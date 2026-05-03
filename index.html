@@ -811,6 +811,13 @@
   .auth-link { background:none; border:none; color:rgba(255,255,255,0.65); font-size:10px; cursor:pointer; text-align:center; text-decoration:underline; font-family:inherit; }
   .auth-divider { text-align:center; color:rgba(255,255,255,0.55); font-size:10px; }
   .auth-err { background:rgba(214,51,64,0.82); border:1px solid rgba(214,51,64,0.4); border-radius:8px; padding:8px 10px; color:#fff; font-size:11px; font-weight:600; display:none; }
+  /* auth trigger button (in toolbar, guest mode) */
+  .auth-trigger-btn { color:var(--red); font-size:11px; font-weight:700; border:1.5px solid var(--red); border-radius:20px; padding:4px 10px; margin-left:auto; flex-shrink:0; background:none; cursor:pointer; font-family:inherit; transition:background .2s,color .2s; }
+  @keyframes auth-pulse { 0%,100%{transform:scale(1);box-shadow:none;} 50%{transform:scale(1.1);box-shadow:0 0 0 6px rgba(214,51,64,0.35);} }
+  .auth-trigger-btn.auth-pulsing { animation:auth-pulse 0.55s ease-in-out infinite; background:var(--red)!important; color:#fff!important; }
+  /* close button inside glass card */
+  .auth-close-btn { position:absolute; top:8px; right:10px; background:none; border:none; color:rgba(255,255,255,0.65); font-size:17px; cursor:pointer; line-height:1; padding:4px 6px; }
+  .auth-close-btn:hover { color:#fff; }
   #main-app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
   .team-section-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:8px; }
   .team-member-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:13px; }
@@ -826,8 +833,9 @@
 </head>
 <body>
 <!-- Auth Overlay -->
-<div id="auth-overlay">
+<div id="auth-overlay" class="hidden">
   <div class="auth-card" id="auth-login">
+    <button class="auth-close-btn" onclick="_closeAuthModal()">✕</button>
     <div class="auth-logo">🏪</div>
     <h2>ATMM.AI&amp;ZEHEM.AI Store</h2>
     <p class="auth-sub">快速盘库补货进销存系统</p>
@@ -840,6 +848,7 @@
     <button class="auth-link" onclick="_doForgot()">忘记密码?</button>
   </div>
   <div class="auth-card" id="auth-register" style="display:none">
+    <button class="auth-close-btn" onclick="_closeAuthModal()">✕</button>
     <div class="auth-logo">🏪</div>
     <h2>创建账号</h2>
     <p class="auth-sub">免费试用30天 · 无需绑卡</p>
@@ -851,6 +860,7 @@
     <button class="auth-link" onclick="_showAuth('login')">已有账号? 登录</button>
   </div>
   <div class="auth-card" id="auth-invite" style="display:none">
+    <button class="auth-close-btn" onclick="_closeAuthModal()">✕</button>
     <div class="auth-logo">✉️</div>
     <h2>接受团队邀请</h2>
     <p class="auth-sub">你已被邀请加入仓库团队</p>
@@ -881,6 +891,7 @@
     <button class="tool" data-view="grid">总览</button>
     <button class="tool" id="legend-btn">图例</button>
     <button class="tool" id="reset-btn">重置</button>
+    <button id="auth-trigger-btn" class="tool auth-trigger-btn" onclick="_openAuthModal()">👤 登录 / 试用</button>
   </div>
 
   <main>
@@ -1562,6 +1573,7 @@ document.querySelectorAll('[data-meta-save]').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!_user) { _pulseLoginBtn(); return; }
     saveState();
     showSheet('save-sheet');
   });
@@ -3881,6 +3893,7 @@ function refreshLibList(filter) {
 }
 
 document.getElementById('upload-btn').addEventListener('click', () => {
+  if (!_user) { _pulseLoginBtn(); return; }
   showSheet('upload-sheet');
   pendingImportLines = null;
   refreshLibList('');
@@ -3948,6 +3961,7 @@ function stopTranslation() {
 }
 
 document.getElementById('translate-btn').addEventListener('click', () => {
+  if (!_user) { _pulseLoginBtn(); return; }
   showSheet('translate-sheet');
 });
 
@@ -4092,7 +4106,10 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
   });
 });
 
-document.getElementById('save-btn').addEventListener('click', () => { saveState(); showSheet('save-sheet'); });
+document.getElementById('save-btn').addEventListener('click', () => {
+  if (!_user) { _pulseLoginBtn(); return; }
+  saveState(); showSheet('save-sheet');
+});
 document.querySelectorAll('#save-sheet .action-row').forEach(b => {
   b.addEventListener('click', () => {
     const act = b.dataset.act; hideSheets();
@@ -4497,10 +4514,32 @@ async function _doAcceptInvite() {
 async function _doLogout() {
   await sb.auth.signOut();
   _user = null; _warehouse = null; _role = null; _subscription = null;
-  loadState(); render(); // Reset to local demo data after logout
-  document.getElementById('auth-overlay').classList.remove('hidden');
+  loadState(); render();
+  _closeAuthModal();
   _showAuth('login');
+  const trigBtn = document.getElementById('auth-trigger-btn');
+  if (trigBtn) trigBtn.style.display = '';
   hideSheets();
+}
+
+// ── Auth modal open / close / pulse ──
+function _openAuthModal() {
+  _showAuth('login');
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+function _closeAuthModal() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+let _authPulseTimer = null;
+function _pulseLoginBtn() {
+  const btn = document.getElementById('auth-trigger-btn');
+  if (!btn || btn.classList.contains('auth-pulsing')) return;
+  btn.classList.add('auth-pulsing');
+  clearTimeout(_authPulseTimer);
+  _authPulseTimer = setTimeout(() => {
+    btn.classList.remove('auth-pulsing');
+    _openAuthModal();
+  }, 3000);
 }
 
 // ── On sign-in: load warehouse + data ──
@@ -4550,9 +4589,10 @@ async function _onSignIn(user) {
   // Apply role-based UI restrictions
   _applyPermissions();
 
-  // Show app
-  document.getElementById('auth-overlay').classList.add('hidden');
-  document.getElementById('main-app').classList.add('visible');
+  // Close modal and hide login button (user is now logged in)
+  _closeAuthModal();
+  const trigBtn = document.getElementById('auth-trigger-btn');
+  if (trigBtn) trigBtn.style.display = 'none';
 
   render();
   toast('👋 ' + (_role === 'boss' ? '👑 老板' : _role === 'manager' ? '🔑 经理' : '👷 操作员') + ' — ' + (user.email || ''));
@@ -4712,15 +4752,14 @@ async function _initAuth() {
   // Handle invite URL from Supabase auth email
   _inviteWarehouseId = params.get('invite_warehouse');
   _inviteRole        = params.get('invite_role');
-  if (_inviteWarehouseId) _showAuth('invite');
+  if (_inviteWarehouseId) { _showAuth('invite'); _openAuthModal(); }
 
-  // Check existing session
+  // Check existing session silently — no modal shown for guests
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await _onSignIn(session.user);
-  } else if (!_inviteWarehouseId) {
-    _showAuth('login');
   }
+  // else: guest mode — app is fully usable, no blocking overlay
 
   // Listen for future auth changes
   sb.auth.onAuthStateChange(async (evt, session) => {
