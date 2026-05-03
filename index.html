@@ -797,20 +797,20 @@
   .delete-zone.active { background: linear-gradient(to top, rgba(214,51,64,1), rgba(214,51,64,0.4)); }
 
   /* ===== AUTH OVERLAY ===== */
-  #auth-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.48); display:flex; align-items:flex-start; justify-content:center; padding-top:52px; padding-left:12px; padding-right:12px; }
+  #auth-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.36); pointer-events:none; display:block; }
   #auth-overlay.hidden { display:none; }
-  .auth-card { background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:18px 16px; width:100%; max-width:268px; display:flex; flex-direction:column; gap:8px; box-shadow:0 16px 48px rgba(0,0,0,0.32); }
+  .auth-card { position:fixed; top:52px; left:50%; transform:translateX(-50%); z-index:10000; pointer-events:all; cursor:grab; background:rgba(255,255,255,0.13); backdrop-filter:blur(26px); -webkit-backdrop-filter:blur(26px); border:1px solid rgba(255,255,255,0.32); border-radius:16px; padding:18px 16px; width:268px; display:flex; flex-direction:column; gap:8px; box-shadow:0 16px 48px rgba(0,0,0,0.42); }
   .auth-card .auth-logo { font-size:26px; text-align:center; }
-  .auth-card h2 { font-size:15px; font-weight:800; text-align:center; letter-spacing:-0.02em; }
-  .auth-card .auth-sub { font-size:10px; color:var(--muted); text-align:center; line-height:1.4; }
-  .auth-card input { width:100%; padding:9px 11px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; color:var(--ink); font-family:inherit; outline:none; }
-  .auth-card input:focus { border-color:var(--ink); }
-  .auth-btn-primary { padding:10px; border-radius:8px; background:var(--ink); color:var(--paper); border:none; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+  .auth-card h2 { font-size:15px; font-weight:800; text-align:center; letter-spacing:-0.02em; color:#fff; }
+  .auth-card .auth-sub { font-size:10px; color:rgba(255,255,255,0.72); text-align:center; line-height:1.4; }
+  .auth-card input { width:100%; padding:9px 11px; border:1.5px solid rgba(255,255,255,0.5); border-radius:8px; background:rgba(255,255,255,0.93); font-size:13px; color:#111; font-family:inherit; outline:none; box-sizing:border-box; }
+  .auth-card input:focus { border-color:#fff; outline:2px solid rgba(255,255,255,0.4); }
+  .auth-btn-primary { padding:10px; border-radius:8px; background:rgba(0,0,0,0.72); color:#fff; border:none; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
   .auth-btn-primary:active { opacity:.8; }
-  .auth-btn-secondary { padding:8px; border-radius:8px; background:var(--paper); color:var(--ink); border:1.5px solid var(--line); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; }
-  .auth-link { background:none; border:none; color:var(--muted); font-size:10px; cursor:pointer; text-align:center; text-decoration:underline; font-family:inherit; }
-  .auth-divider { text-align:center; color:var(--muted); font-size:10px; }
-  .auth-err { background:#ffe5e5; border:1px solid var(--red); border-radius:8px; padding:8px 10px; color:var(--red); font-size:11px; font-weight:600; display:none; }
+  .auth-btn-secondary { padding:8px; border-radius:8px; background:rgba(255,255,255,0.14); color:#fff; border:1.5px solid rgba(255,255,255,0.38); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .auth-link { background:none; border:none; color:rgba(255,255,255,0.65); font-size:10px; cursor:pointer; text-align:center; text-decoration:underline; font-family:inherit; }
+  .auth-divider { text-align:center; color:rgba(255,255,255,0.55); font-size:10px; }
+  .auth-err { background:rgba(214,51,64,0.82); border:1px solid rgba(214,51,64,0.4); border-radius:8px; padding:8px 10px; color:#fff; font-size:11px; font-weight:600; display:none; }
   #main-app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
   .team-section-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:8px; }
   .team-member-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:13px; }
@@ -829,7 +829,7 @@
 <div id="auth-overlay">
   <div class="auth-card" id="auth-login">
     <div class="auth-logo">🏪</div>
-    <h2>ATMM-ZEHEM.AI Store</h2>
+    <h2>ATMM.AI&amp;ZEHEM.AI Store</h2>
     <p class="auth-sub">快速盘库补货进销存系统</p>
     <div class="auth-err" id="err-login"></div>
     <input type="email"    id="auth-email"    placeholder="邮箱 Email" autocomplete="email">
@@ -4424,9 +4424,11 @@ let _inviteWarehouseId = null, _inviteRole = null;
 
 // ── Auth screen switcher ──
 function _showAuth(screen) {
-  document.getElementById('auth-login').style.display    = screen === 'login'    ? '' : 'none';
-  document.getElementById('auth-register').style.display = screen === 'register' ? '' : 'none';
-  document.getElementById('auth-invite').style.display   = screen === 'invite'   ? '' : 'none';
+  // Reset any dragged positions when switching screens
+  document.querySelectorAll('.auth-card').forEach(c => { c.style.left=''; c.style.top=''; c.style.transform=''; });
+  document.getElementById('auth-login').style.display    = screen === 'login'    ? 'flex' : 'none';
+  document.getElementById('auth-register').style.display = screen === 'register' ? 'flex' : 'none';
+  document.getElementById('auth-invite').style.display   = screen === 'invite'   ? 'flex' : 'none';
 }
 function _authErr(id, msg) {
   const el = document.getElementById(id);
@@ -4733,6 +4735,38 @@ async function _initAuth() {
 
 // ── Wire up settings button ──
 document.getElementById('settings-btn').addEventListener('click', _openSettings);
+
+// ── Draggable auth card ──
+function _makeDraggable(card) {
+  let dragging = false, ox, oy;
+  const toFixed = (cx, cy) => {
+    const r = card.getBoundingClientRect();
+    card.style.transform = 'none';
+    card.style.left = r.left + 'px';
+    card.style.top  = r.top  + 'px';
+    ox = cx - r.left; oy = cy - r.top;
+    dragging = true; card.style.cursor = 'grabbing';
+  };
+  const onMove = (cx, cy) => {
+    if (!dragging) return;
+    card.style.left = (cx - ox) + 'px';
+    card.style.top  = (cy - oy) + 'px';
+  };
+  const onEnd = () => { dragging = false; card.style.cursor = 'grab'; };
+  card.addEventListener('mousedown', e => {
+    if (['INPUT','BUTTON','SELECT'].includes(e.target.tagName)) return;
+    toFixed(e.clientX, e.clientY); e.preventDefault();
+  });
+  card.addEventListener('touchstart', e => {
+    if (['INPUT','BUTTON','SELECT'].includes(e.target.tagName)) return;
+    const t = e.touches[0]; toFixed(t.clientX, t.clientY);
+  }, { passive: true });
+  document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+  document.addEventListener('touchmove', e => { if (dragging) onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+document.querySelectorAll('.auth-card').forEach(_makeDraggable);
 
 _initAuth(); // All vars declared above — safe entry point
 
