@@ -1,6 +1,7 @@
 -- ============================================================
 -- ATMM.STORE Database Schema
--- Run this entire file in: Supabase → SQL Editor → New query
+-- Run in: ZEHEM.AI Supabase project (vkwndhdqbmuyogieccph)
+-- Supabase Dashboard → SQL Editor → New query → paste → Run
 -- ============================================================
 
 -- Auto-generate warehouse invite codes like ATOM-X7K2

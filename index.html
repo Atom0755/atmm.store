@@ -829,6 +829,12 @@
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
   #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
   #invite-form input, #invite-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
+  /* ZEHEM.AI footer brand bar */
+  #zehem-footer { position:fixed; bottom:0; left:0; right:0; z-index:200; height:30px; background:var(--paper); border-top:1px solid var(--line); display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; cursor:pointer; }
+  #zehem-footer .zf-logo { font-size:13px; font-weight:900; letter-spacing:-0.03em; color:#6c47ff; }
+  #zehem-footer .zf-text { font-size:10px; color:var(--muted); letter-spacing:0.04em; }
+  #zehem-footer:hover .zf-logo { opacity:.8; }
+  main { padding-bottom:30px; }
 </style>
 </head>
 <body>
@@ -4430,8 +4436,8 @@ document.querySelectorAll('[data-search-input-btn]').forEach(btn => {
 // ================================================================
 // SUPABASE · AUTH · CLOUD SYNC · PERMISSIONS
 // ================================================================
-const _SUPA_URL  = 'https://xcigegulhuglmnhbtzrf.supabase.co';
-const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaWdlZ3VsaHVnbG1uaGJ0enJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTI5OTUsImV4cCI6MjA5MzM2ODk5NX0.vCzOGR-Q6o1wL-o36sfgMs9K8K_sONfg_Osl-wYRHxM';
+const _SUPA_URL  = 'https://vkwndhdqbmuyogieccph.supabase.co';
+const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrd25kaGRxYm11eW9naWVjY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDg2NzcsImV4cCI6MjA4MTkyNDY3N30.Q2Kf4rzJWJdWnYjpLRofmGUp6DNWBgFoDkFJ4yr473k';
 const _STRIPE_PK = 'pk_test_51TSuQEE6TJzfSMV6fTefIFNS3YFFSXK9rvvdhr8ap7UyW36oJAlQWmCgVLOOGKH98GMF4NtPcyT8uPSQMjWrQvka00lqjGxTZP';
 const sb = window.supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
@@ -4818,5 +4824,10 @@ document.addEventListener('touchend', (e) => {
   lastTouchEnd = now;
 }, { passive: false });
 </script>
+<!-- ZEHEM.AI brand footer -->
+<a id="zehem-footer" href="https://zehem.ai" target="_blank" rel="noopener">
+  <span class="zf-logo">Z ZEHEM.AI</span>
+  <span class="zf-text">· AI平台 · 注册后两站通用 ·</span>
+</a>
 </body>
 </html>
