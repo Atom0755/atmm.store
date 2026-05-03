@@ -1,0 +1,4308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atom盘库补货">
+<title>Atom盘库补货表手机版</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231a1a1a'/%3E%3Ctext x='90' y='118' font-family='system-ui' font-size='80' font-weight='700' fill='%23faf8f3' text-anchor='middle'%3E库%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f3ee; --paper: #faf8f3; --ink: #1a1a1a; --line: #2a2a2a; --muted: #8a8580;
+    --red: #d63340; --yellow: #f4c430; --green: #4a9b3f;
+    --shelf-bg: #ebe6dd; --aisle-bg: #ddd5c7; --pallet-bg: #e8dfcf;
+    --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+  }
+  html, body { height: 100%; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  body { font-family: 'Bricolage Grotesque', system-ui, sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.4; overflow: hidden; padding-top: var(--safe-top); }
+  .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+  header { flex-shrink: 0; padding: 12px 16px 8px; padding-right: max(16px, env(safe-area-inset-right, 0px)); background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  header h1 { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; }
+  .icon-btn { width: 36px; height: 36px; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; display: grid; place-items: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+  .icon-btn:active { transform: scale(0.94); background: var(--ink); color: var(--paper); }
+  .table-tabs { flex-shrink: 0; display: flex; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .table-tab {
+    flex: 1; padding: 10px 6px; font-size: 12px; font-weight: 500;
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--muted); border-bottom: 3px solid transparent;
+    transition: all .18s;
+  }
+  .table-tab.active {
+    color: var(--red);
+    border-bottom-color: var(--red);
+    background: var(--bg);
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+  .table-tab small { display: block; font-size: 9px; font-weight: 500; margin-top: 2px; opacity: 0.7; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+  .table-tab.active small { opacity: 0.85; font-size: 10px; font-weight: 700; }
+  .toolbar { flex-shrink: 0; padding: 8px 12px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .tool { flex-shrink: 0; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .tool.active { background: var(--ink); color: var(--paper); }
+  .tool:active { transform: scale(0.96); }
+  main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .table-pane { display: none; }
+  .table-pane.active { display: block; }
+  .meta-bar {
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 14px;
+  }
+  .meta-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--red);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    display: inline-block;
+    padding: 2px 6px;
+    margin-left: -6px;
+    border-radius: 4px;
+    transition: background .15s;
+  }
+  .meta-title:active { background: rgba(0,0,0,0.06); }
+  .meta-fields {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta-fields label {
+    flex: 1;
+    min-width: 130px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .meta-fields input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    font-family: inherit;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .meta-fields input:focus {
+    outline: none;
+    background: #fff8d6;
+  }
+  .meta-fields input[type="date"] {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .meta-save-btn {
+    flex-shrink: 0;
+    background: var(--red);
+    color: white;
+    border: 0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(214,51,64,0.35);
+    font-family: inherit;
+    letter-spacing: 0.02em;
+  }
+  .meta-save-btn:active { transform: scale(0.94); background: #b8232f; }
+
+  /* Search bar — top of every list view */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .search-bar input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    font-family: inherit;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .search-bar input:focus {
+    outline: none;
+    background: #fff8d6;
+    border-color: var(--ink);
+  }
+  .search-bar .search-icon-btn {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    font-size: 16px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .search-bar .search-icon-btn:active { transform: scale(0.92); background: var(--ink); color: var(--paper); }
+  .search-bar .search-clear {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.08);
+    color: var(--ink);
+    font-size: 14px;
+    cursor: pointer;
+    display: none;
+  }
+  .search-bar .search-clear.show { display: grid; place-items: center; }
+  .search-results-info {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 4px 12px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+  }
+  .search-results-info.has-hits { color: var(--red); background: #fff8d6; }
+
+  .list-view { padding: 10px 14px 100px; }
+  .aisle-block { margin-bottom: 20px; }
+  .aisle-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; font-weight: 700; font-size: 14px; }
+  .aisle-header .add-child { background: var(--ink); color: var(--paper); border: 0; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  .container-block { background: var(--shelf-bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 5px; overflow: hidden; }
+  .container-block.pallet { background: var(--pallet-bg); }
+  .container-name { padding: 5px 10px; background: rgba(0,0,0,0.05); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .container-name .shelf-drag-handle { cursor: grab; padding: 0 4px; font-size: 14px; color: var(--muted); -webkit-touch-callout: none; }
+  .container-name .shelf-drag-handle:active { cursor: grabbing; color: var(--ink); }
+  .container-name .cont-name { flex: 1; }
+  .container-name .container-tools { display: flex; gap: 4px; align-items: center; }
+  .container-name .mini-btn { background: transparent; border: 1px solid rgba(0,0,0,0.2); color: var(--muted); padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-family: inherit; }
+  .container-name .mini-btn:active { background: var(--ink); color: var(--paper); }
+  /* Delete button — red, prominent */
+  .container-name .delete-btn {
+    background: rgba(214,51,64,0.08);
+    border: 1px solid rgba(214,51,64,0.4);
+    color: #b8232f;
+    font-weight: 700;
+    padding: 3px 8px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .container-name .delete-btn:active {
+    background: var(--red);
+    color: white;
+    border-color: var(--red);
+    transform: scale(0.92);
+  }
+  .container-name .add-after-shelf { background: var(--ink); color: var(--paper); border: 0; width: 22px; height: 22px; border-radius: 5px; font-size: 13px; font-weight: 700; cursor: pointer; line-height: 1; padding: 0; }
+  .container-name .add-after-shelf:active { transform: scale(0.92); }
+
+  /* "+" divider between this container and the next — sits at the BOTTOM of each container */
+  .add-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0 8px;
+    background: rgba(0,0,0,0.02);
+    border-top: 1px dashed rgba(0,0,0,0.15);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .add-divider .add-divider-btn {
+    width: 36px;
+    height: 28px;
+    border-radius: 14px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .12s, background .12s;
+  }
+  .add-divider .add-divider-btn:active {
+    transform: scale(0.88);
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .add-divider .add-divider-hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: 8px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .container-block.shelf-dragging { opacity: 0.4; }
+  .container-block.shelf-drop-target { box-shadow: 0 -3px 0 var(--ink) inset, 0 3px 0 var(--ink) inset; }
+  .slot { display: grid; grid-template-columns: 32px 1fr 38px 48px 42px; gap: 4px; align-items: center; padding: 7px 6px; border-bottom: 1px dashed rgba(0,0,0,0.1); min-height: 50px; background: var(--paper); }
+  .slot.pallet-slot { grid-template-columns: 32px 1fr 36px 44px 38px 44px; }
+  .slot.search-hit { animation: searchFlash 1.4s ease-in-out infinite; background: #fff8d6 !important; }
+  .grid-slot.search-hit {
+    animation: searchFlash 1.4s ease-in-out infinite;
+    background: #fff8d6 !important;
+    box-shadow: 0 0 0 2px var(--red), 0 0 8px rgba(214,51,64,0.5);
+    border-radius: 3px;
+    z-index: 5;
+    position: relative;
+  }
+  @keyframes searchFlash {
+    0%, 100% { box-shadow: inset 0 0 0 3px transparent; background: #fff8d6 !important; }
+    50% { box-shadow: inset 0 0 0 3px var(--red); background: #fff0a0 !important; }
+  }
+  /* Quantity box — between color and unit */
+  .qty-cell {
+    height: 38px;
+    border: 2px dashed rgba(0,0,0,0.4);
+    border-radius: 8px;
+    background: var(--paper);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 0 2px;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .qty-cell:active { transform: scale(0.92); }
+  .qty-cell.has-qty { border-style: solid; background: #fff8d6; border-color: #c79900; }
+  .qty-cell.empty-qty { color: rgba(0,0,0,0.25); font-size: 16px; }
+  /* Restock (补货) box — only on pallets table, far right */
+  .restock-cell {
+    height: 38px;
+    border: 2px dashed #d63340;
+    border-radius: 8px;
+    background: rgba(214,51,64,0.05);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 800;
+    color: #b8232f;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 0 2px;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .restock-cell:active { transform: scale(0.92); }
+  .restock-cell::before { content: '+'; font-size: 18px; opacity: 0.6; }
+  .restock-cell.has-val::before { content: ''; }
+  .slot:last-child { border-bottom: 0; }
+  .slot.dragover { background: #fff8d6; }
+  .slot.empty .model-cell { color: var(--muted); font-style: italic; }
+  .slot-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 700;
+    width: 26px;
+    height: 26px;
+    border: 1.5px dashed rgba(0,0,0,0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--paper);
+    box-sizing: border-box;
+    flex-shrink: 0;
+    grid-row: 1;
+  }
+  .slot-num:empty,
+  .slot-num.empty-num { border-style: dotted; opacity: 0.4; }
+
+  /* === Product info row (image + EN/CN names) — appears below the main row === */
+  .slot-info-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 50px 1fr;
+    gap: 8px;
+    align-items: stretch;
+    padding: 6px 0 4px 0;
+    margin-top: 4px;
+    border-top: 1px dotted rgba(0,0,0,0.08);
+  }
+  .product-img-cell {
+    width: 50px;
+    height: 50px;
+    border: 1.5px dashed rgba(0,0,0,0.3);
+    border-radius: 8px;
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .product-img-cell:active { transform: scale(0.94); }
+  .product-img-cell.has-img { border-style: solid; border-color: var(--green); padding: 0; }
+  .product-img-cell .img-plus {
+    font-size: 22px;
+    color: rgba(0,0,0,0.4);
+    font-weight: 300;
+    line-height: 1;
+  }
+  .product-img-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+  }
+  .product-names {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+  }
+  .product-name {
+    border: 1px dashed rgba(0,0,0,0.18);
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-size: 11px;
+    line-height: 1.3;
+    background: var(--paper);
+    cursor: text;
+    min-height: 20px;
+    word-break: break-word;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .product-name.empty {
+    color: rgba(0,0,0,0.3);
+    font-style: italic;
+  }
+  .product-name input {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 0;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .product-name input:focus { background: #fff8d6; }
+  .product-name.en { font-weight: 600; color: var(--ink); }
+  .product-name.cn { font-weight: 500; color: rgba(0,0,0,0.75); }
+  /* Autocomplete suggestions popup */
+  .name-suggest {
+    position: absolute;
+    z-index: 60;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-height: 140px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 180px;
+    max-width: 90vw;
+    font-size: 12px;
+  }
+  .name-suggest-item {
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    cursor: pointer;
+    word-break: break-word;
+  }
+  .name-suggest-item:last-child { border-bottom: 0; }
+  .name-suggest-item:active,
+  .name-suggest-item.highlight { background: var(--ink); color: var(--paper); }
+  .name-suggest-item .matched { background: rgba(255,238,150,0.6); border-radius: 2px; padding: 0 1px; }
+  .name-suggest-item .completion { color: var(--muted); }
+  .model-cell { font-size: 13px; font-weight: 500; cursor: grab; padding: 4px 0; line-height: 1.25; word-break: break-word; }
+  .model-cell.dragging { opacity: 0.4; }
+  .model-cell.empty-clickable { color: var(--muted); font-style: italic; cursor: pointer; }
+  .model-cell.empty-clickable::before { content: '＋ '; }
+  .unit-cell {
+    height: 38px;
+    border: 2px dashed rgba(0,0,0,0.25);
+    border-radius: 8px;
+    background: var(--paper);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    overflow: hidden;
+    text-align: center;
+    padding: 0 2px;
+    line-height: 1.1;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+  .unit-cell:active { transform: scale(0.92); }
+  .unit-cell.has-unit { border-style: solid; color: var(--ink); background: var(--bg); }
+
+  /* COLOR CELL — improved visibility for empty state */
+  .color-cell {
+    width: 36px;
+    height: 36px;
+    border: 2.5px dashed rgba(0,0,0,0.55);
+    border-radius: 50%;
+    background: var(--paper);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    transition: all .15s;
+    position: relative;
+  }
+  .color-cell:active { transform: scale(0.88); }
+  .color-cell:not([data-color=""]):not([data-color="null"]) {
+    border-style: solid;
+  }
+  .color-cell[data-color=""]::before, .color-cell[data-color="null"]::before {
+    content: '○';
+    font-size: 20px;
+    color: rgba(0,0,0,0.45);
+    line-height: 1;
+  }
+  .color-cell[data-color="red"] { background: var(--red); border-color: #a02028; color: white; }
+  .color-cell[data-color="yellow"] { background: var(--yellow); border-color: #c79900; color: #1a1a1a; }
+  .color-cell[data-color="green"] { background: var(--green); border-color: #2f7028; color: white; }
+
+  .grid-view { padding: 10px; padding-bottom: 100px; display: none; }
+  .grid-view.active { display: block; }
+  .list-view.hidden { display: none; }
+  .aisles-row { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 6px; }
+  .grid-aisle { background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; padding: 5px; }
+  .grid-aisle-name { font-weight: 700; font-size: 11px; text-align: center; padding: 3px 0 6px; }
+  .grid-pallets { display: grid; grid-template-columns: repeat(var(--pcols, 2), minmax(0, 1fr)); gap: 4px; }
+  .grid-container { background: var(--shelf-bg); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; min-width: 0; }
+  .grid-container.pallet { background: var(--pallet-bg); }
+  .grid-container-name { padding: 2px 4px; background: rgba(0,0,0,0.07); font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: var(--muted); text-align: center; }
+  .grid-slot { padding: 3px 4px; border-bottom: 1px dashed rgba(0,0,0,0.1); background: var(--paper); min-height: 30px; display: flex; align-items: center; gap: 3px; font-size: 9px; line-height: 1.15; }
+  .grid-slot:last-child { border-bottom: 0; }
+  .grid-slot.dragover { background: #fff8d6; }
+  .grid-slot .gnum { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: var(--muted); flex-shrink: 0; width: 14px; text-align: right; }
+  .grid-slot .gmodel { flex: 1; word-break: break-word; cursor: grab; font-weight: 500; min-width: 0; }
+  .grid-slot .gcolor { width: 22px; height: 14px; border: 1.5px dashed rgba(0,0,0,0.4); border-radius: 3px; flex-shrink: 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+  .grid-slot .gcolor:not([data-color=""]):not([data-color="null"]) { border-style: solid; }
+  .grid-slot .gcolor[data-color="red"] { background: var(--red); border-color: var(--red); color: white; }
+  .grid-slot .gcolor[data-color="yellow"] { background: var(--yellow); border-color: #c79900; }
+  .grid-slot .gcolor[data-color="green"] { background: var(--green); border-color: var(--green); color: white; }
+  .grid-slot.empty .gmodel { color: var(--muted); font-style: italic; }
+  .fab { position: fixed; right: 14px; bottom: calc(14px + var(--safe-bottom)); width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--paper); border: 0; font-size: 22px; font-weight: 300; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 50; opacity: 0.85; }
+  .fab:hover { opacity: 1; }
+  .fab:active { transform: scale(0.9); }
+  .sheet-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .sheet-backdrop.show { display: flex; }
+  .sheet { width: 100%; max-width: 480px; background: var(--paper); border-radius: 18px 18px 0 0; padding: 0; border: 1px solid var(--line); border-bottom: 0; animation: slideUp .25s cubic-bezier(.2,.9,.3,1); max-height: 88vh; display: flex; flex-direction: column; }
+  .sheet-body { padding: 18px 18px 8px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+  .sheet-footer { padding: 10px 18px calc(14px + var(--safe-bottom)); border-top: 1px solid rgba(0,0,0,0.08); background: var(--paper); position: sticky; bottom: 0; }
+  .sheet-backdrop.modal-style { align-items: center; }
+  .sheet-backdrop.modal-style .sheet { border-radius: 16px; max-height: 92vh; max-width: 460px; width: calc(100% - 24px); border-bottom: 1px solid var(--line); animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } }
+  @keyframes slideUp { from { transform: translateY(100%); } }
+  .sheet h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; color: var(--muted); }
+  .color-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .color-opt {
+    height: 80px;
+    border-radius: 12px;
+    border: 2px solid #2a2a2a;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #1a1a1a;
+    text-align: center;
+    line-height: 1.2;
+    transition: transform .12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .color-opt:active { transform: scale(0.92); }
+  /* iOS Safari has a known bug with CSS variables inside attribute selectors —
+     use direct hex + !important to guarantee the colors render */
+  #color-sheet .color-opt[data-color="red"],
+  .color-opt.color-red {
+    background-color: #d63340 !important;
+    background: #d63340 !important;
+    border-color: #a02028 !important;
+    color: #ffffff !important;
+  }
+  #color-sheet .color-opt[data-color="yellow"],
+  .color-opt.color-yellow {
+    background-color: #f4c430 !important;
+    background: #f4c430 !important;
+    border-color: #c79900 !important;
+    color: #1a1a1a !important;
+  }
+  #color-sheet .color-opt[data-color="green"],
+  .color-opt.color-green {
+    background-color: #4a9b3f !important;
+    background: #4a9b3f !important;
+    border-color: #2f7028 !important;
+    color: #ffffff !important;
+  }
+  #color-sheet .color-opt[data-color="none"],
+  .color-opt.color-none {
+    background-color: #faf8f3 !important;
+    background: #faf8f3 !important;
+    border: 2px dashed #8a8580 !important;
+    color: #555 !important;
+  }
+  /* Make the label text always readable on top of the color */
+  .color-opt .color-label {
+    background: rgba(0,0,0,0.18);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .color-opt[data-color="yellow"] .color-label,
+  .color-opt[data-color="none"] .color-label {
+    background: rgba(255,255,255,0.6);
+    color: #1a1a1a;
+  }
+  .sheet-cancel, .sheet-confirm { width: 100%; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--line); }
+  .sheet-cancel { background: var(--bg); }
+  .sheet-confirm { background: var(--ink); color: var(--paper); margin-bottom: 8px; }
+  .qty-input-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .qty-input-wrap input { flex: 1; border: 0; background: transparent; font-size: 24px; font-weight: 700; text-align: center; font-family: 'JetBrains Mono', monospace; padding: 12px; -webkit-user-select: text; user-select: text; }
+  .qty-input-wrap input:focus { outline: none; }
+  .qty-btn { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); font-size: 20px; font-weight: 700; cursor: pointer; }
+  .qty-btn:active { background: var(--ink); color: var(--paper); }
+  .unit-quick {
+    height: 50px;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+    transition: transform .12s;
+    font-family: inherit;
+  }
+  .unit-quick:active { transform: scale(0.92); background: var(--ink); color: var(--paper); }
+  .unit-quick[data-unit=""] { background: var(--bg); color: var(--muted); border-style: dashed; }
+  .actions-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .action-row { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; }
+  .action-row .ico { font-size: 20px; }
+  .action-row:active { background: var(--ink); color: var(--paper); }
+
+  /* Input method options for model picker */
+  .input-methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .input-method-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 4px;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: center;
+    line-height: 1.2;
+    font-family: inherit;
+    transition: transform .12s;
+  }
+  .input-method-btn:active { transform: scale(0.92); background: var(--ink); color: var(--paper); }
+  .input-method-btn .imico { font-size: 22px; line-height: 1; }
+  .input-method-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* Handwriting canvas */
+  .handwrite-wrap { display: none; margin-bottom: 10px; }
+  .handwrite-wrap.show { display: block; }
+
+  /* Barcode/QR scanner */
+  .barcode-wrap { display: none; margin-bottom: 10px; position: relative; }
+  .barcode-wrap.show { display: block; }
+  /* IMPORTANT: lock the scanner UI orientation — when user rotates phone, the frame should NOT rotate.
+     We force a fixed aspect ratio and disable any auto-rotation behaviors. */
+  .barcode-wrap #barcode-video {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #000;
+    /* Lock orientation: ignore device rotation, always render in document orientation */
+    transform: none !important;
+    -webkit-transform: none !important;
+  }
+  .barcode-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    margin-bottom: 10px;
+    pointer-events: none;
+  }
+  .barcode-wrap .camera-preview {
+    border-radius: 10px;
+  }
+  .barcode-frame {
+    position: absolute;
+    top: 22px;
+    left: 0;
+    right: 0;
+    aspect-ratio: 4/3;
+    pointer-events: none;
+  }
+  .barcode-frame-corner {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 4px solid #4a9b3f;
+  }
+  .barcode-frame-corner.tl { top: 18%; left: 12%; border-right: 0; border-bottom: 0; }
+  .barcode-frame-corner.tr { top: 18%; right: 12%; border-left: 0; border-bottom: 0; }
+  .barcode-frame-corner.bl { bottom: 18%; left: 12%; border-right: 0; border-top: 0; }
+  .barcode-frame-corner.br { bottom: 18%; right: 12%; border-left: 0; border-top: 0; }
+  .barcode-laser {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #4a9b3f, transparent);
+    box-shadow: 0 0 8px #4a9b3f;
+    animation: laser 1.6s ease-in-out infinite;
+  }
+  @keyframes laser {
+    0%, 100% { transform: translateY(-30px); opacity: 0.8; }
+    50% { transform: translateY(30px); opacity: 1; }
+  }
+  .handwrite-canvas {
+    width: 100%;
+    height: 180px;
+    background: #fff8d6;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    touch-action: none;
+    display: block;
+  }
+  .handwrite-tools { display: flex; gap: 8px; margin-top: 8px; }
+  .handwrite-tools button { flex: 1; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .handwrite-tools button:active { background: var(--ink); color: var(--paper); }
+
+  .model-search-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: #fff8d6;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    -webkit-user-select: text;
+    user-select: text;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+    color: var(--ink);
+    -webkit-appearance: none;
+  }
+  .model-search-input:focus { outline: 3px solid rgba(214,51,64,0.3); outline-offset: -1px; }
+  .model-suggestions { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: var(--bg); }
+  .suggestion { padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.08); cursor: pointer; font-size: 13px; }
+  .suggestion:last-child { border-bottom: 0; }
+  .suggestion.selected { background: var(--ink); color: var(--paper); }
+  .suggestion .match-score { float: right; font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .suggestion.selected .match-score { color: rgba(255,255,255,0.6); }
+
+  .camera-wrap { display: none; margin-bottom: 10px; }
+  .camera-wrap.show { display: block; }
+  .camera-preview { width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 10px; margin-bottom: 10px; object-fit: cover; }
+  .camera-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+  .camera-controls button { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .camera-controls button.primary { background: var(--ink); color: var(--paper); }
+
+  .voice-wrap { display: none; margin-bottom: 10px; padding: 16px; background: #fff8d6; border: 2px solid var(--ink); border-radius: 10px; text-align: center; }
+  .voice-wrap.show { display: block; }
+  .voice-mic-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 0;
+    background: var(--red);
+    color: white;
+    font-size: 36px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(214,51,64,0.4);
+    margin: 8px 0;
+  }
+  .voice-mic-btn.recording { background: #2f7028; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  .voice-status { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 6px; }
+
+  [contenteditable="true"] { outline: 2px solid var(--ink); outline-offset: 2px; background: #fff8d6; border-radius: 4px; -webkit-user-select: text; user-select: text; }
+  .toast { position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; z-index: 200; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 80vw; text-align: center; }
+  .toast.show { opacity: 1; }
+  .delete-zone { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, rgba(214,51,64,0.95), rgba(214,51,64,0)); display: none; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; z-index: 90; pointer-events: none; padding-bottom: var(--safe-bottom); }
+  .delete-zone.show { display: flex; }
+  .delete-zone.active { background: linear-gradient(to top, rgba(214,51,64,1), rgba(214,51,64,0.4)); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Atom 盘库补货表 <span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;">手机版</span></h1>
+    <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
+    <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
+    <button class="icon-btn" id="save-btn" title="保存">💾</button>
+  </header>
+
+  <div class="table-tabs">
+    <button class="table-tab active" data-table="shelfBlack">黑色MUG+IC<small>BLACK SHELF</small></button>
+    <button class="table-tab" data-table="shelfWhite">白色BK/CH<small>WHITE SHELF</small></button>
+    <button class="table-tab" data-table="pallet">整箱货堆<small>PALLETS</small></button>
+  </div>
+
+  <div class="toolbar">
+    <button class="tool active" data-view="list">列表</button>
+    <button class="tool" data-view="grid">总览</button>
+    <button class="tool" id="legend-btn">图例</button>
+    <button class="tool" id="reset-btn">重置</button>
+  </div>
+
+  <main>
+    <div class="table-pane active" data-table-pane="shelfBlack">
+      <div class="meta-bar">
+        <div class="meta-title editable" data-meta-title="shelfBlack">黑色 MUG 和 IC 零散货架表</div>
+        <div class="meta-fields">
+          <label>填表人 <input type="text" data-meta="filler" data-table-meta="shelfBlack" placeholder="姓名"></label>
+          <label>日期 <input type="date" data-meta="date" data-table-meta="shelfBlack"></label>
+          <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" data-search="shelfBlack" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
+        <button class="search-icon-btn" data-search-input-btn="shelfBlack" title="拍照/手写/语音搜索">📷</button>
+        <button class="search-clear" data-search-clear="shelfBlack">✕</button>
+      </div>
+      <div class="search-results-info" data-search-info="shelfBlack" style="display:none;"></div>
+      <div class="list-view" id="shelfBlack-list"></div>
+      <div class="grid-view" id="shelfBlack-grid"></div>
+    </div>
+    <div class="table-pane" data-table-pane="shelfWhite">
+      <div class="meta-bar">
+        <div class="meta-title editable" data-meta-title="shelfWhite">白色 BK/CH 零散货架表</div>
+        <div class="meta-fields">
+          <label>填表人 <input type="text" data-meta="filler" data-table-meta="shelfWhite" placeholder="姓名"></label>
+          <label>日期 <input type="date" data-meta="date" data-table-meta="shelfWhite"></label>
+          <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" data-search="shelfWhite" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
+        <button class="search-icon-btn" data-search-input-btn="shelfWhite" title="拍照/手写/语音搜索">📷</button>
+        <button class="search-clear" data-search-clear="shelfWhite">✕</button>
+      </div>
+      <div class="search-results-info" data-search-info="shelfWhite" style="display:none;"></div>
+      <div class="list-view" id="shelfWhite-list"></div>
+      <div class="grid-view" id="shelfWhite-grid"></div>
+    </div>
+    <div class="table-pane" data-table-pane="pallet">
+      <div class="meta-bar">
+        <div class="meta-title editable" data-meta-title="pallet">整箱货堆库存表</div>
+        <div class="meta-fields">
+          <label>填表人 <input type="text" data-meta="filler" data-table-meta="pallet" placeholder="姓名"></label>
+          <label>日期 <input type="date" data-meta="date" data-table-meta="pallet"></label>
+          <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" data-search="pallet" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
+        <button class="search-icon-btn" data-search-input-btn="pallet" title="拍照/手写/语音搜索">📷</button>
+        <button class="search-clear" data-search-clear="pallet">✕</button>
+      </div>
+      <div class="search-results-info" data-search-info="pallet" style="display:none;"></div>
+      <div class="list-view" id="pallet-list"></div>
+      <div class="grid-view" id="pallet-grid"></div>
+    </div>
+  </main>
+  <button class="fab" id="add-aisle" title="新增通道/排" aria-label="新增通道">+</button>
+  <div class="delete-zone" id="delete-zone">🗑️ 拖到这里删除整箱(已搬走)</div>
+</div>
+
+<div class="sheet-backdrop modal-style" id="color-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>库存状态颜色</h3>
+      <div class="color-options">
+        <div class="color-opt color-red" data-color="red" style="background:#d63340; border-color:#a02028; color:#fff;"><span class="color-label">无货</span></div>
+        <div class="color-opt color-yellow" data-color="yellow" style="background:#f4c430; border-color:#c79900; color:#1a1a1a;"><span class="color-label">少量</span></div>
+        <div class="color-opt color-green" data-color="green" style="background:#4a9b3f; border-color:#2f7028; color:#fff;"><span class="color-label">充足</span></div>
+        <div class="color-opt color-none" data-color="none" style="background:#faf8f3; border:2px dashed #8a8580; color:#555;"><span class="color-label">清除</span></div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop modal-style" id="qty-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3 id="qty-title">输入数量</h3>
+      <div class="qty-input-wrap">
+        <button class="qty-btn" id="qty-minus">−</button>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" id="qty-input" min="0" step="1">
+        <button class="qty-btn" id="qty-plus">+</button>
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.04em;">或用其他方式输入数字 / OTHER INPUT METHODS</div>
+      <div class="input-methods" style="margin-bottom:8px;">
+        <button class="input-method-btn" data-qty-method="camera"><span class="imico">📷</span><span>拍照</span></button>
+        <button class="input-method-btn" data-qty-method="handwrite"><span class="imico">✍️</span><span>手写</span></button>
+        <button class="input-method-btn" data-qty-method="voice"><span class="imico">🎤</span><span>语音</span></button>
+      </div>
+      <div id="qty-method-status" style="display:none; padding:8px; background:#fff8d6; border:1px solid var(--line); border-radius:8px; font-size:12px; font-weight:600; text-align:center; margin-bottom:8px;"></div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-confirm" id="qty-confirm">确定</button>
+      <button class="sheet-cancel" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop modal-style" id="unit-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3 id="unit-title">单位</h3>
+      <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:8px; margin-bottom:12px;">
+        <button class="unit-quick" data-unit="套">套</button>
+        <button class="unit-quick" data-unit="个">个</button>
+        <button class="unit-quick" data-unit="对">对</button>
+        <button class="unit-quick" data-unit="件">件</button>
+        <button class="unit-quick" data-unit="箱">箱</button>
+        <button class="unit-quick" data-unit="包">包</button>
+        <button class="unit-quick" data-unit="片">片</button>
+        <button class="unit-quick" data-unit="">清除</button>
+      </div>
+      <input type="text" id="unit-input" placeholder="或自定义单位..." autocomplete="off" style="width:100%; padding:12px; border:2px solid var(--ink); border-radius:10px; font-size:16px; font-weight:600; background:#fff8d6;">
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-confirm" id="unit-confirm">确定</button>
+      <button class="sheet-cancel" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE / EXPORT sheet — with WeChat / Drive / Email -->
+<div class="sheet-backdrop" id="save-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>保存与分享</h3>
+      <div class="actions-list">
+        <button class="action-row" data-act="share-wechat"><span class="ico">💬</span>分享到微信 / Messages</button>
+        <button class="action-row" data-act="share-drive"><span class="ico">☁️</span>保存到 Google Drive / iCloud</button>
+        <button class="action-row" data-act="share-email"><span class="ico">📧</span>发送到邮箱</button>
+        <button class="action-row" data-act="download-csv"><span class="ico">📊</span>导出 CSV 表格</button>
+        <button class="action-row" data-act="download-json"><span class="ico">📁</span>下载 JSON 备份</button>
+        <button class="action-row" data-act="load-json"><span class="ico">📂</span>从本地导入 JSON</button>
+      </div>
+      <div style="font-size:11px; color:var(--muted); padding: 8px 4px; line-height:1.6;">
+        💡 数据已自动保存到本浏览器,以上选项是导出 / 备份到其他地方。
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="upload-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>📋 型号库管理 / Model Library</h3>
+
+      <!-- Current models in library, with search -->
+      <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--ink);">📚 当前型号库 <span id="lib-count" style="color: var(--red); font-family: 'JetBrains Mono', monospace;">0</span> 个型号</div>
+          <button id="lib-export" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:600;">📤 导出 TXT</button>
+        </div>
+        <input type="text" id="lib-search" placeholder="🔍 搜索型号库..." autocomplete="off" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; margin-bottom:6px; background:var(--paper); -webkit-user-select:text; user-select:text;">
+        <div id="lib-list" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: var(--paper); -webkit-overflow-scrolling: touch;"></div>
+      </div>
+
+      <!-- Upload sources -->
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em;">⬆️ 上传新型号清单 / UPLOAD NEW LIST</div>
+      <div class="actions-list">
+        <button class="action-row" data-act="upload-paste"><span class="ico">⌨️</span><div style="flex:1;"><div style="font-weight:700;">手动粘贴清单</div><div style="font-size:11px; color:var(--muted);">从微信、邮件、便签复制后粘贴</div></div></button>
+        <button class="action-row" data-act="upload-file"><span class="ico">📁</span><div style="flex:1;"><div style="font-weight:700;">从本地选文件</div><div style="font-size:11px; color:var(--muted);">支持 .txt / .csv / .json (本地、iCloud、Drive 都从这里选)</div></div></button>
+        <button class="action-row" data-act="upload-share"><span class="ico">📤</span><div style="flex:1;"><div style="font-weight:700;">从分享菜单接收</div><div style="font-size:11px; color:var(--muted);">微信/邮件里 → 分享 → "在 Safari 中打开"</div></div></button>
+      </div>
+
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 8px; letter-spacing: 0.05em;">📥 添加方式 / IMPORT MODE</div>
+      <div class="actions-list">
+        <button class="action-row" data-act="upload-append-only" style="background: #e8f5e8; border-color: var(--green);"><span class="ico">📚</span><div style="flex:1;"><div style="font-weight:700;">仅扩充型号库 (推荐)</div><div style="font-size:11px; color:var(--muted);">不动货架,只加到型号库以备拍照匹配</div></div></button>
+        <button class="action-row" data-act="upload-append"><span class="ico">➕</span><div style="flex:1;"><div style="font-weight:700;">追加到货架</div><div style="font-size:11px; color:var(--muted);">填进零散货架的空位</div></div></button>
+        <button class="action-row" data-act="upload-replace" style="background: #ffe5e5; border-color: var(--red);"><span class="ico">🔄</span><div style="flex:1;"><div style="font-weight:700;">替换全部 (危险)</div><div style="font-size:11px; color:var(--muted);">清空两表重建</div></div></button>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Restock target table chooser -->
+<div class="sheet-backdrop modal-style" id="restock-choose-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>补货到哪张零散表?</h3>
+      <div id="restock-choose-info" style="background:#fff8d6; border:2px solid var(--ink); border-radius:10px; padding:12px; margin-bottom:14px; font-size:14px; line-height:1.5;"></div>
+      <div class="actions-list">
+        <button class="action-row" data-restock-target="shelfBlackTable">
+          <span class="ico">⬛</span>
+          <div><div style="font-weight:700;">黑色 MUG+IC 货架</div><div id="restock-black-info" style="font-size:11px; color:var(--muted);"></div></div>
+        </button>
+        <button class="action-row" data-restock-target="shelfWhiteTable">
+          <span class="ico">⬜</span>
+          <div><div style="font-weight:700;">白色 BK/CH 货架</div><div id="restock-white-info" style="font-size:11px; color:var(--muted);"></div></div>
+        </button>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>取消(不补货)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bilingual delete confirmation modal -->
+<div class="sheet-backdrop modal-style" id="confirm-delete-sheet">
+  <div class="sheet">
+    <div class="sheet-body" style="text-align:center;">
+      <div style="font-size:48px; margin: 8px 0 12px;">⚠️</div>
+      <div style="font-size: 16px; font-weight: 800; color: var(--red); margin-bottom: 4px;">请谨慎操作</div>
+      <div style="font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 14px; letter-spacing: 0.02em;">PLEASE BE CAREFUL</div>
+      <div style="background: #fff8d6; border: 2px solid var(--ink); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+        <div id="confirm-delete-target" style="font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 8px;">即将删除: ?</div>
+        <div style="font-size: 13px; line-height: 1.6; color: var(--ink);">
+          删除后<b style="color: var(--red);">不可恢复</b>,所有内容(型号、颜色、数量、单位)都会丢失。
+        </div>
+        <div style="font-size: 12px; line-height: 1.5; color: var(--muted); margin-top: 6px; font-style: italic;">
+          This action <b>cannot be undone</b>. All data (models, colors, quantities, units) will be lost.
+        </div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-confirm" id="confirm-delete-yes" style="background: var(--red); border-color: var(--red);">确定删除 / Confirm Delete</button>
+      <button class="sheet-cancel" data-close>取消 / Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product image upload sheet -->
+<div class="sheet-backdrop modal-style" id="product-img-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3 id="product-img-title">产品图片</h3>
+      <div id="product-img-preview" style="margin-bottom: 14px;"></div>
+      <div class="actions-list">
+        <button class="action-row" id="img-from-camera"><span class="ico">📷</span><div style="flex:1;"><div style="font-weight:700;">拍照</div><div style="font-size:11px; color:var(--muted);">用摄像头拍一张</div></div></button>
+        <button class="action-row" id="img-from-album"><span class="ico">🖼️</span><div style="flex:1;"><div style="font-weight:700;">从相册选</div><div style="font-size:11px; color:var(--muted);">从手机相册选一张</div></div></button>
+        <button class="action-row" id="img-from-url"><span class="ico">🔗</span><div style="flex:1;"><div style="font-weight:700;">输入图片网址</div><div style="font-size:11px; color:var(--muted);">如已有 https://... 链接</div></div></button>
+        <button class="action-row" id="img-remove" style="background: #ffe5e5; border-color: var(--red);"><span class="ico">🗑️</span><div style="flex:1;"><div style="font-weight:700; color: var(--red);">移除图片</div></div></button>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Translate sheet (Google Translate Widget) -->
+<div class="sheet-backdrop" id="translate-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>🌐 翻译 / Translate Page</h3>
+      <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+        <div style="font-size: 12px; line-height: 1.6; color: var(--ink);">
+          <div style="font-weight: 700; margin-bottom: 4px;">📌 使用说明 / How to use</div>
+          <div style="color: var(--muted);">
+            • 选择语言后整个页面自动翻译<br>
+            • Pick a language and the whole page will be translated<br>
+            • 点击「停止翻译」可恢复原文<br>
+            • Tap Stop to restore original text
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em;">🌍 选择语言 / SELECT LANGUAGE</div>
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
+        <button class="action-row translate-lang" data-lang="en"><span class="ico">🇺🇸</span><div style="flex:1; font-weight:700;">English</div></button>
+        <button class="action-row translate-lang" data-lang="es"><span class="ico">🇪🇸</span><div style="flex:1; font-weight:700;">Español</div></button>
+        <button class="action-row translate-lang" data-lang="ja"><span class="ico">🇯🇵</span><div style="flex:1; font-weight:700;">日本語</div></button>
+        <button class="action-row translate-lang" data-lang="ko"><span class="ico">🇰🇷</span><div style="flex:1; font-weight:700;">한국어</div></button>
+        <button class="action-row translate-lang" data-lang="fr"><span class="ico">🇫🇷</span><div style="flex:1; font-weight:700;">Français</div></button>
+        <button class="action-row translate-lang" data-lang="de"><span class="ico">🇩🇪</span><div style="flex:1; font-weight:700;">Deutsch</div></button>
+        <button class="action-row translate-lang" data-lang="vi"><span class="ico">🇻🇳</span><div style="flex:1; font-weight:700;">Tiếng Việt</div></button>
+        <button class="action-row translate-lang" data-lang="ru"><span class="ico">🇷🇺</span><div style="flex:1; font-weight:700;">Русский</div></button>
+        <button class="action-row translate-lang" data-lang="ar"><span class="ico">🇸🇦</span><div style="flex:1; font-weight:700;">العربية</div></button>
+        <button class="action-row translate-lang" data-lang="hi"><span class="ico">🇮🇳</span><div style="flex:1; font-weight:700;">हिन्दी</div></button>
+        <button class="action-row translate-lang" data-lang="th"><span class="ico">🇹🇭</span><div style="flex:1; font-weight:700;">ไทย</div></button>
+        <button class="action-row translate-lang" data-lang="pt"><span class="ico">🇵🇹</span><div style="flex:1; font-weight:700;">Português</div></button>
+      </div>
+
+      <button class="action-row" id="translate-stop" style="background: #ffe5e5; border-color: var(--red);">
+        <span class="ico">🚫</span><div style="flex:1; font-weight:700; color: var(--red);">停止翻译 / Stop Translation</div>
+      </button>
+
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭 / Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="legend-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>说明</h3>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; font-size:13px;">
+        <div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border-radius:8px;">
+          <div style="width:36px; height:24px; background:var(--red); border-radius:4px;"></div>
+          <div><strong>红色</strong> · 无货 (一个都没有)</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border-radius:8px;">
+          <div style="width:36px; height:24px; background:var(--yellow); border-radius:4px;"></div>
+          <div><strong>黄色</strong> · 少量</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border-radius:8px;">
+          <div style="width:36px; height:24px; background:var(--green); border-radius:4px;"></div>
+          <div><strong>绿色</strong> · 充足</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg); border-radius:8px;">
+          <div style="width:36px; height:24px; border:2.5px dashed rgba(0,0,0,0.55); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:rgba(0,0,0,0.45);">○</div>
+          <div><strong>空圆框</strong> · 未标注 (单击选颜色)</div>
+        </div>
+        <div style="font-size:12px; color:var(--muted); padding:10px; background:var(--bg); border-radius:8px; line-height:1.7;">
+          · <b>单击</b>○颜色圆框 → 选红/黄/绿(立即弹出,不等待)<br>
+          · <b>长按</b>○颜色圆框 → 输入数量(整数)<br>
+          · <b>双击</b>型号 → 4 种输入: 拍照/打字/手写/语音<br>
+          · <b>单击</b>单位框 → 选单位(套/个/对...)<br>
+          · <b>双击</b>表标题 / 通道名 / 货架层名 → 修改<br>
+          · <b>长按拖动</b>型号 → 移到其他位置<br>
+          · <b>长按层名</b>(整行) → 整层拖到别处(序号自动重排)<br>
+          · 每层<b>底部 +</b> → 复制此整层(含所有型号、颜色、数量)插到下方<br>
+          · 整箱表上 <b>拖到底部</b> → 删除(整箱搬走)<br>
+          · 顶部 <b>💾</b> 或表内 <b>Save 保存</b> → 导出/分享到微信/Drive/邮箱
+        </div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODEL PICKER with 4 input methods: camera, type, handwrite, voice -->
+<div class="sheet-backdrop modal-style" id="camera-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3 id="camera-title">添加 / 修改型号</h3>
+
+      <!-- Input method selector -->
+      <div class="input-methods" style="grid-template-columns: repeat(5, 1fr);">
+        <button class="input-method-btn active" data-method="type"><span class="imico">⌨️</span><span>打字</span></button>
+        <button class="input-method-btn" data-method="camera"><span class="imico">📷</span><span>拍照</span></button>
+        <button class="input-method-btn" data-method="barcode"><span class="imico">📊</span><span>扫码</span></button>
+        <button class="input-method-btn" data-method="handwrite"><span class="imico">✍️</span><span>手写</span></button>
+        <button class="input-method-btn" data-method="voice"><span class="imico">🎤</span><span>语音</span></button>
+      </div>
+
+      <!-- Camera -->
+      <div class="camera-wrap" id="camera-wrap">
+        <video id="camera-video" class="camera-preview" autoplay playsinline muted style="display:none;"></video>
+        <canvas id="camera-canvas" class="camera-preview" style="display:none;"></canvas>
+        <div class="camera-controls">
+          <button id="camera-start">📷 开启摄像头</button>
+          <button id="camera-retake" style="display:none;">↻ 重拍</button>
+        </div>
+        <div id="ocr-status" style="display:none; padding: 8px 12px; background: #fff8d6; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 10px;"></div>
+      </div>
+
+      <!-- Barcode / QR Scanner -->
+      <div class="barcode-wrap" id="barcode-wrap">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600;">📊 对准条码或二维码,自动识别 / Point at barcode or QR</div>
+        <video id="barcode-video" class="camera-preview" autoplay playsinline muted style="display:none;"></video>
+        <div class="barcode-frame" id="barcode-frame" style="display:none;">
+          <div class="barcode-frame-corner tl"></div>
+          <div class="barcode-frame-corner tr"></div>
+          <div class="barcode-frame-corner bl"></div>
+          <div class="barcode-frame-corner br"></div>
+          <div class="barcode-laser"></div>
+        </div>
+        <div class="camera-controls">
+          <button id="barcode-start">📊 开始扫码</button>
+          <button id="barcode-stop" style="display:none;">⏹️ 停止</button>
+        </div>
+        <div id="barcode-status" style="display:none; padding: 8px 12px; background: #fff8d6; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 10px;"></div>
+        <div id="barcode-result" style="display:none; padding: 10px 12px; background: #e8f5e8; border: 2px solid var(--green); border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 10px; word-break: break-all;"></div>
+      </div>
+
+      <!-- Handwriting -->
+      <div class="handwrite-wrap" id="handwrite-wrap">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600;">在下方区域用手指或笔写字,然后手动输入对应文字 ↓</div>
+        <canvas class="handwrite-canvas" id="handwrite-canvas"></canvas>
+        <div class="handwrite-tools">
+          <button id="hw-clear">🗑️ 清空</button>
+          <button id="hw-undo">↶ 撤销</button>
+        </div>
+      </div>
+
+      <!-- Voice -->
+      <div class="voice-wrap" id="voice-wrap">
+        <div style="font-size:13px; color:var(--muted); margin-bottom:6px;">点击麦克风按钮说出型号</div>
+        <button class="voice-mic-btn" id="voice-mic">🎤</button>
+        <div class="voice-status" id="voice-status">点击开始录音</div>
+      </div>
+
+      <!-- Always-visible text field (works for all methods) -->
+      <div style="font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 600;">型号名 (可手动修改):</div>
+      <textarea class="model-search-input" id="model-search" placeholder="输入型号名,或选下方建议..." autocomplete="off" rows="2" spellcheck="false"></textarea>
+      <div class="model-suggestions" id="model-suggestions"></div>
+
+      <!-- Box-to-set conversion ratio (used by restock flow to convert pallet boxes → scattered sets) -->
+      <div style="margin-top:8px; padding:10px; background:var(--bg); border:1px dashed var(--line); border-radius:8px; font-size:12px; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:18px;">📦</span>
+        <span style="font-weight:600; color:var(--ink);">1 箱 =</span>
+        <input type="number" id="model-ratio-input" min="1" step="1" value="1" style="width:60px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; text-align:center; font-family:'JetBrains Mono', monospace; font-weight:700; font-size:14px;">
+        <span style="font-weight:600; color:var(--ink);">套</span>
+        <span style="font-size:10px; color:var(--muted); margin-left:auto;">补货换算用</span>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-confirm" id="model-confirm">确定</button>
+      <button class="sheet-cancel" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// === GLOBAL ERROR DISPLAY (debug mode) ===
+// Captures any uncaught error and shows the actual message + line on screen,
+// instead of the generic "Script error" iOS Safari shows.
+(function() {
+  let errBox = null;
+  function showError(msg, src, line, col, err) {
+    try {
+      if (!errBox) {
+        errBox = document.createElement('div');
+        errBox.id = '__err_box';
+        errBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#d63340;color:#fff;padding:10px 12px;border-radius:10px;font-family:monospace;font-size:11px;line-height:1.4;max-height:40vh;overflow:auto;box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:pre-wrap;word-break:break-word;';
+        errBox.addEventListener('click', () => errBox.remove());
+        document.body && document.body.appendChild(errBox);
+      }
+      const stack = err && err.stack ? '\n' + String(err.stack).split('\n').slice(0,4).join('\n') : '';
+      errBox.textContent = `❌ ${msg}\nat ${src || '?'}:${line || '?'}:${col || '?'}${stack}\n\n(点击关闭)`;
+    } catch(e) {}
+  }
+  window.addEventListener('error', e => {
+    showError(e.message || 'unknown', e.filename, e.lineno, e.colno, e.error);
+  });
+  window.addEventListener('unhandledrejection', e => {
+    showError('Unhandled promise: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)), '', '', '', e.reason);
+  });
+})();
+// === END ERROR DISPLAY ===
+</script>
+<script>
+const INITIAL_MODELS = [
+  "VW Golf 6 (2010-2014)","Accord (2003-2007)","Infiniti G35/37 (2007-2015)","Ford Focus (2012-2018)",
+  "Lexus IS (2014-2024)","Corolla sed (2003-2008)","Nissan Versa (2010+)","Forte sed (2012-2018)",
+  "Lexus GX 460","Nissan Sentra (2020-2025)","Kia K5 (2021)","Honda Civic (2022-2025)",
+  "Corolla sed (2014-2019)","Honda Civic (2006-2011)","Lancer EVO X (2008-2017)","Nissan Altima (2013-2018)",
+  "Toyota Camry (2018-2024)","Corolla sed (2020-2025)","VW Golf 7 (2015-2019)","VW Jetta (2011-2018)",
+  "Lexus GS (2013-2020)","Acura RDX (2019-2024)","Toyota Highlander (2014-2019)","Corolla sed (2007-2013)",
+  "Toyota Camry (2012-2017)","Subaru Crosstrek (2014-2025)","Chevy Cruz (2009-2015)","Impreza Hatchback (2017-2021)",
+  "Infiniti Q50 (2014+)","Subaru WRX (2015-2021)","Versa sed (2012-2019)","VW Passat sed (2012-2018)",
+  "Accord (2013-2017)","Chevy Malibu (2016-2022)","Dodge Charger (2011)","Accord (2018-2022)",
+  "Fit HB (2015-2019)","Legacy B4 sed (2014-2019)","Accord (2008-2012)","Subaru WRX (2022-2024)",
+  "CRV (2017-2022)","Legacy B4 sed (2009-2014)","Honda CR-Z (2023+)","Nissan Rouge (2014-2019)",
+  "Toyota Camry (2025-2026)","Toyota BZ4X (2023-2025)","HRV (2015)"
+];
+const SHELF_NAMES = ["顶","上","中","下"];
+const SHELF_AISLE_NAMES = ["左","中","右"];
+const PALLET_AISLE_NAMES = ["A","B"];
+const SLOTS_PER_SHELF = 5;
+const PALLETS_PER_AISLE = 15;
+const LAYERS_PER_PALLET = 10;
+
+let state = null;
+let currentTable = 'shelfBlack';
+
+function newSlot() { return { modelId: null, color: null, qty: 0, unit: null, restock: 0 }; }
+function loadState() {
+  try {
+    const raw = localStorage.getItem('inventoryV3');
+    if (raw) {
+      state = JSON.parse(raw);
+      if (state.models && state.shelfBlackTable && state.shelfWhiteTable && state.palletTable) {
+        // Migrate: ensure all slots have restock field, all models have boxToSetRatio
+        migrateState();
+        return;
+      }
+    }
+    const oldRaw = localStorage.getItem('inventoryV2');
+    if (oldRaw) {
+      const old = JSON.parse(oldRaw);
+      if (old.models && old.shelfTable && old.palletTable) {
+        state = {
+          models: old.models,
+          shelfBlackTable: old.shelfTable,
+          shelfWhiteTable: buildEmptyShelfTable(),
+          palletTable: old.palletTable,
+          meta: { shelfBlack: { filler: '', date: '' }, shelfWhite: { filler: '', date: '' }, pallet: { filler: '', date: '' } }
+        };
+        migrateState();
+        return;
+      }
+    }
+  } catch(e) {}
+  state = buildInitial();
+}
+
+function migrateState() {
+  // Ensure all models have boxToSetRatio
+  if (state.models) state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
+  // Ensure all slots have restock and unit fields
+  const tables = [state.shelfBlackTable, state.shelfWhiteTable];
+  for (const t of tables) {
+    if (!t) continue;
+    for (const a of (t.aisles || [])) for (const c of (a.shelves || [])) for (const s of (c.slots || [])) {
+      if (s.restock === undefined) s.restock = 0;
+      if (s.unit === undefined) s.unit = null;
+    }
+  }
+  if (state.palletTable) {
+    for (const a of (state.palletTable.aisles || [])) for (const c of (a.pallets || [])) for (const s of (c.layers || [])) {
+      if (s.restock === undefined) s.restock = 0;
+      if (s.unit === undefined) s.unit = null;
+    }
+  }
+}
+function saveState() { try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {} }
+function buildEmptyShelfTable() {
+  return { aisles: SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) })) };
+}
+function buildInitial() {
+  const models = INITIAL_MODELS.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n }));
+  const shelfBlackAisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
+  let mi = 0;
+  for (const a of shelfBlackAisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) {
+    if (mi < models.length) { s.slots[i].modelId = models[mi].id; mi++; }
+  }
+  if (mi < models.length) {
+    const la = shelfBlackAisles[shelfBlackAisles.length-1];
+    while (mi < models.length) {
+      const idx = la.shelves.length;
+      const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
+      for (let i=0; i<SLOTS_PER_SHELF && mi < models.length; i++) { slots[i].modelId = models[mi].id; mi++; }
+      la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+    }
+  }
+  const shelfWhiteAisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
+  mi = 0;
+  for (const a of shelfWhiteAisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) {
+    if (mi < models.length) { s.slots[i].modelId = models[mi].id; mi++; }
+  }
+  if (mi < models.length) {
+    const la = shelfWhiteAisles[shelfWhiteAisles.length-1];
+    while (mi < models.length) {
+      const idx = la.shelves.length;
+      const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
+      for (let i=0; i<SLOTS_PER_SHELF && mi < models.length; i++) { slots[i].modelId = models[mi].id; mi++; }
+      la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+    }
+  }
+  const palletAisles = PALLET_AISLE_NAMES.map(n => ({
+    name: n,
+    pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) }))
+  }));
+  if (palletAisles[0]) {
+    for (let p = 0; p < 3 && p < palletAisles[0].pallets.length; p++) {
+      const layout = p === 2 ? [20,21,22,23,24] : [p*10, p*10+1, p*10+2, p*10+3, p*10+4, p*10+5, p*10+6, p*10+7, p*10+8, p*10+9];
+      layout.forEach((mi, li) => {
+        if (mi < models.length) palletAisles[0].pallets[p].layers[li] = { modelId: models[mi].id, color: null, qty: 0 };
+      });
+    }
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    models,
+    shelfBlackTable: { aisles: shelfBlackAisles },
+    shelfWhiteTable: { aisles: shelfWhiteAisles },
+    palletTable: { aisles: palletAisles },
+    meta: {
+      shelfBlack: { filler: '', date: today, title: '黑色 MUG 和 IC 零散货架表' },
+      shelfWhite: { filler: '', date: today, title: '白色 BK/CH 零散货架表' },
+      pallet: { filler: '', date: today, title: '整箱货堆库存表' }
+    }
+  };
+}
+
+function getModel(id) { return state.models.find(m => m.id === id); }
+function isShelfTable(t) { return t === 'shelfBlack' || t === 'shelfWhite'; }
+function getActiveTable() {
+  if (currentTable === 'shelfBlack') return state.shelfBlackTable;
+  if (currentTable === 'shelfWhite') return state.shelfWhiteTable;
+  return state.palletTable;
+}
+function getContainerKey() { return isShelfTable(currentTable) ? 'shelves' : 'pallets'; }
+function getSlotsKey() { return isShelfTable(currentTable) ? 'slots' : 'layers'; }
+function getSlot(ai, ci, si) { return getActiveTable().aisles[ai][getContainerKey()][ci][getSlotsKey()][si]; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render() { renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); }
+
+function renderMetaBars() {
+  if (!state.meta) state.meta = { shelfBlack:{filler:'',date:'',title:'黑色 MUG 和 IC 零散货架表'}, shelfWhite:{filler:'',date:'',title:'白色 BK/CH 零散货架表'}, pallet:{filler:'',date:'',title:'整箱货堆库存表'} };
+  const defaults = { shelfBlack: '黑色 MUG 和 IC 零散货架表', shelfWhite: '白色 BK/CH 零散货架表', pallet: '整箱货堆库存表' };
+  ['shelfBlack','shelfWhite','pallet'].forEach(key => {
+    if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title: defaults[key] };
+    if (!state.meta[key].title) state.meta[key].title = defaults[key];
+    const fillerInp = document.querySelector(`input[data-meta="filler"][data-table-meta="${key}"]`);
+    const dateInp = document.querySelector(`input[data-meta="date"][data-table-meta="${key}"]`);
+    const titleEl = document.querySelector(`.meta-title[data-meta-title="${key}"]`);
+    if (fillerInp && document.activeElement !== fillerInp) fillerInp.value = state.meta[key].filler || '';
+    if (dateInp && document.activeElement !== dateInp) dateInp.value = state.meta[key].date || '';
+    if (titleEl && titleEl.contentEditable !== 'true') titleEl.textContent = state.meta[key].title || defaults[key];
+  });
+}
+
+document.querySelectorAll('input[data-meta]').forEach(inp => {
+  inp.addEventListener('input', () => {
+    const key = inp.dataset.tableMeta;
+    const field = inp.dataset.meta;
+    if (!state.meta) state.meta = {};
+    if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title:'' };
+    state.meta[key][field] = inp.value;
+    saveState();
+  });
+});
+
+// SAVE buttons inside each meta-bar — open save sheet
+document.querySelectorAll('[data-meta-save]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    saveState();
+    showSheet('save-sheet');
+  });
+});
+
+document.querySelectorAll('.meta-title[data-meta-title]').forEach(el => {
+  let lastTap = 0;
+  el.addEventListener('dblclick', (e) => { e.preventDefault(); startEditMetaTitle(el); });
+  el.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 350) { e.preventDefault(); startEditMetaTitle(el); }
+    lastTap = now;
+  });
+});
+function startEditMetaTitle(el) {
+  el.contentEditable = 'true';
+  el.focus();
+  const range = document.createRange(); range.selectNodeContents(el);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  const finish = () => {
+    el.contentEditable = 'false';
+    el.removeEventListener('blur', finish); el.removeEventListener('keydown', onKey);
+    const txt = el.textContent.trim();
+    const key = el.dataset.metaTitle;
+    if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title:'' };
+    if (txt) state.meta[key].title = txt;
+    render();
+  };
+  const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } if (e.key === 'Escape') { e.preventDefault(); render(); } };
+  el.addEventListener('blur', finish); el.addEventListener('keydown', onKey);
+}
+
+function renderListView() {
+  const isShelf = isShelfTable(currentTable);
+  const root = document.getElementById(currentTable + '-list');
+  root.innerHTML = '';
+  const t = getActiveTable();
+  if (!t.aisles.length) { root.innerHTML = `<div style="text-align:center; padding:40px; color:var(--muted);">暂无数据,点右下 + 添加</div>`; return; }
+  const ck = getContainerKey(), sk = getSlotsKey();
+  let serial = 0;
+  t.aisles.forEach((aisle, ai) => {
+    const ablock = document.createElement('div');
+    ablock.className = 'aisle-block';
+    const containerLabel = isShelf ? '货架' : '托盘';
+    ablock.innerHTML = `<div class="aisle-header">
+      <span class="aisle-name editable" data-ai="${ai}">${isShelf ? '通道 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
+      <button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button></div>`;
+    aisle[ck].forEach((container, ci) => {
+      const cblock = document.createElement('div');
+      cblock.className = 'container-block' + (isShelf ? '' : ' pallet');
+      // FIX: Delete button (✕ 删) on every container — works for shelves and pallets
+      const deleteBtn = `<button class="mini-btn delete-btn" data-act="del-container" data-ai="${ai}" data-ci="${ci}" title="删除整层 / 整个托盘">✕ 删</button>`;
+      // FIX (二): No "+" in the row header anymore — moved to the BOTTOM divider below
+      cblock.innerHTML = `<div class="container-name">
+        <span class="shelf-drag-handle" data-ai="${ai}" data-ci="${ci}" data-table="${currentTable}" title="按住拖动整层">⠿</span>
+        <span class="cont-name editable" data-ai="${ai}" data-ci="${ci}">${escapeHtml(container.name)}</span>
+        <div class="container-tools">
+          ${deleteBtn}
+        </div></div>`;
+      container[sk].forEach((slot, si) => {
+        serial++;
+        const cell = document.createElement('div');
+        cell.className = 'slot' + (slot.modelId ? '' : ' empty') + (isShelf ? '' : ' pallet-slot');
+        cell.dataset.ai = ai; cell.dataset.ci = ci; cell.dataset.si = si;
+        if (slot.modelId) cell.dataset.mid = slot.modelId;
+        if (slot.modelId) cell.dataset.mid = slot.modelId;
+        const m = slot.modelId ? getModel(slot.modelId) : null;
+        const modelHtml = slot.modelId
+          ? `<div class="model-cell has-model" draggable="true" data-mid="${slot.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-table="${currentTable}">${escapeHtml(m ? m.name : '?')}</div>`
+          : `<div class="model-cell empty-clickable" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${isShelf ? '空格 (点击添加)' : '空层 (拍照添加)'}</div>`;
+        // Color cell now ONLY shows color (no number) — number moved to dedicated qty-cell
+        const colorHtml = slot.modelId
+          ? `<div class="color-cell" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}"></div>`
+          : `<div class="color-cell" style="visibility:hidden"></div>`;
+        // NEW: dedicated quantity dashed-box between color and unit
+        const qtyHtml = slot.modelId
+          ? `<div class="qty-cell ${slot.qty > 0 ? 'has-qty' : 'empty-qty'}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" title="数量(双击修改)">${slot.qty > 0 ? slot.qty : '—'}</div>`
+          : `<div class="qty-cell" style="visibility:hidden"></div>`;
+        const unitHtml = slot.modelId
+          ? `<div class="unit-cell ${slot.unit ? 'has-unit' : ''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.unit ? escapeHtml(slot.unit) : '单位'}</div>`
+          : `<div class="unit-cell" style="visibility:hidden"></div>`;
+        // NEW: pallet-only "restock" cell on the far right
+        const restockHtml = !isShelf
+          ? (slot.modelId
+              ? `<div class="restock-cell ${slot.restock > 0 ? 'has-val' : ''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" title="补货数量(双击)">${slot.restock > 0 ? slot.restock : ''}</div>`
+              : `<div class="restock-cell" style="visibility:hidden"></div>`)
+          : '';
+        // Product info row (image + EN/CN names) — only render for filled slots
+        let infoRowHtml = '';
+        if (slot.modelId) {
+          const m = getModel(slot.modelId);
+          const enName = (m && m.enName) ? m.enName : '';
+          const cnName = (m && m.cnName) ? m.cnName : '';
+          const imgUrl = (m && m.imageUrl) ? m.imageUrl : '';
+          const imgInner = imgUrl
+            ? `<img src="${escapeHtml(imgUrl)}" alt="">`
+            : `<span class="img-plus">+</span>`;
+          infoRowHtml = `<div class="slot-info-row">
+            <div class="product-img-cell ${imgUrl ? 'has-img' : ''}" data-mid="${slot.modelId}" title="点击上传产品图片">${imgInner}</div>
+            <div class="product-names">
+              <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
+              <div class="product-name cn ${cnName ? '' : 'empty'}" data-field="cnName" data-mid="${slot.modelId}">${cnName ? escapeHtml(cnName) : '中文名称 (点击输入)'}</div>
+            </div>
+          </div>`;
+        }
+        cell.innerHTML = `<div class="slot-num">${slot.modelId ? serial : '—'}</div>${modelHtml}${colorHtml}${qtyHtml}${unitHtml}${restockHtml}${infoRowHtml}`;
+        cblock.appendChild(cell);
+      });
+      // FIX (二): "+" divider at the BOTTOM of each container — clicks duplicate this entire layer (with all slot data) below
+      const dividerLabel = isShelf ? '复制此层 / 在下方插入新层' : '复制此托盘 / 插入新托盘';
+      const divider = document.createElement('div');
+      divider.className = 'add-divider';
+      divider.innerHTML = `<button class="add-divider-btn" data-ai="${ai}" data-ci="${ci}" title="${dividerLabel}">+</button><span class="add-divider-hint">${dividerLabel}</span>`;
+      cblock.appendChild(divider);
+      ablock.appendChild(cblock);
+    });
+    root.appendChild(ablock);
+  });
+  attachListHandlers(root);
+}
+
+function renderGridView() {
+  const isShelf = isShelfTable(currentTable);
+  const root = document.getElementById(currentTable + '-grid');
+  root.innerHTML = '';
+  const t = getActiveTable();
+  if (!t.aisles.length) return;
+  const ck = getContainerKey(), sk = getSlotsKey();
+  const slotSerial = {}; let n = 0;
+  t.aisles.forEach((aisle, ai) => aisle[ck].forEach((c, ci) => c[sk].forEach((slot, si) => { n++; slotSerial[`${ai}|${ci}|${si}`] = n; })));
+
+  // FIX: For pallet table specifically — when there's only 1 aisle (or aisles have many pallets),
+  // flatten the pallets into a multi-column horizontal grid to mimic the shelf table's compact layout.
+  // This way 整箱货堆 with 15 pallets in F-aisle becomes 4-5 columns wide, fits on one screen.
+  const isPallet = !isShelf;
+  const totalContainers = t.aisles.reduce((sum, a) => sum + a[ck].length, 0);
+  // FIX: Apply flat multi-column grid in either case:
+  //   - Pallet table (always benefits from horizontal layout)
+  //   - Shelf table when there are many containers (>6) — covers cases like "single A-aisle with many duplicated layers"
+  const useFlatPalletGrid = isPallet || totalContainers > 6 || t.aisles.length === 1;
+
+  if (useFlatPalletGrid) {
+    // Compute optimal column count based on viewport
+    const w = (window.innerWidth || 400);
+    let cols;
+    if (w < 380) cols = 3;
+    else if (w < 500) cols = 4;
+    else if (w < 700) cols = 5;
+    else cols = 6;
+
+    // Render a single flat grid of all containers across all aisles
+    const flatRow = document.createElement('div');
+    flatRow.className = 'aisles-row pallet-flat';
+    flatRow.style.setProperty('--cols', cols);
+    // Belt + suspenders: also set gridTemplateColumns directly (CSS-var attribute selectors can be flaky on iOS Safari)
+    flatRow.style.display = 'grid';
+    flatRow.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    flatRow.style.gap = '6px';
+    t.aisles.forEach((aisle, ai) => {
+      aisle[ck].forEach((container, ci) => {
+        // Each container becomes its own column item — show aisle prefix so user sees 左·上 / A·A1板 etc
+        const cont = document.createElement('div');
+        cont.className = 'grid-container' + (isShelf ? '' : ' pallet');
+        // Show "aisle·container" if there are multiple aisles, otherwise just container name
+        const headerName = t.aisles.length > 1
+          ? `${escapeHtml(aisle.name)}·${escapeHtml(container.name)}`
+          : escapeHtml(container.name);
+        cont.innerHTML = `<div class="grid-container-name editable" data-ai="${ai}" data-ci="${ci}">${headerName}</div>`;
+        container[sk].forEach((slot, si) => {
+          const gs = document.createElement('div');
+          gs.className = 'grid-slot' + (slot.modelId ? '' : ' empty');
+          gs.dataset.ai = ai; gs.dataset.ci = ci; gs.dataset.si = si; if (slot.modelId) gs.dataset.mid = slot.modelId;
+          const m = slot.modelId ? getModel(slot.modelId) : null;
+          const num = slotSerial[`${ai}|${ci}|${si}`];
+          const modelHtml = slot.modelId
+            ? `<div class="gmodel" draggable="true" data-mid="${slot.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-table="${currentTable}">${escapeHtml(m ? m.name : '?')}</div>`
+            : `<div class="gmodel">${isShelf ? '空' : '—'}</div>`;
+          const colorHtml = slot.modelId
+            ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
+            : `<div class="gcolor" style="visibility:hidden"></div>`;
+          gs.innerHTML = `<div class="gnum">${slot.modelId ? num : ''}</div>${modelHtml}${colorHtml}`;
+          cont.appendChild(gs);
+        });
+        flatRow.appendChild(cont);
+      });
+    });
+    root.appendChild(flatRow);
+    attachGridHandlers(root);
+    return;
+  }
+
+  // Original layout for shelf tables (左/中/右 columns)
+  const row = document.createElement('div');
+  row.className = 'aisles-row';
+  row.style.setProperty('--cols', t.aisles.length);
+  row.style.display = 'grid';
+  row.style.gridTemplateColumns = `repeat(${t.aisles.length}, minmax(0, 1fr))`;
+  row.style.gap = '6px';
+  t.aisles.forEach((aisle, ai) => {
+    const acol = document.createElement('div');
+    acol.className = 'grid-aisle';
+    acol.innerHTML = `<div class="grid-aisle-name editable" data-ai="${ai}">${escapeHtml(aisle.name)}</div>`;
+    const containers = document.createElement('div');
+    containers.className = 'grid-pallets';
+    containers.style.setProperty('--pcols', isShelf ? 1 : 2);
+    aisle[ck].forEach((container, ci) => {
+      const cont = document.createElement('div');
+      cont.className = 'grid-container' + (isShelf ? '' : ' pallet');
+      cont.innerHTML = `<div class="grid-container-name editable" data-ai="${ai}" data-ci="${ci}">${escapeHtml(container.name)}</div>`;
+      container[sk].forEach((slot, si) => {
+        const gs = document.createElement('div');
+        gs.className = 'grid-slot' + (slot.modelId ? '' : ' empty');
+        gs.dataset.ai = ai; gs.dataset.ci = ci; gs.dataset.si = si; if (slot.modelId) gs.dataset.mid = slot.modelId;
+        const m = slot.modelId ? getModel(slot.modelId) : null;
+        const num = slotSerial[`${ai}|${ci}|${si}`];
+        const modelHtml = slot.modelId
+          ? `<div class="gmodel" draggable="true" data-mid="${slot.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-table="${currentTable}">${escapeHtml(m ? m.name : '?')}</div>`
+          : `<div class="gmodel">${isShelf ? '空' : '—'}</div>`;
+        const colorHtml = slot.modelId
+          ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
+          : `<div class="gcolor" style="visibility:hidden"></div>`;
+        gs.innerHTML = `<div class="gnum">${slot.modelId ? num : ''}</div>${modelHtml}${colorHtml}`;
+        cont.appendChild(gs);
+      });
+      containers.appendChild(cont);
+    });
+    acol.appendChild(containers);
+    row.appendChild(acol);
+  });
+  root.appendChild(row);
+  attachGridHandlers(root);
+}
+
+function attachListHandlers(root) {
+  root.querySelectorAll('.model-cell.has-model').forEach(el => {
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend', onDragEnd);
+    addTouchDrag(el);
+    attachModelDoubleTap(el);
+  });
+  root.querySelectorAll('.model-cell.empty-clickable').forEach(el => {
+    el.addEventListener('click', () => { openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true); });
+  });
+  root.querySelectorAll('.slot').forEach(el => {
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+    el.addEventListener('drop', onDropSlot);
+  });
+  root.querySelectorAll('.color-cell[data-ai]').forEach(el => attachColorCellHandlers(el));
+  root.querySelectorAll('.unit-cell[data-ai]').forEach(el => attachUnitCellHandlers(el));
+  // NEW: product image cells — click opens upload dialog
+  root.querySelectorAll('.product-img-cell[data-mid]').forEach(el => attachProductImageHandler(el));
+  // NEW: product name cells (EN/CN) — click to edit, with autocomplete
+  root.querySelectorAll('.product-name[data-mid]').forEach(el => attachProductNameHandler(el));
+  // NEW: qty-cell — double-tap opens 4-method input picker for the quantity
+  root.querySelectorAll('.qty-cell[data-ai]').forEach(el => attachQtyCellHandlers(el));
+  // NEW: restock-cell (pallets only) — double-tap opens restock input + flow
+  root.querySelectorAll('.restock-cell[data-ai]').forEach(el => attachRestockCellHandlers(el));
+  root.querySelectorAll('.editable').forEach(el => makeEditable(el));
+  root.querySelectorAll('.add-child').forEach(el => { el.addEventListener('click', (e) => { e.stopPropagation(); addContainerToAisle(+el.dataset.ai); }); });
+  // FIX (二): Bottom-divider "+" buttons → duplicate the current layer (with all data) and insert below
+  root.querySelectorAll('.add-divider-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      duplicateShelfBelow(+el.dataset.ai, +el.dataset.ci);
+    });
+    // Also handle touchend explicitly to avoid iOS click delay
+    el.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      duplicateShelfBelow(+el.dataset.ai, +el.dataset.ci);
+    }, { passive: false });
+  });
+  root.querySelectorAll('.shelf-drag-handle').forEach(el => addShelfDrag(el));
+  root.querySelectorAll('.container-name').forEach(row => {
+    const handle = row.querySelector('.shelf-drag-handle');
+    if (handle) addShelfDrag(row, handle);
+  });
+  root.querySelectorAll('.container-block').forEach(block => {
+    block.addEventListener('dragover', (e) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('text/shelf')) {
+        e.preventDefault();
+        block.classList.add('shelf-drop-target');
+      }
+    });
+    block.addEventListener('dragleave', () => block.classList.remove('shelf-drop-target'));
+    block.addEventListener('drop', (e) => {
+      const data = e.dataTransfer?.getData('text/shelf');
+      if (!data) return;
+      e.preventDefault();
+      const { ai: srcAi, ci: srcCi } = JSON.parse(data);
+      const targetHandle = block.querySelector('.shelf-drag-handle');
+      if (targetHandle) moveShelf(srcAi, srcCi, +targetHandle.dataset.ai, +targetHandle.dataset.ci);
+      block.classList.remove('shelf-drop-target');
+    });
+  });
+  root.querySelectorAll('.mini-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ai = +el.dataset.ai, ci = +el.dataset.ci, act = el.dataset.act;
+      if (act === 'add-layer') {
+        state.palletTable.aisles[ai].pallets[ci].layers.push(newSlot());
+        toast('已加一层'); render();
+      } else if (act === 'del-container' || act === 'del-pallet') {
+        // FIX: Use bilingual confirm modal — works for shelves and pallets
+        requestDeleteContainer(ai, ci);
+      }
+    });
+  });
+}
+
+// Bilingual delete confirmation flow
+let pendingDelete = null;
+function requestDeleteContainer(ai, ci) {
+  const t = getActiveTable();
+  const ck = getContainerKey(), sk = getSlotsKey();
+  const container = t.aisles[ai][ck][ci];
+  if (!container) return;
+  const aisleName = t.aisles[ai].name;
+  const filledCount = container[sk].filter(s => s.modelId).length;
+  const totalCount = container[sk].length;
+  pendingDelete = { ai, ci };
+  const targetEl = document.getElementById('confirm-delete-target');
+  if (targetEl) {
+    targetEl.innerHTML = `即将删除 / About to delete:<br>
+      <span style="color:var(--red); font-size:17px;">${escapeHtml(aisleName)} · ${escapeHtml(container.name)}</span><br>
+      <span style="font-size:12px; color:var(--muted); font-weight:600;">(${filledCount}/${totalCount} 个型号 · ${filledCount}/${totalCount} models)</span>`;
+  }
+  showSheet('confirm-delete-sheet');
+}
+
+document.getElementById('confirm-delete-yes').addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  if (!pendingDelete) { hideSheets(); return; }
+  const { ai, ci } = pendingDelete;
+  const t = getActiveTable();
+  const ck = getContainerKey();
+  const removed = t.aisles[ai][ck].splice(ci, 1)[0];
+  pendingDelete = null;
+  hideSheets();
+  toast(`🗑️ 已删除: ${removed?.name || ''}`);
+  render();
+});
+
+document.getElementById('confirm-delete-yes').addEventListener('touchend', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  if (!pendingDelete) { hideSheets(); return; }
+  const { ai, ci } = pendingDelete;
+  const t = getActiveTable();
+  const ck = getContainerKey();
+  const removed = t.aisles[ai][ck].splice(ci, 1)[0];
+  pendingDelete = null;
+  hideSheets();
+  toast(`🗑️ 已删除: ${removed?.name || ''}`);
+  render();
+}, { passive: false });
+
+function attachModelDoubleTap(el) {
+  let lastTapTime = 0;
+  let lastTapX = 0, lastTapY = 0;
+  const handleDoubleTap = () => {
+    const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si;
+    const slot = getSlot(ai, ci, si);
+    const oldColor = slot.color, oldQty = slot.qty, oldUnit = slot.unit;
+    openModelPicker(ai, ci, si, true, (model) => {
+      const s = getSlot(ai, ci, si);
+      s.modelId = model.id;
+      s.color = oldColor; s.qty = oldQty; s.unit = oldUnit;
+    });
+  };
+  el.addEventListener('click', (e) => {
+    const now = Date.now();
+    if (now - lastTapTime < 380) {
+      e.preventDefault(); e.stopPropagation();
+      lastTapTime = 0; handleDoubleTap();
+    } else { lastTapTime = now; }
+  });
+  el.addEventListener('touchend', (e) => {
+    if (e.changedTouches && e.changedTouches.length) {
+      const t = e.changedTouches[0];
+      const now = Date.now();
+      const dx = Math.abs(t.clientX - lastTapX);
+      const dy = Math.abs(t.clientY - lastTapY);
+      if (now - lastTapTime < 380 && dx < 30 && dy < 30) {
+        e.preventDefault(); e.stopPropagation();
+        lastTapTime = 0; handleDoubleTap(); return;
+      }
+      lastTapTime = now; lastTapX = t.clientX; lastTapY = t.clientY;
+    }
+  }, { passive: false });
+}
+function attachGridHandlers(root) {
+  root.querySelectorAll('.gmodel[draggable="true"]').forEach(el => {
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend', onDragEnd);
+    addTouchDrag(el);
+    attachModelDoubleTap(el);
+  });
+  root.querySelectorAll('.grid-slot').forEach(el => {
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+    el.addEventListener('drop', onDropSlot);
+    if (el.classList.contains('empty')) {
+      el.addEventListener('click', () => openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true));
+    }
+  });
+  root.querySelectorAll('.gcolor[data-ai]').forEach(el => attachColorCellHandlers(el));
+  root.querySelectorAll('.editable').forEach(el => makeEditable(el));
+}
+
+function attachUnitCellHandlers(el) {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openUnitEditor(+el.dataset.ai, +el.dataset.ci, +el.dataset.si);
+  });
+}
+
+// === Product image cell — click to upload/replace product photo ===
+function attachProductImageHandler(el) {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    openProductImageUpload(el.dataset.mid);
+  });
+}
+
+let pendingImageMid = null;
+function openProductImageUpload(mid) {
+  pendingImageMid = mid;
+  const m = getModel(mid);
+  const sheet = document.getElementById('product-img-sheet');
+  if (sheet) {
+    const titleEl = document.getElementById('product-img-title');
+    if (titleEl) titleEl.textContent = m ? `${m.name} · 产品图片` : '产品图片';
+    const previewEl = document.getElementById('product-img-preview');
+    if (previewEl) {
+      if (m && m.imageUrl) {
+        previewEl.innerHTML = `<img src="${escapeHtml(m.imageUrl)}" style="width:100%; max-height:200px; object-fit:contain; background:#f0f0f0; border-radius:8px;">`;
+      } else {
+        previewEl.innerHTML = `<div style="padding:30px; text-align:center; color:var(--muted); border:2px dashed var(--line); border-radius:8px;">暂无图片<br>No image yet</div>`;
+      }
+    }
+    showSheet('product-img-sheet');
+  }
+}
+
+// === Product name cell — click to edit with autocomplete ===
+let activeNameSuggest = null;
+function attachProductNameHandler(el) {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (el.querySelector('input')) return; // already editing
+    startEditProductName(el);
+  });
+}
+function startEditProductName(el) {
+  const mid = el.dataset.mid;
+  const field = el.dataset.field; // 'enName' or 'cnName'
+  const m = getModel(mid);
+  if (!m) return;
+  const currentValue = (m && m[field]) ? m[field] : '';
+
+  // Replace cell content with an input
+  el.classList.remove('empty');
+  el.innerHTML = '';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = currentValue;
+  input.placeholder = field === 'enName' ? 'English name...' : '中文名称...';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  el.appendChild(input);
+  // Focus + cursor at end
+  setTimeout(() => {
+    input.focus();
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch(e) {}
+  }, 30);
+
+  removeNameSuggest();
+
+  let highlightIndex = -1;
+  let suggestions = [];
+
+  const updateSuggest = () => {
+    const q = (input.value || '').trim().toLowerCase();
+    suggestions = [];
+    if (q.length < 1) { removeNameSuggest(); return; }
+    // Find similar values from other models in the same field
+    const seen = new Set();
+    for (const mm of state.models) {
+      if (mm.id === mid) continue;
+      const v = (mm[field] || '').trim();
+      if (!v) continue;
+      const vl = v.toLowerCase();
+      if (vl === q) continue; // exact match — no point suggesting
+      if (seen.has(vl)) continue;
+      // Match if value starts with q OR contains q (prefix preferred)
+      const prefixMatch = vl.startsWith(q);
+      const containsMatch = vl.includes(q);
+      if (prefixMatch || containsMatch) {
+        seen.add(vl);
+        suggestions.push({ text: v, prefix: prefixMatch });
+      }
+    }
+    // Prefix matches first, then alphabetical
+    suggestions.sort((a, b) => {
+      if (a.prefix !== b.prefix) return a.prefix ? -1 : 1;
+      return a.text.localeCompare(b.text);
+    });
+    suggestions = suggestions.slice(0, 8);
+    if (!suggestions.length) { removeNameSuggest(); return; }
+    showNameSuggest(el, input, q, suggestions, (chosen) => {
+      input.value = chosen;
+      try { input.setSelectionRange(q.length, chosen.length); } catch(e) {} // select the auto-completed part
+      input.focus();
+    });
+  };
+
+  input.addEventListener('input', updateSuggest);
+  input.addEventListener('focus', updateSuggest);
+
+  input.addEventListener('keydown', (e) => {
+    if (!activeNameSuggest) return;
+    const items = activeNameSuggest.querySelectorAll('.name-suggest-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlightIndex = (highlightIndex + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle('highlight', i === highlightIndex));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlightIndex = (highlightIndex - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle('highlight', i === highlightIndex));
+    } else if (e.key === 'Enter' && highlightIndex >= 0) {
+      e.preventDefault();
+      input.value = suggestions[highlightIndex].text;
+      removeNameSuggest();
+    } else if (e.key === 'Tab' && suggestions.length) {
+      e.preventDefault();
+      input.value = suggestions[0].text;
+      removeNameSuggest();
+    } else if (e.key === 'Escape') {
+      removeNameSuggest();
+      input.blur();
+    }
+  });
+
+  const finish = (cancel) => {
+    removeNameSuggest();
+    const newVal = (input.value || '').trim();
+    if (!cancel) {
+      const mm = getModel(mid);
+      if (mm) {
+        if (newVal) mm[field] = newVal;
+        else delete mm[field];
+        saveState();
+      }
+    }
+    // Re-render just this cell to its display state
+    const finalVal = newVal;
+    if (finalVal) {
+      el.classList.remove('empty');
+      el.textContent = finalVal;
+    } else {
+      el.classList.add('empty');
+      el.textContent = field === 'enName' ? 'English Name (点击输入)' : '中文名称 (点击输入)';
+    }
+  };
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => finish(false), 100); // small delay so suggestion clicks register
+  });
+}
+
+function showNameSuggest(parentCell, input, query, suggestions, onPick) {
+  removeNameSuggest();
+  const list = document.createElement('div');
+  list.className = 'name-suggest';
+  // Position below the cell
+  const rect = parentCell.getBoundingClientRect();
+  list.style.left = rect.left + 'px';
+  list.style.top = (rect.bottom + 2 + window.scrollY) + 'px';
+  list.style.minWidth = rect.width + 'px';
+
+  list.innerHTML = suggestions.map(s => {
+    // Highlight matched portion
+    const lowerText = s.text.toLowerCase();
+    const idx = lowerText.indexOf(query.toLowerCase());
+    let html;
+    if (idx >= 0) {
+      const before = escapeHtml(s.text.substring(0, idx));
+      const matched = escapeHtml(s.text.substring(idx, idx + query.length));
+      const after = escapeHtml(s.text.substring(idx + query.length));
+      html = `${before}<span class="matched">${matched}</span><span class="completion">${after}</span>`;
+    } else {
+      html = escapeHtml(s.text);
+    }
+    return `<div class="name-suggest-item" data-text="${escapeHtml(s.text)}">${html}</div>`;
+  }).join('');
+
+  list.querySelectorAll('.name-suggest-item').forEach(it => {
+    const handler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onPick(it.dataset.text);
+      removeNameSuggest();
+    };
+    it.addEventListener('mousedown', handler);
+    it.addEventListener('touchstart', handler, { passive: false });
+  });
+
+  document.body.appendChild(list);
+  activeNameSuggest = list;
+}
+function removeNameSuggest() {
+  if (activeNameSuggest) { activeNameSuggest.remove(); activeNameSuggest = null; }
+}
+// Close suggest if user taps elsewhere
+document.addEventListener('click', (e) => {
+  if (activeNameSuggest && !activeNameSuggest.contains(e.target) && !e.target.closest('.product-name input')) {
+    removeNameSuggest();
+  }
+});
+
+// NEW: Quantity cell — double-tap opens the multi-input number picker
+// Single tap also opens it (numbers don't have a meaningful single-tap action)
+function attachQtyCellHandlers(el) {
+  const ai = () => +el.dataset.ai, ci = () => +el.dataset.ci, si = () => +el.dataset.si;
+  const onTap = () => openQtyMultiInput(ai(), ci(), si(), 'qty');
+  let touchHandled = false;
+  el.addEventListener('touchend', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    touchHandled = true;
+    onTap();
+    setTimeout(() => { touchHandled = false; }, 400);
+  }, { passive: false });
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (touchHandled) return;
+    onTap();
+  });
+}
+
+// NEW: Restock cell — double-tap opens multi-input number picker, then runs the restock flow
+function attachRestockCellHandlers(el) {
+  const ai = () => +el.dataset.ai, ci = () => +el.dataset.ci, si = () => +el.dataset.si;
+  const onTap = () => openQtyMultiInput(ai(), ci(), si(), 'restock');
+  let touchHandled = false;
+  el.addEventListener('touchend', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    touchHandled = true;
+    onTap();
+    setTimeout(() => { touchHandled = false; }, 400);
+  }, { passive: false });
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (touchHandled) return;
+    onTap();
+  });
+}
+
+// Color cell — single tap = color picker (immediate, no delay)
+// Quantity is now in a separate qty-cell, so this only handles color.
+function attachColorCellHandlers(el) {
+  const ai = () => +el.dataset.ai, ci = () => +el.dataset.ci, si = () => +el.dataset.si;
+  const onTap = () => openColorPicker(ai(), ci(), si());
+  let touchHandled = false;
+  el.addEventListener('touchend', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    touchHandled = true;
+    onTap();
+    setTimeout(() => { touchHandled = false; }, 400);
+  }, { passive: false });
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (touchHandled) return;
+    onTap();
+  });
+}
+
+function makeEditable(el) {
+  let lastTap = 0;
+  el.addEventListener('dblclick', (e) => { e.preventDefault(); startEdit(el); });
+  el.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 350) { e.preventDefault(); startEdit(el); }
+    lastTap = now;
+  });
+}
+function startEdit(el) {
+  el.contentEditable = 'true';
+  el.focus();
+  const range = document.createRange(); range.selectNodeContents(el);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  const finish = () => {
+    el.contentEditable = 'false';
+    el.removeEventListener('blur', finish); el.removeEventListener('keydown', onKey);
+    // FIX (二): No longer strip ' 层' suffix — user fully owns the name
+    let txt = el.textContent.trim().replace(/^通道 · /,'').replace(/^排 · /,'');
+    if (!txt) { render(); return; }
+    const ai = el.dataset.ai !== undefined ? +el.dataset.ai : null;
+    const ci = el.dataset.ci !== undefined ? +el.dataset.ci : null;
+    const t = getActiveTable(); const ck = getContainerKey();
+    if (el.classList.contains('aisle-name') || el.classList.contains('grid-aisle-name')) t.aisles[ai].name = txt;
+    else if (el.classList.contains('cont-name') || el.classList.contains('grid-container-name')) t.aisles[ai][ck][ci].name = txt;
+    render();
+  };
+  const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } if (e.key === 'Escape') { e.preventDefault(); render(); } };
+  el.addEventListener('blur', finish); el.addEventListener('keydown', onKey);
+}
+
+let dragMid = null, dragSrc = null, dragSrcTable = null;
+function onDragStart(e) {
+  dragMid = this.dataset.mid; dragSrcTable = this.dataset.table;
+  dragSrc = { ai: +this.dataset.ai, ci: +this.dataset.ci, si: +this.dataset.si };
+  this.classList.add('dragging');
+  if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragMid); }
+  if (currentTable === 'pallet') showDeleteZone();
+}
+function onDragEnd() { this.classList.remove('dragging'); document.querySelectorAll('.dragover').forEach(el => el.classList.remove('dragover')); hideDeleteZone(); }
+function onDropSlot(e) {
+  e.preventDefault(); this.classList.remove('dragover');
+  if (!dragMid || !dragSrc || dragSrcTable !== currentTable) { dragMid = null; dragSrc = null; return; }
+  performMove(dragSrc, { ai: +this.dataset.ai, ci: +this.dataset.ci, si: +this.dataset.si });
+  dragMid = null; dragSrc = null;
+}
+function performMove(src, tgt) {
+  if (src.ai === tgt.ai && src.ci === tgt.ci && src.si === tgt.si) return;
+  const sSlot = getSlot(src.ai, src.ci, src.si), tSlot = getSlot(tgt.ai, tgt.ci, tgt.si);
+  const tmp = { modelId: tSlot.modelId, color: tSlot.color, qty: tSlot.qty, unit: tSlot.unit };
+  tSlot.modelId = sSlot.modelId; tSlot.color = sSlot.color; tSlot.qty = sSlot.qty; tSlot.unit = sSlot.unit;
+  sSlot.modelId = tmp.modelId; sSlot.color = tmp.color; sSlot.qty = tmp.qty; sSlot.unit = tmp.unit;
+  render();
+}
+function showDeleteZone() { document.getElementById('delete-zone').classList.add('show'); }
+function hideDeleteZone() { const z = document.getElementById('delete-zone'); z.classList.remove('show'); z.classList.remove('active'); }
+
+function addTouchDrag(el) {
+  let ghost = null, startX = 0, startY = 0, longPressTimer = null, dragging = false;
+  el.addEventListener('touchstart', (e) => {
+    const t = e.touches[0]; startX = t.clientX; startY = t.clientY;
+    longPressTimer = setTimeout(() => {
+      dragging = true;
+      dragMid = el.dataset.mid; dragSrcTable = el.dataset.table;
+      dragSrc = { ai: +el.dataset.ai, ci: +el.dataset.ci, si: +el.dataset.si };
+      ghost = el.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed', zIndex: '300', pointerEvents: 'none', background: 'var(--paper)',
+        padding: '6px 10px', border: '2px solid var(--ink)', borderRadius: '8px',
+        boxShadow: '0 6px 20px rgba(0,0,0,0.3)', left: (t.clientX-50)+'px', top: (t.clientY-18)+'px',
+        opacity: '0.95', maxWidth: '180px', fontSize: '13px'
+      });
+      document.body.appendChild(ghost);
+      el.classList.add('dragging');
+      if (currentTable === 'pallet') showDeleteZone();
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 350);
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!dragging && Math.hypot(t.clientX-startX, t.clientY-startY) > 10) clearTimeout(longPressTimer);
+    if (dragging && ghost) {
+      e.preventDefault();
+      ghost.style.left = (t.clientX-50)+'px'; ghost.style.top = (t.clientY-18)+'px';
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.style.display = '';
+      document.querySelectorAll('.dragover').forEach(x => x.classList.remove('dragover'));
+      const slot = under?.closest('.slot, .grid-slot');
+      if (slot) slot.classList.add('dragover');
+      const dz = document.getElementById('delete-zone');
+      if (currentTable === 'pallet') {
+        const dzRect = dz.getBoundingClientRect();
+        if (t.clientY > dzRect.top) dz.classList.add('active'); else dz.classList.remove('active');
+      }
+    }
+  }, { passive: false });
+  el.addEventListener('touchend', (e) => {
+    clearTimeout(longPressTimer);
+    if (dragging) {
+      const t = e.changedTouches[0];
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.remove(); ghost = null;
+      el.classList.remove('dragging');
+      const dz = document.getElementById('delete-zone'); const dzRect = dz.getBoundingClientRect();
+      if (currentTable === 'pallet' && t.clientY > dzRect.top) {
+        const s = getSlot(dragSrc.ai, dragSrc.ci, dragSrc.si);
+        s.modelId = null; s.color = null; s.qty = 0; s.unit = null;
+        toast('🗑️ 整箱已搬走'); render();
+      } else {
+        const slot = under?.closest('.slot, .grid-slot');
+        if (slot && dragMid) performMove(dragSrc, { ai: +slot.dataset.ai, ci: +slot.dataset.ci, si: +slot.dataset.si });
+      }
+      document.querySelectorAll('.dragover').forEach(x => x.classList.remove('dragover'));
+      hideDeleteZone();
+      dragging = false; dragMid = null; dragSrc = null;
+    }
+  });
+  el.addEventListener('touchcancel', () => { clearTimeout(longPressTimer); if (ghost) { ghost.remove(); ghost = null; } dragging = false; el.classList.remove('dragging'); hideDeleteZone(); });
+}
+
+let pendingSlot = null;
+function openColorPicker(ai, ci, si) {
+  // Capture target in closure — completely independent of pendingSlot global
+  const targetAi = ai, targetCi = ci, targetSi = si;
+  const targetTable = currentTable;  // Lock the table reference too
+  pendingSlot = { ai, ci, si };
+  // Re-bind handlers each time, with the closure-captured target
+  document.querySelectorAll('#color-sheet .color-opt').forEach(el => {
+    // Clone node to remove all old listeners
+    const newEl = el.cloneNode(true);
+    el.parentNode.replaceChild(newEl, el);
+    let processing = false;
+    const applyColor = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (processing) return;
+      processing = true;
+      const c = newEl.dataset.color;
+      // Switch to the correct table if user navigated away
+      if (currentTable !== targetTable) {
+        toast('⚠️ 表已切换,操作已取消');
+        pendingSlot = null;
+        hideSheets();
+        return;
+      }
+      // Direct table access — don't go through getSlot which depends on currentTable
+      let tableData;
+      if (targetTable === 'shelfBlack') tableData = state.shelfBlackTable;
+      else if (targetTable === 'shelfWhite') tableData = state.shelfWhiteTable;
+      else if (targetTable === 'pallet') tableData = state.palletTable;
+
+      const containerKey = (targetTable === 'pallet') ? 'pallets' : 'shelves';
+      const slotsKey = (targetTable === 'pallet') ? 'layers' : 'slots';
+
+      let s = null;
+      try {
+        s = tableData.aisles[targetAi][containerKey][targetCi][slotsKey][targetSi];
+      } catch(err) {
+        toast('⚠️ 数据查找失败: ' + err.message);
+        pendingSlot = null;
+        hideSheets();
+        return;
+      }
+
+      if (!s) {
+        toast('⚠️ 找不到目标位置 [' + targetAi + ',' + targetCi + ',' + targetSi + ']');
+        pendingSlot = null;
+        hideSheets();
+        return;
+      }
+
+      const oldColor = s.color;
+      s.color = (c === 'none' ? null : c);
+      // Verify write succeeded by reading back
+      const verify = tableData.aisles[targetAi][containerKey][targetCi][slotsKey][targetSi];
+      if (verify.color !== s.color) {
+        toast('⚠️ 写入失败 (' + oldColor + '→' + c + ')');
+      } else {
+        toast(c === 'none' ? '已清除颜色' : `✅ 已设为${c==='red'?'🔴 无货':c==='yellow'?'🟡 少量':'🟢 充足'}`);
+      }
+
+      pendingSlot = null;
+      hideSheets();
+      saveState();
+      render();
+    };
+    newEl.addEventListener('click', applyColor);
+    newEl.addEventListener('touchend', applyColor, { passive: false });
+  });
+  showSheet('color-sheet');
+}
+// Remove the old top-level binding (now done inside openColorPicker)
+
+function openQtyEditor(ai, ci, si) {
+  pendingSlot = { ai, ci, si };
+  pendingQtyField = 'qty';
+  const s = getSlot(ai, ci, si);
+  const m = s.modelId ? getModel(s.modelId) : null;
+  document.getElementById('qty-title').textContent = m ? `${m.name} · 数量` : '数量';
+  const inp = document.getElementById('qty-input'); inp.value = s.qty || 0;
+  showSheet('qty-sheet');
+  setTimeout(() => { inp.focus(); inp.select(); }, 100);
+}
+
+// NEW: Universal multi-input number editor — handles both 'qty' and 'restock' fields
+let pendingQtyField = 'qty'; // 'qty' or 'restock'
+function openQtyMultiInput(ai, ci, si, field) {
+  pendingSlot = { ai, ci, si };
+  pendingQtyField = field || 'qty';
+  const s = getSlot(ai, ci, si);
+  const m = s.modelId ? getModel(s.modelId) : null;
+  const titleEl = document.getElementById('qty-title');
+  if (field === 'restock') {
+    titleEl.innerHTML = m ? `${escapeHtml(m.name)} · <span style="color:var(--red);">补货数量</span>` : '补货数量';
+  } else {
+    titleEl.textContent = m ? `${m.name} · 数量` : '数量';
+  }
+  const inp = document.getElementById('qty-input');
+  inp.value = (field === 'restock' ? (s.restock || 0) : (s.qty || 0));
+  // Reset method status
+  const status = document.getElementById('qty-method-status');
+  if (status) { status.style.display = 'none'; status.textContent = ''; }
+  document.querySelectorAll('[data-qty-method]').forEach(b => b.classList.remove('active'));
+  showSheet('qty-sheet');
+  setTimeout(() => { inp.focus(); inp.select(); }, 100);
+}
+
+document.getElementById('qty-minus').addEventListener('click', () => { const inp = document.getElementById('qty-input'); inp.value = Math.max(0, (parseInt(inp.value)||0)-1); });
+document.getElementById('qty-plus').addEventListener('click', () => { const inp = document.getElementById('qty-input'); inp.value = (parseInt(inp.value)||0)+1; });
+
+function commitQtyValue() {
+  const v = Math.max(0, parseInt(document.getElementById('qty-input').value) || 0);
+  if (!pendingSlot) { hideSheets(); return; }
+  const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si);
+  if (pendingQtyField === 'restock') {
+    // Restock flow: applies the restock amount, deducts from pallet, adds to scattered shelves (with conversion)
+    if (v <= 0) { s.restock = 0; hideSheets(); render(); return; }
+    s.restock = v;
+    hideSheets();
+    runRestockFlow(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, v);
+  } else {
+    s.qty = v;
+    hideSheets(); render();
+  }
+}
+document.getElementById('qty-confirm').addEventListener('click', commitQtyValue);
+document.getElementById('qty-confirm').addEventListener('touchend', (e) => { e.preventDefault(); commitQtyValue(); }, { passive: false });
+document.getElementById('qty-input').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/[^\d]/g, ''); });
+
+// Multi-input methods inside qty-sheet — camera/handwrite/voice that fill the input with digits
+document.querySelectorAll('[data-qty-method]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const method = btn.dataset.qtyMethod;
+    document.querySelectorAll('[data-qty-method]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const status = document.getElementById('qty-method-status');
+    if (method === 'camera') {
+      status.style.display = ''; status.textContent = '⏳ 打开摄像头中...';
+      await runQtyCameraOcr(status);
+    } else if (method === 'handwrite') {
+      status.style.display = ''; status.innerHTML = '✍️ 手写功能 → 请用键盘上方的 +/- 或直接点击数字键盘输入<br>(为节省空间,数字弹窗不内嵌画板)';
+    } else if (method === 'voice') {
+      status.style.display = ''; status.textContent = '🎤 正在录音... 请说出数字';
+      await runQtyVoice(status);
+    }
+  });
+});
+
+// Camera OCR for digits inside qty-sheet
+async function runQtyCameraOcr(statusEl) {
+  try {
+    if (!navigator.mediaDevices) { statusEl.textContent = '⚠️ 此设备不支持摄像头'; return; }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    // Create temporary preview overlay
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, { position:'fixed', inset:'0', background:'#000', zIndex:'500', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' });
+    const video = document.createElement('video');
+    video.autoplay = true; video.playsInline = true; video.muted = true;
+    video.srcObject = stream;
+    Object.assign(video.style, { maxWidth:'95%', maxHeight:'70%', borderRadius:'8px' });
+    const btnRow = document.createElement('div');
+    Object.assign(btnRow.style, { marginTop:'16px', display:'flex', gap:'12px' });
+    const captureBtn = document.createElement('button');
+    captureBtn.textContent = '📸 拍下';
+    Object.assign(captureBtn.style, { padding:'14px 24px', fontSize:'16px', fontWeight:'700', borderRadius:'8px', border:'0', background:'#fff', color:'#000', cursor:'pointer' });
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    Object.assign(cancelBtn.style, { padding:'14px 24px', fontSize:'16px', fontWeight:'600', borderRadius:'8px', border:'2px solid #fff', background:'transparent', color:'#fff', cursor:'pointer' });
+    btnRow.appendChild(captureBtn); btnRow.appendChild(cancelBtn);
+    overlay.appendChild(video); overlay.appendChild(btnRow);
+    document.body.appendChild(overlay);
+    statusEl.textContent = '📸 对准数字后点"拍下"';
+    const cleanup = () => { stream.getTracks().forEach(t => t.stop()); overlay.remove(); };
+    cancelBtn.onclick = () => { cleanup(); statusEl.textContent = '已取消'; };
+    captureBtn.onclick = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      cleanup();
+      statusEl.textContent = '⏳ 识别数字中...';
+      try {
+        const processed = preprocessForOcr(canvas);
+        const result = await Tesseract.recognize(processed, 'eng', {
+          logger: m => { if (m.status === 'recognizing text') statusEl.textContent = `⏳ 识别 ${Math.round(m.progress*100)}%`; }
+        });
+        const text = (result.data.text || '').trim();
+        // Extract first contiguous run of digits
+        const match = text.match(/\d+/);
+        if (match) {
+          document.getElementById('qty-input').value = match[0];
+          statusEl.textContent = '✅ 识别为: ' + match[0] + ' (可手动修改)';
+        } else {
+          statusEl.textContent = '⚠️ 未找到数字 (识别文字: ' + text.slice(0,40) + '),请手动输入';
+        }
+      } catch(e) { statusEl.textContent = '❌ 识别失败: ' + (e.message || e.name); }
+    };
+  } catch(e) {
+    statusEl.textContent = '⚠️ 无法打开摄像头: ' + (e.message || e.name);
+  }
+}
+
+// Voice input for digits inside qty-sheet
+async function runQtyVoice(statusEl) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { statusEl.textContent = '⚠️ 此设备不支持语音识别'; return; }
+  const rec = new SR();
+  rec.lang = 'zh-CN';
+  rec.continuous = false;
+  rec.interimResults = true;
+  rec.onresult = (e) => {
+    let txt = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    // Convert Chinese number words to digits (simple cases)
+    const num = chineseToNumber(txt) || (txt.match(/\d+/) ? txt.match(/\d+/)[0] : null);
+    if (num !== null) {
+      document.getElementById('qty-input').value = num;
+      statusEl.textContent = '✅ 识别为: ' + num;
+    } else {
+      statusEl.textContent = '识别中: ' + txt;
+    }
+  };
+  rec.onerror = (e) => { statusEl.textContent = '⚠️ 错误: ' + e.error; };
+  rec.onend = () => { /* keep last status */ };
+  try { rec.start(); } catch(e) { statusEl.textContent = '启动失败'; }
+}
+
+// Convert Chinese numerals like 三十五 → 35
+function chineseToNumber(text) {
+  const map = { '零':0, '一':1, '二':2, '两':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9, '十':10, '百':100, '千':1000, '万':10000 };
+  let total = 0, current = 0;
+  let hasChinese = false;
+  for (const ch of text) {
+    if (map[ch] === undefined) continue;
+    hasChinese = true;
+    const v = map[ch];
+    if (v === 10 || v === 100 || v === 1000 || v === 10000) {
+      if (current === 0) current = 1;
+      total += current * v;
+      current = 0;
+    } else {
+      current = current * 10 + v;
+    }
+  }
+  total += current;
+  return hasChinese && total > 0 ? String(total) : null;
+}
+
+// =============== RESTOCK FLOW ===============
+// When user enters a value in pallet's restock cell:
+//   1. Deduct that amount (in boxes) from pallet's qty
+//   2. Multiply by boxToSetRatio (model's "1 box = ? sets" ratio)
+//   3. Find the model in shelfBlack/shelfWhite tables
+//   4. If found in both → ask which to add to
+//   5. If found in one → add directly
+//   6. If found in neither → show toast warning
+let pendingRestock = null; // { palletAi, palletCi, palletSi, modelId, boxes, sets, targets: [{table, ai, ci, si}] }
+
+function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
+  const palletSlot = state.palletTable.aisles[palletAi].pallets[palletCi].layers[palletSi];
+  if (!palletSlot.modelId) {
+    toast('⚠️ 此格无型号'); palletSlot.restock = 0; render(); return;
+  }
+  const m = getModel(palletSlot.modelId);
+  if (!m) { palletSlot.restock = 0; render(); return; }
+
+  // Check pallet stock is enough
+  const currentPalletQty = palletSlot.qty || 0;
+  if (currentPalletQty < boxes) {
+    if (!confirm(`⚠️ 整箱货堆里 "${m.name}" 当前只有 ${currentPalletQty} 箱,补货 ${boxes} 箱会导致负库存。\n\n是否仍要继续?`)) {
+      palletSlot.restock = 0; render(); return;
+    }
+  }
+
+  // Conversion ratio: 1 box = ? sets (default 1)
+  const ratio = m.boxToSetRatio || 1;
+  const sets = boxes * ratio;
+
+  // Find the model in scattered shelf tables
+  const targets = [];
+  ['shelfBlackTable', 'shelfWhiteTable'].forEach(tableKey => {
+    const table = state[tableKey];
+    table.aisles.forEach((aisle, ai) => {
+      aisle.shelves.forEach((shelf, ci) => {
+        shelf.slots.forEach((slot, si) => {
+          if (slot.modelId === m.id) {
+            targets.push({ table: tableKey, ai, ci, si, location: `${aisle.name}通道-${shelf.name}` });
+          }
+        });
+      });
+    });
+  });
+
+  if (targets.length === 0) {
+    // Not found in any scattered shelf
+    palletSlot.qty = Math.max(0, currentPalletQty - boxes);
+    palletSlot.restock = 0;
+    toast(`⚠️ "${m.name}" 在零散表中未找到 — 整箱已扣 ${boxes},但无处可补`);
+    render();
+    return;
+  }
+
+  pendingRestock = { palletAi, palletCi, palletSi, modelId: m.id, modelName: m.name, boxes, sets, ratio, targets };
+
+  // Group by table
+  const blackTargets = targets.filter(t => t.table === 'shelfBlackTable');
+  const whiteTargets = targets.filter(t => t.table === 'shelfWhiteTable');
+
+  // If only one table has it, skip the table-choice dialog
+  if (blackTargets.length === 0 && whiteTargets.length > 0) {
+    confirmRestock('shelfWhiteTable');
+  } else if (whiteTargets.length === 0 && blackTargets.length > 0) {
+    confirmRestock('shelfBlackTable');
+  } else {
+    // Both tables have it — ask user
+    showRestockTableChoice(blackTargets, whiteTargets);
+  }
+}
+
+function showRestockTableChoice(blackTargets, whiteTargets) {
+  const sheet = document.getElementById('restock-choose-sheet');
+  if (!sheet) return;
+  document.getElementById('restock-choose-info').innerHTML =
+    `<b>${escapeHtml(pendingRestock.modelName)}</b> · 补货 <b style="color:var(--red);">${pendingRestock.boxes} 箱</b> = <b style="color:#2f7028;">${pendingRestock.sets} 套</b><br>
+     <span style="font-size:11px; color:var(--muted);">(换算 1 箱 = ${pendingRestock.ratio} 套)</span>`;
+  document.getElementById('restock-black-info').textContent = `黑色 MUG+IC (${blackTargets.length} 个位置)`;
+  document.getElementById('restock-white-info').textContent = `白色 BK/CH (${whiteTargets.length} 个位置)`;
+  showSheet('restock-choose-sheet');
+}
+
+function confirmRestock(tableKey) {
+  if (!pendingRestock) { hideSheets(); return; }
+  const { palletAi, palletCi, palletSi, modelId, boxes, sets, targets } = pendingRestock;
+  const palletSlot = state.palletTable.aisles[palletAi].pallets[palletCi].layers[palletSi];
+  const targetsInTable = targets.filter(t => t.table === tableKey);
+
+  if (targetsInTable.length === 0) {
+    toast('⚠️ 该表中无此型号');
+    pendingRestock = null; hideSheets(); render(); return;
+  }
+
+  // Add all sets to the FIRST matching slot (simplest predictable behavior)
+  const tgt = targetsInTable[0];
+  const tgtSlot = state[tableKey].aisles[tgt.ai].shelves[tgt.ci].slots[tgt.si];
+  const oldQty = tgtSlot.qty || 0;
+  tgtSlot.qty = oldQty + sets;
+  // Also default unit to 套 if not set
+  if (!tgtSlot.unit) tgtSlot.unit = '套';
+
+  // Deduct from pallet
+  palletSlot.qty = Math.max(0, (palletSlot.qty || 0) - boxes);
+  palletSlot.restock = 0;
+  if (!palletSlot.unit) palletSlot.unit = '箱';
+
+  const tableName = tableKey === 'shelfBlackTable' ? '黑色MUG+IC' : '白色BK/CH';
+  toast(`✅ 整箱 -${boxes}箱 → ${tableName} ${tgt.location} +${sets}套`);
+  pendingRestock = null;
+  hideSheets();
+  render();
+}
+
+// Bind restock target choice buttons
+document.querySelectorAll('[data-restock-target]').forEach(btn => {
+  const handler = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    confirmRestock(btn.dataset.restockTarget);
+  };
+  btn.addEventListener('click', handler);
+  btn.addEventListener('touchend', handler, { passive: false });
+});
+
+function openUnitEditor(ai, ci, si) {
+  pendingSlot = { ai, ci, si };
+  const s = getSlot(ai, ci, si);
+  const m = s.modelId ? getModel(s.modelId) : null;
+  document.getElementById('unit-title').textContent = m ? `${m.name} · 单位` : '单位';
+  document.getElementById('unit-input').value = s.unit || '';
+  showSheet('unit-sheet');
+}
+document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const u = btn.dataset.unit;
+    const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si);
+    s.unit = u || null;
+    hideSheets(); render();
+  });
+});
+document.getElementById('unit-confirm').addEventListener('click', () => {
+  const u = document.getElementById('unit-input').value.trim();
+  const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si);
+  s.unit = u || null;
+  hideSheets(); render();
+});
+
+// ===== MODEL PICKER with 4 input methods =====
+let pendingModelTarget = null, cameraStream = null, selectedSuggestionId = null, modelPickerCallback = null;
+let voiceRecognition = null, voiceActive = false;
+
+function openModelPicker(ai, ci, si, withCamera, callback) {
+  pendingModelTarget = (ai === null) ? null : { ai, ci, si };
+  modelPickerCallback = callback || null;
+  selectedSuggestionId = null;
+  // Default to "type" method
+  switchInputMethod('type');
+  document.getElementById('camera-title').textContent = '添加 / 修改型号';
+  document.getElementById('model-search').value = '';
+  // Clear any previous barcode scan result
+  const prevResult = document.getElementById('barcode-result');
+  if (prevResult) prevResult.style.display = 'none';
+  const prevStatus = document.getElementById('barcode-status');
+  if (prevStatus) prevStatus.style.display = 'none';
+  // Pre-fill ratio if there's already a model in this slot
+  const ratioInp = document.getElementById('model-ratio-input');
+  if (ratioInp) {
+    let preRatio = 1;
+    if (ai !== null && ci !== null && si !== null) {
+      try {
+        const slot = getSlot(ai, ci, si);
+        if (slot.modelId) {
+          const m = getModel(slot.modelId);
+          if (m && m.boxToSetRatio) preRatio = m.boxToSetRatio;
+        }
+      } catch(e) {}
+    }
+    ratioInp.value = preRatio;
+  }
+  renderSuggestions('');
+  showSheet('camera-sheet');
+  setTimeout(() => {
+    const inp = document.getElementById('model-search');
+    if (inp) inp.focus();
+  }, 200);
+}
+
+function switchInputMethod(method) {
+  document.querySelectorAll('.input-method-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.method === method);
+  });
+  document.getElementById('camera-wrap').classList.toggle('show', method === 'camera');
+  document.getElementById('handwrite-wrap').classList.toggle('show', method === 'handwrite');
+  document.getElementById('voice-wrap').classList.toggle('show', method === 'voice');
+  const bw = document.getElementById('barcode-wrap');
+  if (bw) bw.classList.toggle('show', method === 'barcode');
+
+  // Stop other methods when switching
+  if (method !== 'camera') stopCamera();
+  if (method !== 'voice') stopVoice();
+  if (method !== 'barcode') stopBarcodeScanner();
+  if (method === 'handwrite') initHandwrite();
+}
+
+document.querySelectorAll('.input-method-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchInputMethod(btn.dataset.method));
+});
+
+// CAMERA
+document.getElementById('camera-start').addEventListener('click', async () => {
+  const btn = document.getElementById('camera-start');
+  const mode = btn.dataset.mode || 'start';
+  if (mode === 'start') {
+    await startCameraNow();
+  } else if (mode === 'capture') {
+    capturePhotoNow();
+  }
+});
+
+async function startCameraNow() {
+  const video = document.getElementById('camera-video');
+  if (cameraStream) stopCamera();
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+    video.style.display = '';
+    document.getElementById('camera-canvas').style.display = 'none';
+    const btn = document.getElementById('camera-start');
+    btn.textContent = '📸 拍下';
+    btn.dataset.mode = 'capture';
+    video.addEventListener('click', tryFocus);
+  } catch(e) { toast('无法打开摄像头: ' + (e.message || e.name)); }
+}
+
+function tryFocus() {
+  if (!cameraStream) return;
+  const track = cameraStream.getVideoTracks()[0];
+  if (!track) return;
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  try {
+    const constraints = {};
+    if (caps.focusMode && caps.focusMode.includes('continuous')) {
+      constraints.focusMode = 'continuous';
+    }
+    if (Object.keys(constraints).length) track.applyConstraints({ advanced: [constraints] });
+  } catch(e) {}
+}
+
+function capturePhotoNow() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  if (!video.videoWidth) { toast('摄像头未就绪,请稍等'); return; }
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.style.display = ''; video.style.display = 'none';
+  stopCamera();
+  document.getElementById('camera-retake').style.display = '';
+  const btn = document.getElementById('camera-start');
+  btn.style.display = 'none';
+  btn.dataset.mode = 'start';
+  runOcrOnCanvas(canvas);
+}
+
+async function runOcrOnCanvas(canvas) {
+  const searchInput = document.getElementById('model-search');
+  searchInput.value = '';
+  toast('🔍 正在识别照片中的文字...');
+  const ocrStatus = document.getElementById('ocr-status');
+  if (ocrStatus) { ocrStatus.style.display = ''; ocrStatus.textContent = '⏳ 处理图片中...'; }
+  try {
+    if (typeof Tesseract === 'undefined') {
+      toast('OCR 库未加载,请联网');
+      if (ocrStatus) ocrStatus.style.display = 'none';
+      return;
+    }
+    const processed = preprocessForOcr(canvas);
+    if (ocrStatus) ocrStatus.textContent = '⏳ 识别中文字 0%...';
+    const result = await Tesseract.recognize(processed, 'eng+chi_sim', {
+      logger: m => {
+        if (m.status === 'recognizing text' && ocrStatus) {
+          ocrStatus.textContent = `⏳ 识别中 ${Math.round(m.progress * 100)}%`;
+        } else if (m.status === 'loading language traineddata' && ocrStatus) {
+          ocrStatus.textContent = `⏳ 加载语言库 ${Math.round((m.progress||0) * 100)}%`;
+        }
+      }
+    });
+    let text = (result.data.text || '').trim();
+    if (ocrStatus) ocrStatus.style.display = 'none';
+    if (!text) {
+      toast('未识别到文字,请手动输入或重拍');
+      searchInput.focus();
+      return;
+    }
+    const candidate = extractBestCandidate(text);
+    searchInput.value = candidate;
+    renderSuggestions(searchInput.value);
+    setTimeout(() => {
+      const topSuggestion = document.querySelector('#model-suggestions .suggestion[data-mid]');
+      if (topSuggestion) {
+        const score = parseInt(topSuggestion.querySelector('.match-score')?.textContent || '0');
+        if (score >= 60) {
+          topSuggestion.click();
+          toast('✅ 已识别并匹配,可点确定');
+        } else {
+          toast('已识别,可手动修改后确定');
+        }
+      } else {
+        toast('已识别 — 请检查文字是否正确');
+      }
+    }, 200);
+  } catch (e) {
+    if (ocrStatus) ocrStatus.style.display = 'none';
+    toast('识别失败: ' + (e.message || '未知错误') + ' — 请手动输入');
+    searchInput.focus();
+  }
+}
+
+function preprocessForOcr(srcCanvas) {
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const targetW = Math.max(w, 1500);
+  const scale = targetW / w;
+  const out = document.createElement('canvas');
+  out.width = Math.round(w * scale);
+  out.height = Math.round(h * scale);
+  const ctx = out.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(srcCanvas, 0, 0, out.width, out.height);
+  const imgData = ctx.getImageData(0, 0, out.width, out.height);
+  const d = imgData.data;
+  let min = 255, max = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = (d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114) | 0;
+    if (gray < min) min = gray;
+    if (gray > max) max = gray;
+  }
+  const range = Math.max(1, max - min);
+  for (let i = 0; i < d.length; i += 4) {
+    let gray = (d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114) | 0;
+    gray = Math.max(0, Math.min(255, ((gray - min) / range) * 255));
+    if (gray > 180) gray = 255;
+    else if (gray < 80) gray = 0;
+    d[i] = d[i+1] = d[i+2] = gray;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return out;
+}
+
+function extractBestCandidate(text) {
+  const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const filtered = lines.filter(l => !/^(车型|型号|品牌|名称)$/.test(l));
+  const yearLines = filtered.filter(l => /\b(19|20)\d{2}\s*[-~–—]\s*(19|20)\d{2}\b/.test(l));
+  if (yearLines.length) {
+    const idx = filtered.indexOf(yearLines[0]);
+    if (idx >= 0 && idx + 1 < filtered.length) {
+      const next = filtered[idx + 1];
+      if (/^[A-Za-z]/.test(next) && next.length < 30) {
+        return yearLines[0] + ' ' + next;
+      }
+    }
+    return yearLines[0];
+  }
+  const singleYear = filtered.find(l => /\b(19|20)\d{2}\b/.test(l) && /[A-Za-z]{3,}/.test(l));
+  if (singleYear) return singleYear;
+  const joined = filtered.join(' ').replace(/\s+/g, ' ').trim();
+  return joined.replace(/\s+[a-zA-Z0-9]\s+/g, ' ').replace(/\s+/g, ' ').trim() || text;
+}
+
+document.getElementById('camera-retake').addEventListener('click', () => {
+  document.getElementById('camera-canvas').style.display = 'none';
+  document.getElementById('camera-retake').style.display = 'none';
+  const btn = document.getElementById('camera-start');
+  btn.style.display = ''; btn.textContent = '📷 开启摄像头'; btn.dataset.mode = 'start';
+});
+
+function stopCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  const btn = document.getElementById('camera-start');
+  if (btn) { btn.textContent = '📷 开启摄像头'; btn.dataset.mode = 'start'; btn.style.display = ''; }
+  const video = document.getElementById('camera-video');
+  if (video) video.style.display = 'none';
+  const canvas = document.getElementById('camera-canvas');
+  if (canvas) canvas.style.display = 'none';
+  const retakeBtn = document.getElementById('camera-retake');
+  if (retakeBtn) retakeBtn.style.display = 'none';
+}
+
+// HANDWRITING — simple drawing canvas (user types the recognized text after writing)
+let hwCtx = null, hwDrawing = false, hwLastX = 0, hwLastY = 0, hwInited = false;
+let hwStrokes = []; // for undo
+function initHandwrite() {
+  if (hwInited) return;
+  hwInited = true;
+  const canvas = document.getElementById('handwrite-canvas');
+  // Set actual pixel size for crispness
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = 180 * dpr;
+  hwCtx = canvas.getContext('2d');
+  hwCtx.scale(dpr, dpr);
+  hwCtx.lineWidth = 3;
+  hwCtx.lineCap = 'round';
+  hwCtx.lineJoin = 'round';
+  hwCtx.strokeStyle = '#1a1a1a';
+
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  };
+  const startStroke = (e) => {
+    e.preventDefault();
+    hwDrawing = true;
+    const p = getPos(e);
+    hwLastX = p.x; hwLastY = p.y;
+    // Save snapshot for undo
+    try { hwStrokes.push(hwCtx.getImageData(0, 0, canvas.width, canvas.height)); } catch(e) {}
+    if (hwStrokes.length > 20) hwStrokes.shift();
+  };
+  const moveStroke = (e) => {
+    if (!hwDrawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    hwCtx.beginPath();
+    hwCtx.moveTo(hwLastX, hwLastY);
+    hwCtx.lineTo(p.x, p.y);
+    hwCtx.stroke();
+    hwLastX = p.x; hwLastY = p.y;
+  };
+  const endStroke = (e) => { hwDrawing = false; };
+
+  canvas.addEventListener('touchstart', startStroke, { passive: false });
+  canvas.addEventListener('touchmove', moveStroke, { passive: false });
+  canvas.addEventListener('touchend', endStroke);
+  canvas.addEventListener('mousedown', startStroke);
+  canvas.addEventListener('mousemove', moveStroke);
+  canvas.addEventListener('mouseup', endStroke);
+  canvas.addEventListener('mouseleave', endStroke);
+}
+function clearHandwrite() {
+  if (!hwCtx) return;
+  const canvas = document.getElementById('handwrite-canvas');
+  hwCtx.clearRect(0, 0, canvas.width, canvas.height);
+  hwStrokes = [];
+}
+function undoHandwrite() {
+  if (!hwCtx || !hwStrokes.length) return;
+  const last = hwStrokes.pop();
+  hwCtx.putImageData(last, 0, 0);
+}
+document.getElementById('hw-clear').addEventListener('click', clearHandwrite);
+document.getElementById('hw-undo').addEventListener('click', undoHandwrite);
+
+// VOICE — Web Speech API
+function startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voice-status').textContent = '⚠️ 此设备不支持语音识别,请用打字';
+    toast('设备不支持语音识别');
+    return;
+  }
+  if (voiceActive) { stopVoice(); return; }
+  voiceRecognition = new SR();
+  voiceRecognition.lang = 'zh-CN'; // Chinese first
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  const status = document.getElementById('voice-status');
+  const micBtn = document.getElementById('voice-mic');
+  const searchInput = document.getElementById('model-search');
+
+  voiceRecognition.onstart = () => {
+    voiceActive = true;
+    micBtn.classList.add('recording');
+    status.textContent = '🔴 正在录音... 说出型号';
+  };
+  voiceRecognition.onresult = (e) => {
+    let interim = '', finalText = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (interim) status.textContent = '识别中: ' + interim;
+    if (finalText) {
+      searchInput.value = finalText.trim();
+      status.textContent = '✅ 已识别: ' + finalText.trim();
+      renderSuggestions(searchInput.value);
+    }
+  };
+  voiceRecognition.onerror = (e) => {
+    status.textContent = '⚠️ 错误: ' + e.error + ' (请尝试打字输入)';
+    voiceActive = false;
+    micBtn.classList.remove('recording');
+  };
+  voiceRecognition.onend = () => {
+    voiceActive = false;
+    micBtn.classList.remove('recording');
+    if (status.textContent.startsWith('🔴')) status.textContent = '已停止 — 点击麦克风重新录音';
+  };
+  try { voiceRecognition.start(); } catch(e) { status.textContent = '启动失败: ' + e.message; }
+}
+function stopVoice() {
+  if (voiceRecognition && voiceActive) {
+    try { voiceRecognition.stop(); } catch(e) {}
+  }
+  voiceActive = false;
+  const micBtn = document.getElementById('voice-mic');
+  if (micBtn) micBtn.classList.remove('recording');
+}
+document.getElementById('voice-mic').addEventListener('click', startVoice);
+
+// ===== BARCODE / QR SCANNER =====
+// Uses native BarcodeDetector API (iOS 17+, modern Android Chrome) with ZXing fallback for older browsers.
+// Scanned codes are remembered: same code → same model next time.
+let barcodeStream = null;
+let barcodeDetector = null;
+let barcodeRafId = null;
+let barcodeZxingReader = null;
+let barcodeZxingControls = null;
+
+// Get barcode-to-model bindings from localStorage (so scanning same code re-matches the chosen model)
+function getBarcodeBindings() {
+  try { return JSON.parse(localStorage.getItem('barcodeBindings') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveBarcodeBinding(code, modelId) {
+  try {
+    const b = getBarcodeBindings();
+    b[code] = modelId;
+    localStorage.setItem('barcodeBindings', JSON.stringify(b));
+  } catch(e) {}
+}
+
+async function startBarcodeScanner() {
+  const video = document.getElementById('barcode-video');
+  const startBtn = document.getElementById('barcode-start');
+  const stopBtn = document.getElementById('barcode-stop');
+  const frame = document.getElementById('barcode-frame');
+  const status = document.getElementById('barcode-status');
+  const resultBox = document.getElementById('barcode-result');
+
+  if (resultBox) resultBox.style.display = 'none';
+  if (status) { status.style.display = ''; status.textContent = '⏳ 启动摄像头...'; }
+
+  try {
+    // Try to lock screen orientation to portrait so the scan frame doesn't rotate
+    // (Most browsers only allow this in fullscreen; we attempt without fullscreen — graceful no-op if denied)
+    try {
+      if (screen.orientation && typeof screen.orientation.lock === 'function') {
+        screen.orientation.lock('portrait').catch(() => {/* silently ignore */});
+      }
+    } catch(e) { /* not supported, no-op */ }
+
+    barcodeStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false
+    });
+    video.srcObject = barcodeStream;
+    video.style.display = '';
+    if (frame) frame.style.display = '';
+    startBtn.style.display = 'none';
+    stopBtn.style.display = '';
+    if (status) status.textContent = '🔍 扫描中... 请将条码/二维码对准框内';
+
+    // Try native BarcodeDetector first
+    if ('BarcodeDetector' in window) {
+      try {
+        const supportedFormats = await window.BarcodeDetector.getSupportedFormats();
+        barcodeDetector = new window.BarcodeDetector({
+          formats: supportedFormats // accept everything supported
+        });
+        scanLoopNative();
+        return;
+      } catch(e) {
+        console.warn('BarcodeDetector failed, falling back to ZXing:', e);
+      }
+    }
+    // Fallback: load ZXing dynamically and use it
+    await loadZxingAndScan();
+  } catch(e) {
+    const msg = (e && e.message) || (e && e.name) || (e ? String(e) : '未知错误,请确认已授权摄像头');
+    if (status) status.textContent = '❌ 启动失败: ' + msg;
+    toast('启动失败: ' + msg);
+    stopBtn.style.display = 'none';
+    startBtn.style.display = '';
+  }
+}
+
+function scanLoopNative() {
+  const video = document.getElementById('barcode-video');
+  const status = document.getElementById('barcode-status');
+  if (!barcodeStream || !barcodeDetector) return;
+
+  const tick = async () => {
+    if (!barcodeStream || !barcodeDetector) return;
+    if (video.readyState >= 2) {
+      try {
+        const codes = await barcodeDetector.detect(video);
+        if (codes && codes.length) {
+          handleBarcodeFound(codes[0].rawValue, codes[0].format);
+          return; // stop scanning
+        }
+      } catch(e) {
+        // Detection errors are common on bad frames, just keep going
+      }
+    }
+    barcodeRafId = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+async function loadZxingAndScan() {
+  const status = document.getElementById('barcode-status');
+  const video = document.getElementById('barcode-video');
+  if (status) { status.style.display = ''; status.textContent = '⏳ 加载扫码库 (首次需要联网)...'; }
+
+  // Try multiple ZXing distributions — different APIs available in each
+  if (!window.ZXing && !window.ZXingBrowser) {
+    const cdns = [
+      // @zxing/browser — has BrowserMultiFormatReader.decodeFromVideoDevice (preferred for iOS)
+      'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
+      'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
+      // Fallback: @zxing/library
+      'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js',
+      'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js'
+    ];
+    let loadedFrom = null;
+    for (const url of cdns) {
+      try {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = url;
+          s.onload = () => resolve();
+          s.onerror = () => { s.remove(); reject(new Error('网络/CDN 失败')); };
+          // Timeout after 10s per CDN
+          const timer = setTimeout(() => { s.onerror = null; reject(new Error('超时')); }, 10000);
+          s.onload = () => { clearTimeout(timer); resolve(); };
+          document.head.appendChild(s);
+        });
+        if (window.ZXing || window.ZXingBrowser) {
+          loadedFrom = url;
+          break;
+        }
+      } catch (e) {
+        // Continue to next CDN
+        continue;
+      }
+    }
+    if (!window.ZXing && !window.ZXingBrowser) {
+      const msg = '所有 CDN 加载失败,请确保有网络连接后再试';
+      if (status) status.textContent = '❌ ' + msg;
+      toast(msg);
+      return;
+    }
+    console.log('Loaded ZXing from:', loadedFrom);
+  }
+
+  const ZXB = window.ZXingBrowser; // @zxing/browser
+  const ZX = window.ZXing;          // @zxing/library
+  if (!ZXB && !ZX) {
+    if (status) status.textContent = '❌ 扫码库未就绪';
+    return;
+  }
+
+  if (status) status.textContent = '🔍 扫描中... 对准条码或二维码';
+
+  try {
+    // Strategy 1: @zxing/browser BrowserMultiFormatReader (most reliable on iOS Safari)
+    if (ZXB && ZXB.BrowserMultiFormatReader) {
+      barcodeZxingReader = new ZXB.BrowserMultiFormatReader();
+      // decodeFromVideoDevice is the documented API in @zxing/browser
+      // First arg null = "use the existing srcObject if any, or pick environment camera"
+      try {
+        barcodeZxingControls = await barcodeZxingReader.decodeFromVideoDevice(
+          undefined,  // device id - undefined = back camera
+          video,
+          (result, err) => {
+            if (result) {
+              let text = '';
+              try { text = result.getText ? result.getText() : (result.text || String(result)); } catch(e) {}
+              if (text) handleBarcodeFound(text, 'scan');
+            }
+            // err.NotFoundException is normal (no code in this frame), ignore
+          }
+        );
+        return;
+      } catch (e1) {
+        console.warn('decodeFromVideoDevice failed:', e1);
+        // Try the older decodeFromStream API
+        if (typeof barcodeZxingReader.decodeFromStream === 'function' && barcodeStream) {
+          try {
+            barcodeZxingControls = await barcodeZxingReader.decodeFromStream(
+              barcodeStream, video,
+              (result) => {
+                if (result) {
+                  const text = result.getText ? result.getText() : String(result);
+                  if (text) handleBarcodeFound(text, 'scan');
+                }
+              }
+            );
+            return;
+          } catch (e2) { console.warn('decodeFromStream failed:', e2); }
+        }
+      }
+    }
+
+    // Strategy 2: @zxing/library BrowserMultiFormatReader
+    if (ZX && ZX.BrowserMultiFormatReader) {
+      barcodeZxingReader = new ZX.BrowserMultiFormatReader();
+      try {
+        await barcodeZxingReader.decodeFromVideoElementContinuously(video, (result, err) => {
+          if (result) {
+            const text = result.getText ? result.getText() : String(result);
+            if (text) handleBarcodeFound(text, 'scan');
+          }
+        });
+        return;
+      } catch (e3) {
+        console.warn('decodeFromVideoElementContinuously failed:', e3);
+        // Try the simpler decodeFromVideoElement (one-shot)
+        try {
+          // Continuous polling
+          startContinuousZxingScan();
+          return;
+        } catch (e4) { console.warn('continuous polling failed:', e4); }
+      }
+    }
+
+    // All strategies failed
+    if (status) status.textContent = '❌ 扫描器无法启动 — 请尝试用拍照模式';
+    toast('扫描器初始化失败');
+  } catch(e) {
+    const msg = (e && e.message) || (e && e.name) || '未知错误';
+    if (status) status.textContent = '❌ 扫描失败: ' + msg;
+    console.error('barcode error:', e);
+  }
+}
+
+// Continuous polling fallback when async APIs don't work
+function startContinuousZxingScan() {
+  const ZX = window.ZXing;
+  if (!ZX || !barcodeZxingReader) return;
+  const video = document.getElementById('barcode-video');
+  const tick = () => {
+    if (!barcodeStream) return;
+    try {
+      barcodeZxingReader.decodeOnceFromVideoElement(video).then(result => {
+        if (result) {
+          const text = result.getText ? result.getText() : String(result);
+          if (text) handleBarcodeFound(text, 'scan');
+        }
+      }).catch(() => {
+        // No code found, try again
+        if (barcodeStream) {
+          barcodeRafId = requestAnimationFrame(tick);
+        }
+      });
+    } catch(e) {
+      if (barcodeStream) barcodeRafId = requestAnimationFrame(tick);
+    }
+  };
+  tick();
+}
+
+function handleBarcodeFound(code, format) {
+  if (!code) return;
+  // Already scanned? avoid duplicate firing
+  if (window._lastBarcodeHandled === code) return;
+  window._lastBarcodeHandled = code;
+  setTimeout(() => { window._lastBarcodeHandled = null; }, 1500);
+
+  if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+  toast('✅ 扫到: ' + code);
+
+  const status = document.getElementById('barcode-status');
+  const resultBox = document.getElementById('barcode-result');
+  if (status) status.style.display = 'none';
+  if (resultBox) {
+    resultBox.style.display = '';
+    resultBox.innerHTML = `<div style="font-size:10px; color:var(--muted); margin-bottom:4px;">扫码结果 / Scan Result (${escapeHtml(format||'')})</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:var(--ink);">${escapeHtml(code)}</div>`;
+  }
+
+  // Stop the scanner
+  stopBarcodeScanner();
+
+  const searchInput = document.getElementById('model-search');
+
+  // Step 1: Check saved bindings (was this code scanned before?)
+  const bindings = getBarcodeBindings();
+  if (bindings[code]) {
+    const m = getModel(bindings[code]);
+    if (m) {
+      searchInput.value = m.name;
+      selectedSuggestionId = m.id;
+      renderSuggestions(searchInput.value);
+      toast(`✅ 自动匹配上次绑定: ${m.name}`);
+      return;
+    } else {
+      // Binding pointed to a deleted model — clear it
+      delete bindings[code];
+      try { localStorage.setItem('barcodeBindings', JSON.stringify(bindings)); } catch(e) {}
+    }
+  }
+
+  // Step 2: Try fuzzy match against model library by code text
+  searchInput.value = code;
+  renderSuggestions(code);
+  setTimeout(() => {
+    const top = document.querySelector('#model-suggestions .suggestion[data-mid]');
+    if (top) {
+      const score = parseInt(top.querySelector('.match-score')?.textContent || '0');
+      if (score >= 60) {
+        top.click();
+        toast('✅ 已识别 — 检查无误后点确定保存绑定');
+      } else {
+        toast('已扫到码 — 请从下方选型号或修改文字,确定后会记住绑定');
+      }
+    } else {
+      toast('已扫到码 — 输入或选择型号后,确定时会记住此码 → 该型号');
+    }
+  }, 200);
+}
+
+function stopBarcodeScanner() {
+  if (barcodeRafId) { cancelAnimationFrame(barcodeRafId); barcodeRafId = null; }
+  barcodeDetector = null;
+  // Release screen orientation lock
+  try {
+    if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+      screen.orientation.unlock();
+    }
+  } catch(e) {}
+  if (barcodeZxingControls && typeof barcodeZxingControls.stop === 'function') {
+    try { barcodeZxingControls.stop(); } catch(e) {}
+  }
+  if (barcodeZxingReader && typeof barcodeZxingReader.reset === 'function') {
+    try { barcodeZxingReader.reset(); } catch(e) {}
+  }
+  barcodeZxingControls = null;
+  barcodeZxingReader = null;
+  if (barcodeStream) {
+    try { barcodeStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+    barcodeStream = null;
+  }
+  const video = document.getElementById('barcode-video');
+  if (video) { video.srcObject = null; video.style.display = 'none'; }
+  const frame = document.getElementById('barcode-frame');
+  if (frame) frame.style.display = 'none';
+  const startBtn = document.getElementById('barcode-start');
+  const stopBtn = document.getElementById('barcode-stop');
+  if (startBtn) { startBtn.style.display = ''; startBtn.textContent = '📊 开始扫码'; }
+  if (stopBtn) stopBtn.style.display = 'none';
+}
+
+(function bindBarcodeButtons() {
+  const startBtn = document.getElementById('barcode-start');
+  const stopBtn = document.getElementById('barcode-stop');
+  if (startBtn) startBtn.addEventListener('click', startBarcodeScanner);
+  if (stopBtn) stopBtn.addEventListener('click', stopBarcodeScanner);
+})();
+// ===== END BARCODE SCANNER =====
+
+function fuzzyMatch(query, name) {
+  if (!query) return 1;
+  const q = query.toLowerCase().replace(/\s+/g,'');
+  const n = name.toLowerCase().replace(/\s+/g,'');
+  if (n.includes(q)) return 100;
+  let qi = 0, score = 0;
+  for (let i = 0; i < n.length && qi < q.length; i++) { if (n[i] === q[qi]) { score++; qi++; } }
+  return qi === q.length ? (score/n.length)*80 : (score/q.length)*30;
+}
+function renderSuggestions(query) {
+  const root = document.getElementById('model-suggestions');
+  const scored = state.models.map(m => ({ m, s: fuzzyMatch(query, m.name) }))
+    .filter(x => x.s > (query ? 10 : 0)).sort((a,b) => b.s-a.s).slice(0, 30);
+  if (!scored.length) {
+    root.innerHTML = `<div class="suggestion" style="color:var(--muted); font-style:italic; cursor:default;">没有匹配 — 点"确定"会用搜索框文字新建型号</div>`;
+    return;
+  }
+  root.innerHTML = scored.map(x => `<div class="suggestion${x.m.id===selectedSuggestionId?' selected':''}" data-mid="${x.m.id}">${escapeHtml(x.m.name)}<span class="match-score">${query ? Math.round(x.s) : ''}</span></div>`).join('');
+  root.querySelectorAll('.suggestion[data-mid]').forEach(el => {
+    el.addEventListener('click', () => {
+      const m = getModel(el.dataset.mid);
+      document.getElementById('model-search').value = m.name;
+      selectedSuggestionId = m.id;
+      root.querySelectorAll('.suggestion').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+}
+document.getElementById('model-search').addEventListener('input', (e) => { selectedSuggestionId = null; renderSuggestions(e.target.value); });
+
+function commitModelChoice() {
+  const inp = document.getElementById('model-search');
+  let txt = (inp.value || '').replace(/\s+/g, ' ').trim();
+  if (!txt) {
+    inp.style.borderColor = 'var(--red)';
+    inp.style.background = '#ffe5e5';
+    setTimeout(() => { inp.style.borderColor = ''; inp.style.background = ''; }, 1500);
+    inp.focus();
+    toast('⚠️ 请先输入或选择型号名');
+    return;
+  }
+  let model = state.models.find(m => m.name === txt);
+  if (!model) {
+    model = { id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name: txt, boxToSetRatio: 1 };
+    state.models.push(model);
+    toast('✅ 已新建型号: ' + txt);
+  } else {
+    toast('✅ 已选择: ' + model.name);
+  }
+  // Save the box-to-set ratio
+  const ratioInp = document.getElementById('model-ratio-input');
+  if (ratioInp) {
+    const r = Math.max(1, parseInt(ratioInp.value) || 1);
+    model.boxToSetRatio = r;
+  }
+  if (modelPickerCallback) {
+    try { modelPickerCallback(model); } catch(e) { console.error(e); }
+    modelPickerCallback = null;
+  } else if (pendingModelTarget) {
+    const s = getSlot(pendingModelTarget.ai, pendingModelTarget.ci, pendingModelTarget.si);
+    s.modelId = model.id;
+    s.color = null; s.qty = 0; s.unit = null;
+  } else {
+    toast('⚠️ 没有目标位置');
+    return;
+  }
+  pendingModelTarget = null;
+  // If a barcode was scanned and the result box is showing, save the binding (code → model)
+  try {
+    const resultBox = document.getElementById('barcode-result');
+    if (resultBox && resultBox.style.display !== 'none' && resultBox.textContent) {
+      // Extract the code from the displayed result
+      const codeEl = resultBox.querySelector('div:last-child');
+      if (codeEl) {
+        const code = codeEl.textContent.trim();
+        if (code) {
+          saveBarcodeBinding(code, model.id);
+          toast(`📊 已记住: ${code.substring(0,16)}${code.length>16?'...':''} → ${model.name}`);
+        }
+      }
+    }
+  } catch(e) {}
+  stopCamera();
+  stopVoice();
+  if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
+  hideSheets();
+  render();
+}
+
+const _modelConfirmBtn = document.getElementById('model-confirm');
+_modelConfirmBtn.addEventListener('click', (e) => { e.preventDefault(); commitModelChoice(); });
+_modelConfirmBtn.addEventListener('touchend', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  commitModelChoice();
+}, { passive: false });
+document.getElementById('model-search').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    commitModelChoice();
+  }
+});
+window.commitModelChoice = commitModelChoice;
+
+document.getElementById('add-aisle').addEventListener('click', () => {
+  const t = getActiveTable();
+  const newName = String.fromCharCode(65 + t.aisles.length);
+  if (isShelfTable(currentTable)) {
+    t.aisles.push({ name: newName, shelves: SHELF_NAMES.map(n => ({ name: n, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) });
+  } else {
+    t.aisles.push({ name: newName, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) });
+  }
+  toast('新增 ' + (isShelfTable(currentTable) ? '通道 ' : '排 ') + newName);
+  render();
+});
+function addContainerToAisle(ai) {
+  const t = getActiveTable();
+  if (isShelfTable(currentTable)) {
+    const idx = t.aisles[ai].shelves.length;
+    t.aisles[ai].shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) });
+    toast('已加货架');
+  } else {
+    const idx = t.aisles[ai].pallets.length;
+    t.aisles[ai].pallets.push({ name: 'P'+(idx+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) });
+    toast('已加托盘');
+  }
+  render();
+}
+
+function addShelfAfter(ai, ci) {
+  const t = getActiveTable();
+  if (isShelfTable(currentTable)) {
+    const list = t.aisles[ai].shelves;
+    const newIdx = list.length;
+    const newName = SHELF_NAMES[newIdx] || ('第' + (newIdx + 1) + '层');
+    const newShelf = { name: newName, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) };
+    list.splice(ci + 1, 0, newShelf);
+    toast('已在该层后插入新层');
+  } else {
+    const list = t.aisles[ai].pallets;
+    const newIdx = list.length;
+    const newPallet = { name: 'P' + (newIdx + 1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) };
+    list.splice(ci + 1, 0, newPallet);
+    toast('已在此后插入新托盘');
+  }
+  render();
+}
+
+// FIX (二): Duplicate this entire shelf/pallet (including all slot data — model, color, qty, unit) and insert below.
+// Auto-renames the duplicate so it doesn't collide with the original.
+function duplicateShelfBelow(ai, ci) {
+  const t = getActiveTable();
+  const ck = getContainerKey(), sk = getSlotsKey();
+  const list = t.aisles[ai][ck];
+  const src = list[ci];
+  if (!src) return;
+
+  // Deep clone all slots — preserves modelId, color, qty, unit
+  const clonedSlots = src[sk].map(slot => ({
+    modelId: slot.modelId,
+    color: slot.color,
+    qty: slot.qty,
+    unit: slot.unit
+  }));
+
+  // Generate a new name based on source name + suffix
+  const baseName = src.name;
+  let newName = baseName + '-副本';
+  let suffix = 2;
+  const existingNames = new Set(list.map(c => c.name));
+  while (existingNames.has(newName)) {
+    newName = baseName + '-副本' + suffix;
+    suffix++;
+  }
+
+  const newContainer = isShelfTable(currentTable)
+    ? { name: newName, slots: clonedSlots }
+    : { name: newName, layers: clonedSlots };
+
+  list.splice(ci + 1, 0, newContainer);
+  const slotCount = clonedSlots.length;
+  const filledCount = clonedSlots.filter(s => s.modelId).length;
+  toast(`✅ 已复制 "${src.name}" → "${newName}" (${filledCount}/${slotCount} 个型号)`);
+  render();
+}
+
+function addShelfDrag(dragArea, handleEl) {
+  const handle = handleEl || dragArea;
+  let ghost = null, longPressTimer = null, dragging = false, startX = 0, startY = 0;
+  dragArea.addEventListener('touchstart', (e) => {
+    const tgt = e.target;
+    if (tgt.closest('.add-after-shelf, .add-divider, .add-divider-btn, .mini-btn') ||
+        tgt.contentEditable === 'true' ||
+        (tgt.closest('.cont-name') && tgt.closest('.cont-name').contentEditable === 'true')) return;
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    longPressTimer = setTimeout(() => {
+      dragging = true;
+      const block = dragArea.closest('.container-block');
+      block.classList.add('shelf-dragging');
+      const rect = block.getBoundingClientRect();
+      ghost = block.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed', zIndex: '300', pointerEvents: 'none',
+        background: 'var(--paper)', border: '2px solid var(--ink)',
+        borderRadius: '8px', boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+        left: rect.left + 'px', top: (t.clientY - 20) + 'px',
+        width: rect.width + 'px', opacity: '0.92', maxHeight: '200px', overflow: 'hidden'
+      });
+      document.body.appendChild(ghost);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 420);
+  }, { passive: true });
+  dragArea.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!dragging && Math.hypot(t.clientX - startX, t.clientY - startY) > 10) clearTimeout(longPressTimer);
+    if (dragging && ghost) {
+      e.preventDefault();
+      ghost.style.top = (t.clientY - 20) + 'px';
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.style.display = '';
+      document.querySelectorAll('.shelf-drop-target').forEach(x => x.classList.remove('shelf-drop-target'));
+      const target = under?.closest('.container-block');
+      if (target && !target.classList.contains('shelf-dragging')) target.classList.add('shelf-drop-target');
+    }
+  }, { passive: false });
+  dragArea.addEventListener('touchend', (e) => {
+    clearTimeout(longPressTimer);
+    if (dragging) {
+      const t = e.changedTouches[0];
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.remove(); ghost = null;
+      const block = dragArea.closest('.container-block');
+      block.classList.remove('shelf-dragging');
+      document.querySelectorAll('.shelf-drop-target').forEach(x => x.classList.remove('shelf-drop-target'));
+      const target = under?.closest('.container-block');
+      if (target && !target.isSameNode(block)) {
+        const targetHandle = target.querySelector('.shelf-drag-handle');
+        if (targetHandle) {
+          moveShelf(+handle.dataset.ai, +handle.dataset.ci, +targetHandle.dataset.ai, +targetHandle.dataset.ci);
+        }
+      }
+      dragging = false;
+    }
+  });
+  dragArea.addEventListener('touchcancel', () => {
+    clearTimeout(longPressTimer);
+    if (ghost) { ghost.remove(); ghost = null; }
+    dragging = false;
+    const block = dragArea.closest('.container-block');
+    if (block) block.classList.remove('shelf-dragging');
+  });
+  if (handle === dragArea && handle.classList.contains('shelf-drag-handle')) {
+    handle.setAttribute('draggable', 'true');
+    handle.addEventListener('dragstart', (e) => {
+      if (e.dataTransfer) {
+        e.dataTransfer.setData('text/shelf', JSON.stringify({ ai: +handle.dataset.ai, ci: +handle.dataset.ci }));
+        e.dataTransfer.effectAllowed = 'move';
+      }
+      handle.closest('.container-block').classList.add('shelf-dragging');
+    });
+    handle.addEventListener('dragend', () => {
+      handle.closest('.container-block').classList.remove('shelf-dragging');
+      document.querySelectorAll('.shelf-drop-target').forEach(x => x.classList.remove('shelf-drop-target'));
+    });
+  }
+}
+
+function moveShelf(srcAi, srcCi, tgtAi, tgtCi) {
+  const t = getActiveTable();
+  const ck = getContainerKey();
+  const srcList = t.aisles[srcAi][ck];
+  const item = srcList.splice(srcCi, 1)[0];
+  let insertCi = tgtCi;
+  if (srcAi === tgtAi && tgtCi > srcCi) insertCi = tgtCi - 1;
+  t.aisles[tgtAi][ck].splice(insertCi + 1, 0, item);
+  toast('已移动整层');
+  render();
+}
+
+document.querySelectorAll('.table-tab').forEach(b => {
+  b.addEventListener('click', () => {
+    currentTable = b.dataset.table;
+    document.querySelectorAll('.table-tab').forEach(x => x.classList.toggle('active', x.dataset.table === currentTable));
+    document.querySelectorAll('.table-pane').forEach(x => x.classList.toggle('active', x.dataset.tablePane === currentTable));
+    render();
+  });
+});
+document.querySelectorAll('.tool[data-view]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.tool[data-view]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const v = b.dataset.view;
+    document.querySelectorAll('.list-view').forEach(x => x.classList.toggle('hidden', v !== 'list'));
+    document.querySelectorAll('.grid-view').forEach(x => x.classList.toggle('active', v === 'grid'));
+  });
+});
+
+function showSheet(id) { document.getElementById(id).classList.add('show'); }
+function hideSheets() {
+  document.querySelectorAll('.sheet-backdrop').forEach(s => s.classList.remove('show'));
+  stopCamera();
+  stopVoice();
+  if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
+}
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideSheets));
+
+// === Product image upload handlers ===
+function setProductImage(dataUrl) {
+  if (!pendingImageMid) return;
+  const m = getModel(pendingImageMid);
+  if (!m) return;
+  if (dataUrl) m.imageUrl = dataUrl;
+  else delete m.imageUrl;
+  saveState();
+  hideSheets();
+  render();
+  toast(dataUrl ? '✅ 图片已保存' : '🗑️ 图片已移除');
+}
+
+function pickImageFile(useCamera) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  if (useCamera) inp.capture = 'environment';
+  inp.onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      toast('图片太大 (>5MB),请用相册编辑器先压缩');
+      return;
+    }
+    // Compress via canvas to keep localStorage small
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 600;
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            const scale = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.78);
+          setProductImage(compressed);
+        } catch (err) {
+          // Fallback: use original
+          setProductImage(ev.target.result);
+        }
+      };
+      img.onerror = () => toast('图片读取失败');
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => toast('文件读取失败');
+    reader.readAsDataURL(f);
+  };
+  inp.click();
+}
+
+const _imgCamBtn = document.getElementById('img-from-camera');
+if (_imgCamBtn) _imgCamBtn.addEventListener('click', () => pickImageFile(true));
+const _imgAlbumBtn = document.getElementById('img-from-album');
+if (_imgAlbumBtn) _imgAlbumBtn.addEventListener('click', () => pickImageFile(false));
+const _imgUrlBtn = document.getElementById('img-from-url');
+if (_imgUrlBtn) _imgUrlBtn.addEventListener('click', () => {
+  const url = prompt('请输入图片网址 (https://...):', '');
+  if (url && /^https?:\/\//i.test(url.trim())) setProductImage(url.trim());
+  else if (url) toast('网址格式不对');
+});
+const _imgRemoveBtn = document.getElementById('img-remove');
+if (_imgRemoveBtn) _imgRemoveBtn.addEventListener('click', () => {
+  if (confirm('确定移除此型号的图片?')) setProductImage(null);
+});
+document.querySelectorAll('.sheet-backdrop').forEach(s => s.addEventListener('click', e => { if (e.target === s) hideSheets(); }));
+
+// === MODEL LIBRARY UI (upload sheet) ===
+let pendingImportLines = null; // when user picks a source, the parsed lines wait here for "mode" choice
+
+function refreshLibList(filter) {
+  const listEl = document.getElementById('lib-list');
+  const countEl = document.getElementById('lib-count');
+  if (!listEl) return;
+  const q = (filter || '').toLowerCase().trim();
+  const matches = q
+    ? state.models.filter(m => m.name.toLowerCase().includes(q))
+    : state.models.slice();
+  countEl.textContent = state.models.length + (q ? ` (匹配 ${matches.length})` : '');
+  if (!matches.length) {
+    listEl.innerHTML = `<div style="padding:14px; text-align:center; color:var(--muted); font-size:12px; font-style:italic;">${q ? '没有匹配的型号' : '型号库为空,请上传清单'}</div>`;
+    return;
+  }
+  // Sort alphabetically for easier scanning
+  matches.sort((a,b) => a.name.localeCompare(b.name));
+  listEl.innerHTML = matches.map((m,i) => `<div style="padding:6px 10px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+    <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}${m.boxToSetRatio && m.boxToSetRatio !== 1 ? ` <span style="color:var(--muted); font-size:10px;">(1箱=${m.boxToSetRatio}套)</span>` : ''}</span>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted);">#${i+1}</span>
+  </div>`).join('');
+}
+
+document.getElementById('upload-btn').addEventListener('click', () => {
+  showSheet('upload-sheet');
+  pendingImportLines = null;
+  refreshLibList('');
+  const searchEl = document.getElementById('lib-search');
+  if (searchEl) searchEl.value = '';
+});
+
+// === TRANSLATE (direct API — same approach as ZEHEM.AI GlobalLangPicker) ===
+let _xlat_lang = null;
+const _xlat_orig = new Map(); // TextNode → original text
+
+async function _xlat_fetchBatch(texts, lang) {
+  const SEP = ' ◈ ';
+  const joined = texts.join(SEP);
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(lang)}&dt=t&q=${encodeURIComponent(joined)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  const full = data[0].map(i => i[0]).join('');
+  return full.split(/\s*◈\s*/);
+}
+
+async function applyTranslation(lang) {
+  if (_xlat_lang === lang) return;
+  _xlat_lang = lang;
+
+  // Restore any previous translation before applying a new one
+  _xlat_orig.forEach((orig, node) => { if (node.parentElement) node.textContent = orig; });
+  _xlat_orig.clear();
+
+  const SKIP = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA']);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let n;
+  while ((n = walker.nextNode())) {
+    if (!n.textContent.trim()) continue;
+    if (n.parentElement && SKIP.has(n.parentElement.tagName)) continue;
+    nodes.push(n);
+  }
+  nodes.forEach(node => _xlat_orig.set(node, node.textContent));
+
+  toast('⏳ 正在翻译…');
+  const BATCH = 25;
+  for (let i = 0; i < nodes.length; i += BATCH) {
+    const batch = nodes.slice(i, i + BATCH);
+    const texts = batch.map(node => _xlat_orig.get(node));
+    try {
+      const translated = await _xlat_fetchBatch(texts, lang);
+      batch.forEach((node, idx) => {
+        const t = translated[idx];
+        if (t !== undefined && t.trim()) node.textContent = t.trim();
+      });
+    } catch (e) {
+      console.warn('Translate batch error:', e);
+    }
+  }
+  toast('✅ 翻译完成');
+}
+
+function stopTranslation() {
+  _xlat_lang = null;
+  _xlat_orig.forEach((orig, node) => { if (node.parentElement) node.textContent = orig; });
+  _xlat_orig.clear();
+  toast('已恢复原文');
+}
+
+document.getElementById('translate-btn').addEventListener('click', () => {
+  showSheet('translate-sheet');
+});
+
+document.querySelectorAll('.translate-lang').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const lang = btn.dataset.lang;
+    hideSheets();
+    applyTranslation(lang);
+  });
+});
+
+document.getElementById('translate-stop').addEventListener('click', () => {
+  stopTranslation();
+  hideSheets();
+});
+
+const _libSearchEl = document.getElementById('lib-search');
+if (_libSearchEl) _libSearchEl.addEventListener('input', e => refreshLibList(e.target.value));
+
+const _libExportBtn = document.getElementById('lib-export');
+if (_libExportBtn) _libExportBtn.addEventListener('click', () => {
+  if (!state.models.length) { toast('型号库为空'); return; }
+  const text = state.models.map(m => m.name).join('\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  triggerDownload(blob, `model-library-${dateStamp()}.txt`);
+  toast(`已导出 ${state.models.length} 个型号`);
+});
+
+function parseModelLines(txt) {
+  if (!txt) return [];
+  // Try JSON first (for re-importing exported lib)
+  const trimmed = txt.trim();
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try {
+      const data = JSON.parse(trimmed);
+      const arr = Array.isArray(data) ? data : (data.models || []);
+      return arr.map(x => typeof x === 'string' ? x : (x && x.name ? x.name : '')).filter(Boolean);
+    } catch(e) {}
+  }
+  return txt.split('\n').map(l => l.trim().replace(/^[\d①-⑳]+[.、\s,]*/, '').replace(/^[-*•]\s*/, '').trim()).filter(Boolean);
+}
+
+function applyImportMode(mode) {
+  const lines = pendingImportLines;
+  if (!lines || !lines.length) { toast('请先选择来源并提供清单'); return; }
+  if (mode === 'append-only') {
+    // Just append to model library, don't touch shelves
+    const existing = new Set(state.models.map(m => m.name.toLowerCase()));
+    let added = 0;
+    for (const name of lines) {
+      if (!existing.has(name.toLowerCase())) {
+        state.models.push({ id: 'm_'+Date.now()+'_'+added, name, boxToSetRatio: 1 });
+        existing.add(name.toLowerCase());
+        added++;
+      }
+    }
+    toast(`✅ 已扩充型号库: 新增 ${added} 个 (跳过 ${lines.length-added} 个重复)`);
+  } else if (mode === 'append') {
+    const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 1 }));
+    state.models.push(...newModels);
+    for (const tableKey of ['shelfBlackTable', 'shelfWhiteTable']) {
+      let mi = 0;
+      outer: for (const a of state[tableKey].aisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) if (!s.slots[i].modelId) { s.slots[i].modelId = newModels[mi].id; mi++; if (mi >= newModels.length) break outer; }
+      if (mi < newModels.length) {
+        const la = state[tableKey].aisles[state[tableKey].aisles.length-1];
+        while (mi < newModels.length) {
+          const idx = la.shelves.length;
+          const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
+          for (let i=0;i<SLOTS_PER_SHELF && mi < newModels.length; i++) { slots[i].modelId = newModels[mi].id; mi++; }
+          la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+        }
+      }
+    }
+    toast(`✅ 已追加 ${lines.length} 个型号到货架`);
+  } else if (mode === 'replace') {
+    if (!confirm('⚠️ 确认清空所有数据并用此清单重建?\nThis will erase ALL data.')) return;
+    state.models = lines.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n, boxToSetRatio: 1 }));
+    for (const tableKey of ['shelfBlackTable', 'shelfWhiteTable']) {
+      state[tableKey].aisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
+      let mi = 0;
+      for (const a of state[tableKey].aisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) {
+        if (mi < state.models.length) { s.slots[i].modelId = state.models[mi].id; mi++; }
+      }
+      if (mi < state.models.length) {
+        const la = state[tableKey].aisles[state[tableKey].aisles.length-1];
+        while (mi < state.models.length) {
+          const idx = la.shelves.length;
+          const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
+          for (let i=0;i<SLOTS_PER_SHELF && mi < state.models.length; i++) { slots[i].modelId = state.models[mi].id; mi++; }
+          la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+        }
+      }
+    }
+    state.palletTable.aisles = PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) }));
+    toast(`✅ 已用 ${lines.length} 个型号重建`);
+  }
+  pendingImportLines = null;
+  hideSheets();
+  render();
+}
+
+document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
+  b.addEventListener('click', () => {
+    const act = b.dataset.act;
+    if (act === 'upload-paste') {
+      // Pop up textarea-style prompt
+      setTimeout(() => {
+        const txt = prompt('请粘贴型号清单 (每行一个,可带或不带序号):', '');
+        if (!txt) return;
+        const lines = parseModelLines(txt);
+        if (!lines.length) { toast('未识别到型号'); return; }
+        pendingImportLines = lines;
+        toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
+      }, 100);
+    } else if (act === 'upload-file') {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.txt,.csv,.json,text/plain,text/csv,application/json';
+      inp.onchange = e => {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          const lines = parseModelLines(r.result);
+          if (!lines.length) { toast('文件未识别到型号'); return; }
+          pendingImportLines = lines;
+          toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
+        };
+        r.onerror = () => toast('读取失败');
+        r.readAsText(f);
+      };
+      inp.click();
+    } else if (act === 'upload-share') {
+      // Inform user how to use share-to-Safari workflow
+      alert('从微信/邮件分享型号清单文本到本网页:\n\n1. 在微信/邮件里长按文本 → 拷贝\n2. 回到本网页 → 点"手动粘贴清单"\n\n或者: 把 .txt 文件存到 iCloud/Drive → 点"从本地选文件" → 选 iCloud Drive');
+    } else if (act === 'upload-append-only') {
+      applyImportMode('append-only');
+    } else if (act === 'upload-append') {
+      applyImportMode('append');
+    } else if (act === 'upload-replace') {
+      applyImportMode('replace');
+    }
+  });
+});
+
+document.getElementById('save-btn').addEventListener('click', () => { saveState(); showSheet('save-sheet'); });
+document.querySelectorAll('#save-sheet .action-row').forEach(b => {
+  b.addEventListener('click', () => {
+    const act = b.dataset.act; hideSheets();
+    if (act === 'download-json') downloadJSON();
+    else if (act === 'download-csv') downloadCSV();
+    else if (act === 'share-wechat') shareToWeChat();
+    else if (act === 'share-drive') shareToDrive();
+    else if (act === 'share-email') shareToEmail();
+    else if (act === 'load-json') loadJSON();
+  });
+});
+
+function buildExportSummaryText() {
+  const tables = [
+    [(state.meta?.shelfBlack?.title) || '黑色MUG+IC', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
+    [(state.meta?.shelfWhite?.title) || '白色BK/CH', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
+    [(state.meta?.pallet?.title) || '整箱货堆', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
+  ];
+  let lines = [`📦 库存标注汇总 — ${dateStamp()}`];
+  for (const [tableName, t, ck, sk, meta] of tables) {
+    lines.push('');
+    lines.push(`【${tableName}】`);
+    if (meta.filler) lines.push(`填表人: ${meta.filler}`);
+    if (meta.date) lines.push(`日期: ${meta.date}`);
+    let cnt = { red: 0, yellow: 0, green: 0, total: 0, untagged: 0 };
+    for (const a of t.aisles) for (const c of a[ck]) for (const slot of c[sk]) {
+      if (!slot.modelId) continue;
+      cnt.total++;
+      if (slot.color === 'red') cnt.red++;
+      else if (slot.color === 'yellow') cnt.yellow++;
+      else if (slot.color === 'green') cnt.green++;
+      else cnt.untagged++;
+    }
+    lines.push(`总计 ${cnt.total} 个型号 — 🔴无货 ${cnt.red} · 🟡少量 ${cnt.yellow} · 🟢充足 ${cnt.green} · ⚪未标 ${cnt.untagged}`);
+  }
+  return lines.join('\n');
+}
+
+function downloadJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, `inventory-${dateStamp()}.json`); toast('已下载 JSON');
+}
+function downloadCSV() {
+  const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','颜色','数量','单位']];
+  let n = 0;
+  const tables = [
+    [(state.meta?.shelfBlack?.title) || '黑色MUG+IC零散货架', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
+    [(state.meta?.shelfWhite?.title) || '白色BK/CH零散货架', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
+    [(state.meta?.pallet?.title) || '整箱货堆', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
+  ];
+  for (const [tableName, t, ck, sk, meta] of tables) {
+    for (const a of t.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
+      n++; const m = slot.modelId ? getModel(slot.modelId) : null;
+      rows.push([n, tableName, meta.filler || '', meta.date || '', a.name, c.name, i+1, m?.name || '', slot.color || '', slot.qty || 0, slot.unit || '']);
+    });
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
+  triggerDownload(blob, `inventory-${dateStamp()}.csv`); toast('已下载 CSV');
+}
+
+// SHARE TO WECHAT — uses Web Share API (system share sheet, includes WeChat if installed)
+async function shareToWeChat() {
+  const summary = buildExportSummaryText();
+  const csvBlob = makeCsvBlob();
+  const csvFile = new File([csvBlob], `inventory-${dateStamp()}.csv`, { type: 'text/csv' });
+  if (navigator.canShare && navigator.canShare({ files: [csvFile] })) {
+    try {
+      await navigator.share({
+        files: [csvFile],
+        title: '库存数据',
+        text: summary
+      });
+      toast('✅ 请在分享菜单中选择微信');
+      return;
+    } catch(e) {
+      if (e.name !== 'AbortError') toast('分享失败: ' + e.message);
+      return;
+    }
+  }
+  // Fallback: text-only share
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: '库存汇总', text: summary });
+      toast('✅ 请选择微信');
+      return;
+    } catch(e) { if (e.name !== 'AbortError') toast('分享失败'); return; }
+  }
+  // Ultimate fallback: copy to clipboard
+  copyToClipboard(summary);
+  toast('已复制汇总,可粘贴到微信');
+}
+
+// SHARE TO DRIVE / iCloud — file share, user picks Drive/iCloud from system sheet
+async function shareToDrive() {
+  const csvBlob = makeCsvBlob();
+  const jsonBlob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const csvFile = new File([csvBlob], `inventory-${dateStamp()}.csv`, { type: 'text/csv' });
+  const jsonFile = new File([jsonBlob], `inventory-${dateStamp()}.json`, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [csvFile, jsonFile] })) {
+    try {
+      await navigator.share({ files: [csvFile, jsonFile], title: '库存备份' });
+      toast('✅ 请选择 Google Drive 或 iCloud');
+      return;
+    } catch(e) {
+      if (e.name !== 'AbortError') {
+        // Try with single file
+        try {
+          await navigator.share({ files: [csvFile], title: '库存数据' });
+          toast('✅ 请选择存储位置');
+          return;
+        } catch(e2) {}
+      }
+      return;
+    }
+  }
+  // Fallback: download both files
+  triggerDownload(csvBlob, `inventory-${dateStamp()}.csv`);
+  setTimeout(() => triggerDownload(jsonBlob, `inventory-${dateStamp()}.json`), 500);
+  toast('已下载 CSV+JSON,可手动上传到 Drive');
+}
+
+// SHARE TO EMAIL — opens mail client with pre-filled subject + body
+function shareToEmail() {
+  const summary = buildExportSummaryText();
+  const subject = `库存标注汇总 - ${dateStamp()}`;
+  // mailto with body (CSV file can't be attached via mailto, so include text summary)
+  const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(summary + '\n\n（详细 CSV 请通过分享按钮发送)')}`;
+  // Also download the CSV so user can manually attach
+  const csvBlob = makeCsvBlob();
+  triggerDownload(csvBlob, `inventory-${dateStamp()}.csv`);
+  setTimeout(() => {
+    window.location.href = mailtoUrl;
+    toast('已下载 CSV — 邮件已预填,可手动附加 CSV');
+  }, 300);
+}
+
+function makeCsvBlob() {
+  const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','颜色','数量','单位']];
+  let n = 0;
+  const tables = [
+    [(state.meta?.shelfBlack?.title) || '黑色MUG+IC', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
+    [(state.meta?.shelfWhite?.title) || '白色BK/CH', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
+    [(state.meta?.pallet?.title) || '整箱货堆', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
+  ];
+  for (const [tableName, t, ck, sk, meta] of tables) {
+    for (const a of t.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
+      n++; const m = slot.modelId ? getModel(slot.modelId) : null;
+      rows.push([n, tableName, meta.filler || '', meta.date || '', a.name, c.name, i+1, m?.name || '', slot.color || '', slot.qty || 0, slot.unit || '']);
+    });
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  return new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    ta.remove();
+  }
+}
+
+function loadJSON() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.onchange = (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { const data = JSON.parse(r.result); if (data.models && data.shelfBlackTable && data.shelfWhiteTable && data.palletTable) { if (!data.meta) data.meta = { shelfBlack:{}, shelfWhite:{}, pallet:{} }; state = data; render(); toast('已导入'); } else toast('文件格式错误 (需要 v3 格式)'); } catch(e) { toast('解析失败'); } };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+function triggerDownload(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function dateStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+document.getElementById('legend-btn').addEventListener('click', () => showSheet('legend-sheet'));
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('确定要重置为初始数据吗?当前所有改动会丢失。')) { state = buildInitial(); render(); toast('已重置'); }
+});
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// =============== SEARCH HIGHLIGHT ===============
+const searchQueries = { shelfBlack: '', shelfWhite: '', pallet: '' };
+
+function applySearchHighlight() {
+  const q = (searchQueries[currentTable] || '').trim().toLowerCase();
+  const listRoot = document.getElementById(currentTable + '-list');
+  const gridRoot = document.getElementById(currentTable + '-grid');
+  // Clear all hits in both views
+  if (listRoot) listRoot.querySelectorAll('.slot.search-hit').forEach(el => el.classList.remove('search-hit'));
+  if (gridRoot) gridRoot.querySelectorAll('.grid-slot.search-hit').forEach(el => el.classList.remove('search-hit'));
+  const infoEl = document.querySelector(`[data-search-info="${currentTable}"]`);
+  if (!q) {
+    if (infoEl) { infoEl.style.display = 'none'; infoEl.textContent = ''; infoEl.classList.remove('has-hits'); }
+    return;
+  }
+  // Tokenize query (multiple terms separated by space, comma, or 中文逗号)
+  const terms = q.split(/[\s,，]+/).filter(Boolean);
+  if (!terms.length) return;
+  let hitCount = 0;
+  let firstHit = null;
+  // Highlight in LIST view
+  if (listRoot) {
+    listRoot.querySelectorAll('.slot[data-mid]').forEach(slotEl => {
+      const mid = slotEl.dataset.mid;
+      const m = getModel(mid);
+      if (!m) return;
+      const name = m.name.toLowerCase();
+      if (terms.some(term => name.includes(term))) {
+        slotEl.classList.add('search-hit');
+        hitCount++;
+        if (!firstHit) firstHit = slotEl;
+      }
+    });
+  }
+  // Highlight in GRID/总览 view
+  let gridHits = 0;
+  if (gridRoot) {
+    gridRoot.querySelectorAll('.grid-slot[data-mid]').forEach(slotEl => {
+      const mid = slotEl.dataset.mid;
+      const m = getModel(mid);
+      if (!m) return;
+      const name = m.name.toLowerCase();
+      if (terms.some(term => name.includes(term))) {
+        slotEl.classList.add('search-hit');
+        gridHits++;
+        if (!firstHit) firstHit = slotEl;
+      }
+    });
+  }
+  // If list mode is hidden (grid mode active), use grid count
+  if (hitCount === 0) hitCount = gridHits;
+  if (infoEl) {
+    if (hitCount > 0) {
+      infoEl.style.display = '';
+      infoEl.classList.add('has-hits');
+      infoEl.textContent = `🔍 找到 ${hitCount} 个匹配 — 已闪光高亮 (查询: "${q}")`;
+    } else {
+      infoEl.style.display = '';
+      infoEl.classList.remove('has-hits');
+      infoEl.textContent = `🔍 未找到 "${q}"`;
+    }
+  }
+  // Auto-scroll to first hit
+  if (firstHit) {
+    setTimeout(() => {
+      firstHit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }
+}
+
+// Bind search inputs
+document.querySelectorAll('.search-input').forEach(inp => {
+  inp.addEventListener('input', (e) => {
+    const tbl = inp.dataset.search;
+    searchQueries[tbl] = e.target.value;
+    const clearBtn = document.querySelector(`[data-search-clear="${tbl}"]`);
+    if (clearBtn) clearBtn.classList.toggle('show', !!e.target.value);
+    if (tbl === currentTable) applySearchHighlight();
+  });
+});
+document.querySelectorAll('[data-search-clear]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tbl = btn.dataset.searchClear;
+    const inp = document.querySelector(`[data-search="${tbl}"]`);
+    if (inp) { inp.value = ''; searchQueries[tbl] = ''; }
+    btn.classList.remove('show');
+    if (tbl === currentTable) applySearchHighlight();
+  });
+});
+// Search via 4-input methods (camera/handwrite/voice picker)
+document.querySelectorAll('[data-search-input-btn]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tbl = btn.dataset.searchInputBtn;
+    // Open the model picker but redirect its result to the search input
+    pendingModelTarget = null;
+    modelPickerCallback = (model) => {
+      const inp = document.querySelector(`[data-search="${tbl}"]`);
+      if (inp) {
+        inp.value = model.name;
+        searchQueries[tbl] = model.name;
+        const clearBtn = document.querySelector(`[data-search-clear="${tbl}"]`);
+        if (clearBtn) clearBtn.classList.add('show');
+        if (tbl === currentTable) applySearchHighlight();
+      }
+      // Don't actually create a slot — just use the name for searching
+    };
+    selectedSuggestionId = null;
+    switchInputMethod('type');
+    document.getElementById('camera-title').textContent = '🔍 搜索型号 (拍照/打字/手写/语音)';
+    document.getElementById('model-search').value = '';
+    const ratioInp = document.getElementById('model-ratio-input');
+    if (ratioInp) ratioInp.value = 1;
+    renderSuggestions('');
+    showSheet('camera-sheet');
+    setTimeout(() => { document.getElementById('model-search').focus(); }, 200);
+  });
+});
+
+loadState(); render();
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const tgt = e.target;
+  if (tgt && tgt.closest('button, a, input, textarea, .color-cell, .gcolor, .unit-cell, .qty-cell, .restock-cell, .model-cell, .gmodel, .editable, [contenteditable], .suggestion, .color-opt, .action-row, .tool, .table-tab, .unit-quick, .input-method-btn, .voice-mic-btn, canvas, .meta-save-btn, .add-divider, .add-divider-btn, .search-bar, .search-input, .search-icon-btn, .search-clear')) return;
+  const now = Date.now();
+  if (now - lastTouchEnd < 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+</script>
+</body>
+</html>
