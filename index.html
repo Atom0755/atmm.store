@@ -1205,8 +1205,8 @@
 </div>
 
 <!-- Team / Settings Sheet -->
-<div class="sheet-backdrop" id="team-sheet">
-  <div class="sheet">
+<div class="sheet-backdrop modal-style" id="team-sheet" style="align-items:flex-start; padding-top:5vh;">
+  <div class="sheet" style="max-height:67vh; border-radius:16px; border-bottom:1px solid var(--line);">
     <div class="sheet-body">
       <h3>⚙️ 设置 / Settings</h3>
 
@@ -1636,8 +1636,9 @@ function renderListView() {
     ablock.className = 'aisle-block';
     const containerLabel = isShelf ? '货架' : '托盘';
     ablock.innerHTML = `<div class="aisle-header">
-      <span class="aisle-name editable" data-ai="${ai}">${isShelf ? '通道 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
-      <button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button></div>`;
+      <span class="aisle-name editable" data-ai="${ai}">${isShelf ? '货架 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
+      <button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button>
+      <button class="mini-btn delete-btn" data-act="del-aisle" data-ai="${ai}" title="删除此${isShelf?'货架':'排'}" style="margin-left:4px;">✕</button></div>`;
     aisle[ck].forEach((container, ci) => {
       const cblock = document.createElement('div');
       cblock.className = 'container-block' + (isShelf ? '' : ' pallet');
@@ -1896,8 +1897,14 @@ function attachListHandlers(root) {
         state.palletTable.aisles[ai].pallets[ci].layers.push(newSlot());
         toast('已加一层'); render();
       } else if (act === 'del-container' || act === 'del-pallet') {
-        // FIX: Use bilingual confirm modal — works for shelves and pallets
         requestDeleteContainer(ai, ci);
+      } else if (act === 'del-aisle') {
+        const t = getActiveTable();
+        if (t.aisles.length <= 1) { toast('⚠️ 至少保留一个' + (isShelfTable(currentTable) ? '货架' : '排')); return; }
+        const name = t.aisles[ai].name;
+        t.aisles.splice(ai, 1);
+        saveState(); render();
+        toast('🗑️ 已删除: ' + (isShelfTable(currentTable) ? '货架' : '排') + ' · ' + name);
       }
     });
   });
@@ -3615,7 +3622,7 @@ document.getElementById('add-aisle').addEventListener('click', () => {
   } else {
     t.aisles.push({ name: newName, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) });
   }
-  toast('新增 ' + (isShelfTable(currentTable) ? '通道 ' : '排 ') + newName);
+  toast('新增 ' + (isShelfTable(currentTable) ? '货架 ' : '排 ') + newName);
   render();
 });
 function addContainerToAisle(ai) {
@@ -4323,7 +4330,7 @@ let toastTimer = null;
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 // =============== SEARCH HIGHLIGHT ===============
