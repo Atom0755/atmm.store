@@ -536,9 +536,6 @@
   .grid-slot .gcolor[data-color="yellow"] { background: var(--yellow); border-color: #c79900; }
   .grid-slot .gcolor[data-color="green"] { background: var(--green); border-color: var(--green); color: white; }
   .grid-slot.empty .gmodel { color: var(--muted); font-style: italic; }
-  .fab { position: fixed; right: 14px; bottom: calc(14px + var(--safe-bottom)); width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--paper); border: 0; font-size: 22px; font-weight: 300; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 50; opacity: 0.85; }
-  .fab:hover { opacity: 1; }
-  .fab:active { transform: scale(0.9); }
   .sheet-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
   .sheet-backdrop.show { display: flex; }
   .sheet { width: 100%; max-width: 480px; background: var(--paper); border-radius: 18px 18px 0 0; padding: 0; border: 1px solid var(--line); border-bottom: 0; animation: slideUp .25s cubic-bezier(.2,.9,.3,1); max-height: 88vh; display: flex; flex-direction: column; }
@@ -967,7 +964,6 @@
       <div class="grid-view" id="pallet-grid"></div>
     </div>
   </main>
-  <button class="fab" id="add-aisle" title="新增通道/排" aria-label="新增通道">+</button>
   <div class="delete-zone" id="delete-zone">🗑️ 拖到这里删除整箱(已搬走)</div>
 </div>
 
@@ -3614,17 +3610,6 @@ document.getElementById('model-search').addEventListener('keydown', (e) => {
 });
 window.commitModelChoice = commitModelChoice;
 
-document.getElementById('add-aisle').addEventListener('click', () => {
-  const t = getActiveTable();
-  const newName = String.fromCharCode(65 + t.aisles.length);
-  if (isShelfTable(currentTable)) {
-    t.aisles.push({ name: newName, shelves: SHELF_NAMES.map(n => ({ name: n, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) });
-  } else {
-    t.aisles.push({ name: newName, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) });
-  }
-  toast('新增 ' + (isShelfTable(currentTable) ? '货架 ' : '排 ') + newName);
-  render();
-});
 function addContainerToAisle(ai) {
   const t = getActiveTable();
   if (isShelfTable(currentTable)) {
@@ -4675,7 +4660,6 @@ function _applyPermissions() {
   if (isOp) {
     document.getElementById('upload-btn').style.display = 'none';
     document.getElementById('reset-btn').style.display  = 'none';
-    document.getElementById('add-aisle').style.display  = 'none';
   }
   // Only boss sees team management panel
   document.getElementById('team-mgmt-section').style.display = isBoss ? '' : 'none';
