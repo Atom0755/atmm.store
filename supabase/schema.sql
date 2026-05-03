@@ -8,19 +8,19 @@
 create or replace function generate_warehouse_code()
 returns text language plpgsql as $$
 declare
-  chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  code  text;
-  n     int;
+  chars  text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  v_code text;
+  n      int;
 begin
   loop
-    code := 'ATOM-';
+    v_code := 'ATOM-';
     for i in 1..4 loop
-      code := code || substr(chars, floor(random() * length(chars) + 1)::int, 1);
+      v_code := v_code || substr(chars, floor(random() * length(chars) + 1)::int, 1);
     end loop;
-    select count(*) into n from warehouses where warehouses.code = code;
+    select count(*) into n from warehouses where warehouses.code = v_code;
     exit when n = 0;
   end loop;
-  return code;
+  return v_code;
 end;
 $$;
 
