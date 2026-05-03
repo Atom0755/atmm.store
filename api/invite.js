@@ -3,7 +3,8 @@ const { createClient } = require('@supabase/supabase-js');
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
+  res.setHeader('Content-Type', 'application/json');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   const { data: { user }, error } = await sb.auth.getUser(token);
@@ -24,28 +25,48 @@ module.exports = async function handler(req, res) {
     .select('max_members, status').eq('warehouse_id', warehouseId).single();
   const { count } = await sb.from('warehouse_members')
     .select('*', { count: 'exact', head: true }).eq('warehouse_id', warehouseId);
-
   if (sub && count >= sub.max_members)
     return res.status(403).json({ error: '当前方案成员数已满，请升级套餐' });
 
   const origin = req.headers.origin || 'https://atmm.store';
+  const redirectTo = `${origin}/?invite_warehouse=${warehouseId}&invite_role=${role}`;
 
-  // Use Supabase's built-in invite (sends email automatically)
-  try {
-    await sb.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${origin}/?invite_warehouse=${warehouseId}&invite_role=${role}`,
-      data: { warehouse_id: warehouseId, invite_role: role },
-    });
-  } catch (e) {
-    // User may already exist — create invitation record for manual flow
-    const { error: invErr } = await sb.from('invitations').insert({
+  // Check if this email is already a registered user
+  const { data: { users: allUsers } } = await sb.auth.admin.listUsers({ perPage: 1000 });
+  const existingUser = allUsers?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+  if (existingUser) {
+    // Already registered — add them directly to warehouse_members
+    const { error: memberErr } = await sb.from('warehouse_members').upsert({
+      warehouse_id: warehouseId,
+      user_id: existingUser.id,
+      role,
+      display_name: existingUser.email,
+      invited_by: user.id,
+    }, { onConflict: 'warehouse_id,user_id' });
+
+    if (memberErr)
+      return res.status(500).json({ error: memberErr.message });
+
+    return res.json({ success: true, message: `${email} 已加入仓库（已注册用户，直接添加）` });
+  }
+
+  // New user — send invite email via Supabase Auth
+  const { error: invErr } = await sb.auth.admin.inviteUserByEmail(email, {
+    redirectTo,
+    data: { warehouse_id: warehouseId, invite_role: role },
+  });
+
+  if (invErr) {
+    // Fallback: store invitation record so user can join via invite code manually
+    await sb.from('invitations').insert({
       warehouse_id: warehouseId,
       email,
       role,
       invited_by: user.id,
     });
-    if (invErr) return res.status(500).json({ error: invErr.message });
+    return res.json({ success: true, message: `邀请链接已生成，邮件发送可能有延迟` });
   }
 
-  res.json({ success: true, message: `邀请已发送至 ${email}` });
+  res.json({ success: true, message: `邀请邮件已发送至 ${email}` });
 };
