@@ -4630,12 +4630,13 @@ async function _cloudLoad() {
       .select('models,shelf_black_table,shelf_white_table,pallet_table,meta')
       .eq('warehouse_id', _warehouse.id).single();
     if (!data || !Array.isArray(data.models)) return false;
+    const hasAisles = t => t && Array.isArray(t.aisles) && t.aisles.length > 0;
     state = {
       models:          data.models,
-      shelfBlackTable: data.shelf_black_table || buildEmptyShelfTable(),
-      shelfWhiteTable: data.shelf_white_table || buildEmptyShelfTable(),
-      palletTable:     data.pallet_table      || buildInitial().palletTable,
-      meta:            data.meta              || {}
+      shelfBlackTable: hasAisles(data.shelf_black_table) ? data.shelf_black_table : buildEmptyShelfTable(),
+      shelfWhiteTable: hasAisles(data.shelf_white_table) ? data.shelf_white_table : buildEmptyShelfTable(),
+      palletTable:     hasAisles(data.pallet_table)      ? data.pallet_table      : buildInitial().palletTable,
+      meta:            data.meta || {}
     };
     state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
     return true;
