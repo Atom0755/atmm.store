@@ -830,11 +830,12 @@
   #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
   #invite-form input, #invite-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
   /* ZEHEM.AI footer brand bar */
-  #zehem-footer { position:fixed; bottom:0; left:0; right:0; z-index:200; height:30px; background:var(--paper); border-top:1px solid var(--line); display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; cursor:pointer; }
-  #zehem-footer .zf-logo { font-size:13px; font-weight:900; letter-spacing:-0.03em; color:#6c47ff; }
-  #zehem-footer .zf-text { font-size:10px; color:var(--muted); letter-spacing:0.04em; }
-  #zehem-footer:hover .zf-logo { opacity:.8; }
-  main { padding-bottom:30px; }
+  #zehem-footer { position:fixed; bottom:0; left:0; right:0; z-index:200; height:42px; background:var(--paper); border-top:1px solid var(--line); display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; cursor:pointer; }
+  #zehem-footer img.zf-logo { height:22px; width:22px; object-fit:contain; }
+  #zehem-footer .zf-name { font-size:13px; font-weight:800; color:#6c47ff; letter-spacing:-0.01em; }
+  #zehem-footer .zf-text { font-size:10px; color:var(--muted); }
+  #zehem-footer:hover { background:var(--bg); }
+  main { padding-bottom:42px; }
 </style>
 </head>
 <body>
@@ -875,6 +876,16 @@
     <input type="password" id="inv-password" placeholder="密码 Password">
     <button class="auth-btn-primary" onclick="_doAcceptInvite()">登录并加入 →</button>
     <button class="auth-link" onclick="_showAuth('login')">返回登录</button>
+  </div>
+  <!-- For existing ZEHEM.AI users who have no warehouse yet -->
+  <div class="auth-card" id="auth-create-wh" style="display:none">
+    <button class="auth-close-btn" onclick="_closeAuthModal()">✕</button>
+    <div class="auth-logo">🏭</div>
+    <h2>创建您的仓库</h2>
+    <p class="auth-sub">您的帐号已验证，请为 ATMM.store 创建第一个仓库</p>
+    <div class="auth-err" id="err-create-wh"></div>
+    <input type="text" id="new-wh-name" placeholder="仓库名称 (如: 北仓A区)" autocomplete="off">
+    <button class="auth-btn-primary" onclick="_doCreateWarehouse()">创建仓库并开始 →</button>
   </div>
 </div>
 <div class="app" id="main-app">
@@ -4447,11 +4458,9 @@ let _inviteWarehouseId = null, _inviteRole = null;
 
 // ── Auth screen switcher ──
 function _showAuth(screen) {
-  // Reset any dragged positions when switching screens
-  document.querySelectorAll('.auth-card').forEach(c => { c.style.left=''; c.style.top=''; c.style.transform=''; });
-  document.getElementById('auth-login').style.display    = screen === 'login'    ? 'flex' : 'none';
-  document.getElementById('auth-register').style.display = screen === 'register' ? 'flex' : 'none';
-  document.getElementById('auth-invite').style.display   = screen === 'invite'   ? 'flex' : 'none';
+  document.querySelectorAll('.auth-card').forEach(c => { c.style.left=''; c.style.top=''; c.style.transform=''; c.style.display='none'; });
+  const el = document.getElementById('auth-' + screen) || document.getElementById('auth-login');
+  el.style.display = 'flex';
 }
 function _authErr(id, msg) {
   const el = document.getElementById(id);
@@ -4495,6 +4504,16 @@ async function _doRegister() {
         '<button class="auth-btn-primary" onclick="_showAuth(\'login\')">返回登录</button>';
     }
   }
+}
+
+// ── Create warehouse for existing auth user (e.g. ZEHEM.AI users) ──
+async function _doCreateWarehouse() {
+  if (!_user) return;
+  const name = (document.getElementById('new-wh-name').value.trim()) || '我的仓库';
+  _authErr('err-create-wh', '');
+  const { error } = await sb.from('warehouses').insert({ name, owner_id: _user.id });
+  if (error) { _authErr('err-create-wh', error.message); return; }
+  await _onSignIn(_user); // reload with new warehouse
 }
 
 // ── Forgot password ──
@@ -4572,10 +4591,9 @@ async function _onSignIn(user) {
     .eq('user_id', user.id);
 
   if (!memberships || memberships.length === 0) {
-    // Registered but warehouse not created yet (edge case)
-    _authErr('err-login', '');
+    // Authenticated user has no warehouse yet (e.g. existing ZEHEM.AI user)
     document.getElementById('auth-overlay').classList.remove('hidden');
-    _showAuth('register');
+    _showAuth('create-wh');
     return;
   }
 
@@ -4826,7 +4844,8 @@ document.addEventListener('touchend', (e) => {
 </script>
 <!-- ZEHEM.AI brand footer -->
 <a id="zehem-footer" href="https://zehem.ai" target="_blank" rel="noopener">
-  <span class="zf-logo">Z ZEHEM.AI</span>
+  <img class="zf-logo" src="/ZEHEM-LOGO-28.png" alt="ZEHEM.AI">
+  <span class="zf-name">ZEHEM.AI</span>
   <span class="zf-text">· AI平台 · 注册后两站通用 ·</span>
 </a>
 </body>
