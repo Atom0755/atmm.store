@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231a1a1a'/%3E%3Ctext x='90' y='118' font-family='system-ui' font-size='80' font-weight='700' fill='%23faf8f3' text-anchor='middle'%3E库%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -794,14 +795,79 @@
   .delete-zone { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, rgba(214,51,64,0.95), rgba(214,51,64,0)); display: none; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; z-index: 90; pointer-events: none; padding-bottom: var(--safe-bottom); }
   .delete-zone.show { display: flex; }
   .delete-zone.active { background: linear-gradient(to top, rgba(214,51,64,1), rgba(214,51,64,0.4)); }
+
+  /* ===== AUTH OVERLAY ===== */
+  #auth-overlay { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; }
+  #auth-overlay.hidden { display:none; }
+  .auth-card { background:var(--paper); border:1.5px solid var(--line); border-radius:22px; padding:32px 24px; width:100%; max-width:360px; display:flex; flex-direction:column; gap:14px; }
+  .auth-card .auth-logo { font-size:42px; text-align:center; }
+  .auth-card h2 { font-size:22px; font-weight:800; text-align:center; letter-spacing:-0.02em; }
+  .auth-card .auth-sub { font-size:12px; color:var(--muted); text-align:center; line-height:1.5; }
+  .auth-card input { width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--bg); font-size:15px; color:var(--ink); font-family:inherit; outline:none; }
+  .auth-card input:focus { border-color:var(--ink); }
+  .auth-btn-primary { padding:14px; border-radius:10px; background:var(--ink); color:var(--paper); border:none; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+  .auth-btn-primary:active { opacity:.8; }
+  .auth-btn-secondary { padding:12px; border-radius:10px; background:var(--paper); color:var(--ink); border:1.5px solid var(--line); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .auth-link { background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-align:center; text-decoration:underline; font-family:inherit; }
+  .auth-divider { text-align:center; color:var(--muted); font-size:11px; }
+  .auth-err { background:#ffe5e5; border:1px solid var(--red); border-radius:8px; padding:10px 12px; color:var(--red); font-size:12px; font-weight:600; display:none; }
+  #main-app { display:none; flex-direction:column; height:100vh; height:100dvh; }
+  #main-app.visible { display:flex; }
+  .team-section-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:8px; }
+  .team-member-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:13px; }
+  .team-member-role { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--ink); color:var(--paper); }
+  .plan-btn { display:block; width:100%; padding:12px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; text-align:left; margin-bottom:8px; }
+  .plan-btn.current-plan { border-color:var(--red); color:var(--red); }
+  .plan-price { float:right; font-size:11px; font-weight:500; color:var(--muted); }
+  .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
+  .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
+  #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  #invite-form input, #invite-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
 </style>
 </head>
 <body>
-<div class="app">
+<!-- Auth Overlay -->
+<div id="auth-overlay">
+  <div class="auth-card" id="auth-login">
+    <div class="auth-logo">🏪</div>
+    <h2>ATMM Store</h2>
+    <p class="auth-sub">仓库盘库管理系统</p>
+    <div class="auth-err" id="err-login"></div>
+    <input type="email"    id="auth-email"    placeholder="邮箱 Email" autocomplete="email">
+    <input type="password" id="auth-password" placeholder="密码 Password" autocomplete="current-password">
+    <button class="auth-btn-primary" onclick="_doLogin()">登录 Sign In</button>
+    <div class="auth-divider">— 或 or —</div>
+    <button class="auth-btn-secondary" onclick="_showAuth('register')">注册 · 免费试用30天</button>
+    <button class="auth-link" onclick="_doForgot()">忘记密码?</button>
+  </div>
+  <div class="auth-card" id="auth-register" style="display:none">
+    <div class="auth-logo">🏪</div>
+    <h2>创建账号</h2>
+    <p class="auth-sub">免费试用30天 · 无需绑卡</p>
+    <div class="auth-err" id="err-register"></div>
+    <input type="email"    id="reg-email"    placeholder="邮箱 Email" autocomplete="email">
+    <input type="password" id="reg-password" placeholder="密码 (6位以上)" autocomplete="new-password">
+    <input type="text"     id="reg-wh-name"  placeholder="仓库名称 (如: 北仓A区)" autocomplete="off">
+    <button class="auth-btn-primary" onclick="_doRegister()">注册并开始 →</button>
+    <button class="auth-link" onclick="_showAuth('login')">已有账号? 登录</button>
+  </div>
+  <div class="auth-card" id="auth-invite" style="display:none">
+    <div class="auth-logo">✉️</div>
+    <h2>接受团队邀请</h2>
+    <p class="auth-sub">你已被邀请加入仓库团队</p>
+    <div class="auth-err" id="err-invite"></div>
+    <input type="email"    id="inv-email"    placeholder="邮箱 Email">
+    <input type="password" id="inv-password" placeholder="密码 Password">
+    <button class="auth-btn-primary" onclick="_doAcceptInvite()">登录并加入 →</button>
+    <button class="auth-link" onclick="_showAuth('login')">返回登录</button>
+  </div>
+</div>
+<div class="app" id="main-app">
   <header>
     <h1>Atom 盘库补货表 <span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;">手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
+    <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
     <button class="icon-btn" id="save-btn" title="保存">💾</button>
   </header>
 
@@ -1111,6 +1177,63 @@
   </div>
 </div>
 
+<!-- Team / Settings Sheet -->
+<div class="sheet-backdrop" id="team-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>⚙️ 设置 / Settings</h3>
+
+      <!-- Warehouse info -->
+      <div style="margin-bottom:18px;">
+        <div class="team-section-title">🏪 仓库信息</div>
+        <div class="wh-code-box">
+          <span id="wh-code-display">—</span>
+          <button class="wh-code-copy" onclick="_copyCode()">复制</button>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:6px;">将此邀请码分享给团队成员，让他们注册后填写加入。</div>
+      </div>
+
+      <!-- Subscription status -->
+      <div style="margin-bottom:18px;">
+        <div class="team-section-title">💳 订阅状态</div>
+        <div id="sub-status-display" style="font-size:13px; padding:10px; background:var(--bg); border-radius:8px; margin-bottom:8px;"></div>
+        <div id="plan-upgrade-section">
+          <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
+          <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">   基础版 Basic      <span class="plan-price">$10/月 · 1账户</span></button>
+          <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')">    基础版 年付       <span class="plan-price">$99/年 · 1账户</span></button>
+          <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard   <span class="plan-price">$13/月 · 2账户</span></button>
+          <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付       <span class="plan-price">$129/年 · 2账户</span></button>
+          <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')"> 高级版 Premium    <span class="plan-price">$18/月 · 3账户</span></button>
+          <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')">  高级版 年付       <span class="plan-price">$168/年 · 3账户</span></button>
+          <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅 / Manage Subscription</button>
+        </div>
+      </div>
+
+      <!-- Team management (boss only) -->
+      <div id="team-mgmt-section" style="display:none; margin-bottom:18px;">
+        <div class="team-section-title">👥 团队成员</div>
+        <div id="team-members-list"></div>
+        <div id="invite-form">
+          <input type="email" id="invite-email" placeholder="被邀请人邮箱 Email">
+          <select id="invite-role">
+            <option value="operator">👷 操作员 Operator</option>
+            <option value="manager">🔑 经理 Manager</option>
+          </select>
+          <button class="auth-btn-primary" onclick="_sendInvite()">发送邀请 Send Invite</button>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <button class="action-row" onclick="_doLogout()" style="background:#ffe5e5; border-color:var(--red);">
+        <span class="ico">🚪</span><div style="flex:1; font-weight:700; color:var(--red);">退出登录 / Sign Out</div>
+      </button>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭 / Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="legend-sheet">
   <div class="sheet">
     <div class="sheet-body">
@@ -1329,7 +1452,13 @@ function migrateState() {
     }
   }
 }
-function saveState() { try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {} }
+function saveState() {
+  try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {}
+  if (typeof _warehouse !== 'undefined' && _warehouse) {
+    clearTimeout(_supabaseSaveTimer);
+    _supabaseSaveTimer = setTimeout(_cloudSave, 2000);
+  }
+}
 function buildEmptyShelfTable() {
   return { aisles: SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) })) };
 }
@@ -4282,7 +4411,330 @@ document.querySelectorAll('[data-search-input-btn]').forEach(btn => {
   });
 });
 
-loadState(); render();
+_initAuth(); // Auth system initialises first, then calls loadState + render
+
+// ================================================================
+// SUPABASE · AUTH · CLOUD SYNC · PERMISSIONS
+// ================================================================
+const _SUPA_URL  = 'https://xcigegulhuglmnhbtzrf.supabase.co';
+const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaWdlZ3VsaHVnbG1uaGJ0enJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTI5OTUsImV4cCI6MjA5MzM2ODk5NX0.vCzOGR-Q6o1wL-o36sfgMs9K8K_sONfg_Osl-wYRHxM';
+const _STRIPE_PK = 'pk_test_51TSuQEE6TJzfSMV6fTefIFNS3YFFSXK9rvvdhr8ap7UyW36oJAlQWmCgVLOOGKH98GMF4NtPcyT8uPSQMjWrQvka00lqjGxTZP';
+const sb = window.supabase.createClient(_SUPA_URL, _SUPA_ANON);
+
+let _user = null, _warehouse = null, _role = null, _subscription = null;
+let _supabaseSaveTimer = null;
+let _inviteWarehouseId = null, _inviteRole = null;
+
+// ── Auth screen switcher ──
+function _showAuth(screen) {
+  document.getElementById('auth-login').style.display    = screen === 'login'    ? '' : 'none';
+  document.getElementById('auth-register').style.display = screen === 'register' ? '' : 'none';
+  document.getElementById('auth-invite').style.display   = screen === 'invite'   ? '' : 'none';
+}
+function _authErr(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+}
+
+// ── Login ──
+async function _doLogin() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pwd   = document.getElementById('auth-password').value;
+  _authErr('err-login', '');
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) _authErr('err-login', error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
+}
+
+// ── Register ──
+async function _doRegister() {
+  const email  = document.getElementById('reg-email').value.trim();
+  const pwd    = document.getElementById('reg-password').value;
+  const whName = document.getElementById('reg-wh-name').value.trim() || '我的仓库';
+  _authErr('err-register', '');
+  if (!email || !pwd) { _authErr('err-register', '请填写邮箱和密码'); return; }
+  if (pwd.length < 6) { _authErr('err-register', '密码至少6位'); return; }
+
+  const { data, error } = await sb.auth.signUp({ email, password: pwd });
+  if (error) { _authErr('err-register', error.message); return; }
+
+  if (data.user) {
+    // Create warehouse (trigger auto-adds boss member + trial subscription)
+    const { error: whErr } = await sb.from('warehouses')
+      .insert({ name: whName, owner_id: data.user.id });
+    if (whErr && !whErr.message.includes('duplicate')) {
+      _authErr('err-register', '仓库创建失败: ' + whErr.message); return;
+    }
+    // Try to sign in immediately
+    const { error: si } = await sb.auth.signInWithPassword({ email, password: pwd });
+    if (si) {
+      document.getElementById('auth-register').innerHTML =
+        '<div class="auth-logo">📧</div><h2>请验证邮箱</h2>' +
+        '<p class="auth-sub">验证邮件已发送至 ' + email + '<br>点击邮件链接后返回登录</p>' +
+        '<button class="auth-btn-primary" onclick="_showAuth(\'login\')">返回登录</button>';
+    }
+  }
+}
+
+// ── Forgot password ──
+async function _doForgot() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) { _authErr('err-login', '请先输入邮箱'); return; }
+  await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/' });
+  _authErr('err-login', '');
+  toast('📧 密码重置邮件已发送');
+}
+
+// ── Accept invite (existing Supabase user joins via URL params) ──
+async function _doAcceptInvite() {
+  const email = document.getElementById('inv-email').value.trim();
+  const pwd   = document.getElementById('inv-password').value;
+  _authErr('err-invite', '');
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) { _authErr('err-invite', '登录失败: ' + error.message); return; }
+  // onAuthStateChange will fire and _onSignIn will handle joining the warehouse
+}
+
+// ── Sign out ──
+async function _doLogout() {
+  await sb.auth.signOut();
+  _user = null; _warehouse = null; _role = null; _subscription = null;
+  document.getElementById('main-app').classList.remove('visible');
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  _showAuth('login');
+  hideSheets();
+}
+
+// ── On sign-in: load warehouse + data ──
+async function _onSignIn(user) {
+  _user = user;
+
+  // Check URL for invite params (when boss invited an existing user)
+  const params = new URLSearchParams(location.search);
+  const invWh   = params.get('invite_warehouse') || _inviteWarehouseId;
+  const invRole = params.get('invite_role')      || _inviteRole;
+  if (invWh && invRole) {
+    // Join the warehouse
+    await sb.from('warehouse_members').upsert(
+      { warehouse_id: invWh, user_id: user.id, role: invRole },
+      { onConflict: 'warehouse_id,user_id' }
+    );
+    history.replaceState({}, '', '/');
+  }
+
+  // Get membership(s)
+  const { data: memberships } = await sb
+    .from('warehouse_members')
+    .select('role, warehouse_id, warehouses(*)')
+    .eq('user_id', user.id);
+
+  if (!memberships || memberships.length === 0) {
+    // Registered but warehouse not created yet (edge case)
+    _authErr('err-login', '');
+    document.getElementById('auth-overlay').classList.remove('hidden');
+    _showAuth('register');
+    return;
+  }
+
+  const m = memberships[0];
+  _warehouse = m.warehouses;
+  _role      = m.role;
+
+  // Load subscription
+  const { data: sub } = await sb.from('subscriptions')
+    .select('*').eq('warehouse_id', _warehouse.id).single();
+  _subscription = sub;
+
+  // Load inventory from cloud; fall back to localStorage
+  const cloudLoaded = await _cloudLoad();
+  if (!cloudLoaded) { loadState(); }
+
+  // Apply role-based UI restrictions
+  _applyPermissions();
+
+  // Show app
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('main-app').classList.add('visible');
+
+  render();
+  toast('👋 ' + (_role === 'boss' ? '👑 老板' : _role === 'manager' ? '🔑 经理' : '👷 操作员') + ' — ' + (user.email || ''));
+}
+
+// ── Cloud load ──
+async function _cloudLoad() {
+  if (!_warehouse) return false;
+  try {
+    const { data } = await sb.from('warehouse_state')
+      .select('models,shelf_black_table,shelf_white_table,pallet_table,meta')
+      .eq('warehouse_id', _warehouse.id).single();
+    if (!data || !Array.isArray(data.models)) return false;
+    state = {
+      models:          data.models,
+      shelfBlackTable: data.shelf_black_table || buildEmptyShelfTable(),
+      shelfWhiteTable: data.shelf_white_table || buildEmptyShelfTable(),
+      palletTable:     data.pallet_table      || buildInitial().palletTable,
+      meta:            data.meta              || {}
+    };
+    state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── Cloud save (debounced via saveState) ──
+async function _cloudSave() {
+  if (!_warehouse || !_user) return;
+  try {
+    await sb.from('warehouse_state').upsert({
+      warehouse_id:      _warehouse.id,
+      models:            state.models,
+      shelf_black_table: state.shelfBlackTable,
+      shelf_white_table: state.shelfWhiteTable,
+      pallet_table:      state.palletTable,
+      meta:              state.meta,
+      updated_at:        new Date().toISOString()
+    }, { onConflict: 'warehouse_id' });
+  } catch(e) { console.warn('Cloud save failed:', e); }
+}
+
+// ── Permissions ──
+function _applyPermissions() {
+  const isOp   = _role === 'operator';
+  const isBoss = _role === 'boss';
+
+  // Operators cannot manage models or aisles
+  if (isOp) {
+    document.getElementById('upload-btn').style.display = 'none';
+    document.getElementById('reset-btn').style.display  = 'none';
+    document.getElementById('add-aisle').style.display  = 'none';
+  }
+  // Only boss sees team management panel
+  document.getElementById('team-mgmt-section').style.display = isBoss ? '' : 'none';
+}
+// Runtime permission checks called by delete/edit handlers
+window._canDelete      = () => _role === 'boss' || _role === 'manager';
+window._canManageAisle = () => _role === 'boss' || _role === 'manager';
+
+// ── Settings sheet: populate and open ──
+async function _openSettings() {
+  // Warehouse code
+  document.getElementById('wh-code-display').textContent = _warehouse?.code || '—';
+
+  // Subscription status
+  const subEl = document.getElementById('sub-status-display');
+  if (_subscription) {
+    const plan = _subscription.plan;
+    const end  = _subscription.current_period_end
+      ? new Date(_subscription.current_period_end).toLocaleDateString('zh-CN')
+      : (_warehouse?.trial_ends_at ? new Date(_warehouse.trial_ends_at).toLocaleDateString('zh-CN') : '—');
+    const planLabel = { trial:'免费试用', basic:'基础版', standard:'标准版', premium:'高级版' }[plan] || plan;
+    const daysLeft = _subscription.current_period_end
+      ? Math.ceil((new Date(_subscription.current_period_end) - Date.now()) / 86400000)
+      : Math.ceil((new Date(_warehouse.trial_ends_at) - Date.now()) / 86400000);
+    subEl.innerHTML =
+      `<b>${planLabel}</b> · 到期: ${end}` +
+      (daysLeft <= 7 ? ` <span style="color:var(--red);font-weight:700;">⚠️ 剩余${daysLeft}天</span>` : ` (剩余${daysLeft}天)`) +
+      `<br><small style="color:var(--muted);">最多 ${_subscription.max_members} 个成员账户</small>`;
+  }
+
+  // Team members (boss only)
+  if (_role === 'boss') {
+    const { data: members } = await sb.from('warehouse_members')
+      .select('user_id, role, display_name').eq('warehouse_id', _warehouse.id);
+    const listEl = document.getElementById('team-members-list');
+    listEl.innerHTML = (members || []).map(m =>
+      `<div class="team-member-row">
+        <span style="flex:1">${m.display_name || m.user_id}</span>
+        <span class="team-member-role">${m.role === 'boss' ? '👑' : m.role === 'manager' ? '🔑' : '👷'} ${m.role}</span>
+        ${m.user_id !== _user?.id ? `<button onclick="_removeMember('${m.user_id}')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;">✕</button>` : ''}
+      </div>`
+    ).join('');
+  }
+
+  showSheet('team-sheet');
+}
+function _copyCode() {
+  navigator.clipboard.writeText(_warehouse?.code || '').then(() => toast('邀请码已复制'));
+}
+async function _removeMember(uid) {
+  if (!confirm('确定要移除此成员?')) return;
+  await sb.from('warehouse_members')
+    .delete().eq('warehouse_id', _warehouse.id).eq('user_id', uid);
+  _openSettings();
+}
+
+// ── Invite member ──
+async function _sendInvite() {
+  const email = document.getElementById('invite-email').value.trim();
+  const role  = document.getElementById('invite-role').value;
+  if (!email) { toast('请输入被邀请人邮箱'); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const res = await fetch('/api/invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ email, role, warehouseId: _warehouse.id })
+  });
+  const data = await res.json();
+  if (data.success) { toast('✅ 邀请已发送至 ' + email); document.getElementById('invite-email').value = ''; }
+  else toast('❌ ' + (data.error || '发送失败'));
+}
+
+// ── Stripe checkout ──
+async function _startCheckout(planKey) {
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  toast('⏳ 正在跳转付款页面...');
+  const res = await fetch('/api/create-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ planKey, warehouseId: _warehouse.id })
+  });
+  const { url, error } = await res.json();
+  if (error) { toast('❌ ' + error); return; }
+  if (url) location.href = url;
+}
+async function _openPortal() {
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const res = await fetch('/api/customer-portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ warehouseId: _warehouse.id })
+  });
+  const { url, error } = await res.json();
+  if (error) { toast('❌ ' + error); return; }
+  if (url) location.href = url;
+}
+
+// ── Auth init (entry point, replaces old loadState(); render();) ──
+async function _initAuth() {
+  const params = new URLSearchParams(location.search);
+
+  // Handle invite URL from Supabase auth email
+  _inviteWarehouseId = params.get('invite_warehouse');
+  _inviteRole        = params.get('invite_role');
+  if (_inviteWarehouseId) _showAuth('invite');
+
+  // Check existing session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await _onSignIn(session.user);
+  } else if (!_inviteWarehouseId) {
+    _showAuth('login');
+  }
+
+  // Listen for future auth changes
+  sb.auth.onAuthStateChange(async (evt, session) => {
+    if (evt === 'SIGNED_IN' && session?.user && !_user) await _onSignIn(session.user);
+    if (evt === 'SIGNED_OUT') _doLogout();
+  });
+
+  // Handle Stripe checkout return
+  if (params.get('checkout') === 'success') { history.replaceState({}, '', '/'); toast('✅ 订阅成功！欢迎升级到付费版'); }
+  if (params.get('checkout') === 'canceled') { history.replaceState({}, '', '/'); toast('已取消订阅流程'); }
+}
+
+// ── Wire up settings button ──
+document.getElementById('settings-btn').addEventListener('click', _openSettings);
 
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
