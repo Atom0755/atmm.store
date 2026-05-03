@@ -819,9 +819,10 @@
   .team-section-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:8px; }
   .team-member-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:13px; }
   .team-member-role { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--ink); color:var(--paper); }
-  .plan-btn { display:block; width:100%; padding:12px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; text-align:left; margin-bottom:8px; }
+  .plan-btn { display:block; width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; text-align:left; margin-bottom:8px; }
   .plan-btn.current-plan { border-color:var(--red); color:var(--red); }
   .plan-price { float:right; font-size:11px; font-weight:500; color:var(--muted); }
+  .plan-desc { display:block; font-size:11px; font-weight:400; color:var(--muted); margin-top:4px; clear:both; line-height:1.4; }
   .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
   #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
@@ -1222,12 +1223,12 @@
         <div id="sub-status-display" style="font-size:13px; padding:10px; background:var(--bg); border-radius:8px; margin-bottom:8px;"></div>
         <div id="plan-upgrade-section">
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
-          <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">   基础版 Basic      <span class="plan-price">$10/月 · 1账户</span></button>
-          <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')">    基础版 年付       <span class="plan-price">$99/年 · 1账户</span></button>
-          <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard   <span class="plan-price">$13/月 · 2账户</span></button>
-          <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付       <span class="plan-price">$129/年 · 2账户</span></button>
-          <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')"> 高级版 Premium    <span class="plan-price">$18/月 · 3账户</span></button>
-          <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')">  高级版 年付       <span class="plan-price">$168/年 · 3账户</span></button>
+          <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">   基础版 Basic      <span class="plan-price">$10/月</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
+          <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')">    基础版 年付       <span class="plan-price">$99/年</span><span class="plan-desc">1账户（老板）· 省17% · 独立经营，单人管理</span></button>
+          <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard   <span class="plan-price">$13/月</span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作</span></button>
+          <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付       <span class="plan-price">$129/年</span><span class="plan-desc">2账户（老板＋经理或操作员）· 省17% · 小团队协作</span></button>
+          <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')"> 高级版 Premium    <span class="plan-price">$18/月</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置</span></button>
+          <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')">  高级版 年付       <span class="plan-price">$168/年</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省22% · 全团队配置</span></button>
           <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅 / Manage Subscription</button>
         </div>
       </div>
