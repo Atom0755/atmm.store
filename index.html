@@ -4313,10 +4313,10 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 });
 
 let toastTimer = null;
-function toast(msg) {
+function toast(msg, ms = 3000) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms);
 }
 
 // =============== SEARCH HIGHLIGHT ===============
@@ -4739,14 +4739,19 @@ async function _startCheckout(planKey) {
   const { data: { session } } = await sb.auth.getSession();
   const token = session?.access_token;
   toast('⏳ 正在跳转付款页面...');
-  const res = await fetch('/api/create-checkout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ planKey, warehouseId: _warehouse.id })
-  });
-  const { url, error } = await res.json();
-  if (error) { toast('❌ ' + error); return; }
-  if (url) location.href = url;
+  let data;
+  try {
+    const res = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ planKey, warehouseId: _warehouse.id })
+    });
+    data = await res.json();
+  } catch (e) {
+    toast('❌ 网络错误：' + e.message, 6000); return;
+  }
+  if (data.error) { toast('❌ ' + data.error, 6000); return; }
+  if (data.url) location.href = data.url;
 }
 async function _openPortal() {
   const { data: { session } } = await sb.auth.getSession();
