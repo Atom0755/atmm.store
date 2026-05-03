@@ -806,9 +806,9 @@
   </header>
 
   <div class="table-tabs">
-    <button class="table-tab active" data-table="shelfBlack">黑色MUG+IC<small>BLACK SHELF</small></button>
-    <button class="table-tab" data-table="shelfWhite">白色BK/CH<small>WHITE SHELF</small></button>
-    <button class="table-tab" data-table="pallet">整箱货堆<small>PALLETS</small></button>
+    <button class="table-tab active" data-table="shelfBlack">零散货架一区<small>SHELF ZONE 1</small></button>
+    <button class="table-tab" data-table="shelfWhite">零散货架二区<small>SHELF ZONE 2</small></button>
+    <button class="table-tab" data-table="pallet">整箱堆货区<small>PALLET ZONE</small></button>
   </div>
 
   <div class="toolbar">
@@ -821,7 +821,7 @@
   <main>
     <div class="table-pane active" data-table-pane="shelfBlack">
       <div class="meta-bar">
-        <div class="meta-title editable" data-meta-title="shelfBlack">黑色 MUG 和 IC 零散货架表</div>
+        <div class="meta-title editable" data-meta-title="shelfBlack">零散货架一区</div>
         <div class="meta-fields">
           <label>填表人 <input type="text" data-meta="filler" data-table-meta="shelfBlack" placeholder="姓名"></label>
           <label>日期 <input type="date" data-meta="date" data-table-meta="shelfBlack"></label>
@@ -839,7 +839,7 @@
     </div>
     <div class="table-pane" data-table-pane="shelfWhite">
       <div class="meta-bar">
-        <div class="meta-title editable" data-meta-title="shelfWhite">白色 BK/CH 零散货架表</div>
+        <div class="meta-title editable" data-meta-title="shelfWhite">零散货架二区</div>
         <div class="meta-fields">
           <label>填表人 <input type="text" data-meta="filler" data-table-meta="shelfWhite" placeholder="姓名"></label>
           <label>日期 <input type="date" data-meta="date" data-table-meta="shelfWhite"></label>
@@ -857,7 +857,7 @@
     </div>
     <div class="table-pane" data-table-pane="pallet">
       <div class="meta-bar">
-        <div class="meta-title editable" data-meta-title="pallet">整箱货堆库存表</div>
+        <div class="meta-title editable" data-meta-title="pallet">整箱堆货区</div>
         <div class="meta-fields">
           <label>填表人 <input type="text" data-meta="filler" data-table-meta="pallet" placeholder="姓名"></label>
           <label>日期 <input type="date" data-meta="date" data-table-meta="pallet"></label>
@@ -1267,18 +1267,7 @@
 </script>
 <script>
 const INITIAL_MODELS = [
-  "VW Golf 6 (2010-2014)","Accord (2003-2007)","Infiniti G35/37 (2007-2015)","Ford Focus (2012-2018)",
-  "Lexus IS (2014-2024)","Corolla sed (2003-2008)","Nissan Versa (2010+)","Forte sed (2012-2018)",
-  "Lexus GX 460","Nissan Sentra (2020-2025)","Kia K5 (2021)","Honda Civic (2022-2025)",
-  "Corolla sed (2014-2019)","Honda Civic (2006-2011)","Lancer EVO X (2008-2017)","Nissan Altima (2013-2018)",
-  "Toyota Camry (2018-2024)","Corolla sed (2020-2025)","VW Golf 7 (2015-2019)","VW Jetta (2011-2018)",
-  "Lexus GS (2013-2020)","Acura RDX (2019-2024)","Toyota Highlander (2014-2019)","Corolla sed (2007-2013)",
-  "Toyota Camry (2012-2017)","Subaru Crosstrek (2014-2025)","Chevy Cruz (2009-2015)","Impreza Hatchback (2017-2021)",
-  "Infiniti Q50 (2014+)","Subaru WRX (2015-2021)","Versa sed (2012-2019)","VW Passat sed (2012-2018)",
-  "Accord (2013-2017)","Chevy Malibu (2016-2022)","Dodge Charger (2011)","Accord (2018-2022)",
-  "Fit HB (2015-2019)","Legacy B4 sed (2014-2019)","Accord (2008-2012)","Subaru WRX (2022-2024)",
-  "CRV (2017-2022)","Legacy B4 sed (2009-2014)","Honda CR-Z (2023+)","Nissan Rouge (2014-2019)",
-  "Toyota Camry (2025-2026)","Toyota BZ4X (2023-2025)","HRV (2015)"
+  "A123color"
 ];
 const SHELF_NAMES = ["顶","上","中","下"];
 const SHELF_AISLE_NAMES = ["左","中","右"];
@@ -1393,9 +1382,9 @@ function buildInitial() {
     shelfWhiteTable: { aisles: shelfWhiteAisles },
     palletTable: { aisles: palletAisles },
     meta: {
-      shelfBlack: { filler: '', date: today, title: '黑色 MUG 和 IC 零散货架表' },
-      shelfWhite: { filler: '', date: today, title: '白色 BK/CH 零散货架表' },
-      pallet: { filler: '', date: today, title: '整箱货堆库存表' }
+      shelfBlack: { filler: '', date: today, title: '零散货架一区' },
+      shelfWhite: { filler: '', date: today, title: '零散货架二区' },
+      pallet: { filler: '', date: today, title: '整箱堆货区' }
     }
   };
 }
@@ -1415,8 +1404,8 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;'
 function render() { renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); }
 
 function renderMetaBars() {
-  if (!state.meta) state.meta = { shelfBlack:{filler:'',date:'',title:'黑色 MUG 和 IC 零散货架表'}, shelfWhite:{filler:'',date:'',title:'白色 BK/CH 零散货架表'}, pallet:{filler:'',date:'',title:'整箱货堆库存表'} };
-  const defaults = { shelfBlack: '黑色 MUG 和 IC 零散货架表', shelfWhite: '白色 BK/CH 零散货架表', pallet: '整箱货堆库存表' };
+  if (!state.meta) state.meta = { shelfBlack:{filler:'',date:'',title:'零散货架一区'}, shelfWhite:{filler:'',date:'',title:'零散货架二区'}, pallet:{filler:'',date:'',title:'整箱堆货区'} };
+  const defaults = { shelfBlack: '零散货架一区', shelfWhite: '零散货架二区', pallet: '整箱堆货区' };
   ['shelfBlack','shelfWhite','pallet'].forEach(key => {
     if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title: defaults[key] };
     if (!state.meta[key].title) state.meta[key].title = defaults[key];
@@ -2514,7 +2503,7 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   // Check pallet stock is enough
   const currentPalletQty = palletSlot.qty || 0;
   if (currentPalletQty < boxes) {
-    if (!confirm(`⚠️ 整箱货堆里 "${m.name}" 当前只有 ${currentPalletQty} 箱,补货 ${boxes} 箱会导致负库存。\n\n是否仍要继续?`)) {
+    if (!confirm(`⚠️ 整箱堆货区里 "${m.name}" 当前只有 ${currentPalletQty} 箱,补货 ${boxes} 箱会导致负库存。\n\n是否仍要继续?`)) {
       palletSlot.restock = 0; render(); return;
     }
   }
@@ -2599,7 +2588,7 @@ function confirmRestock(tableKey) {
   palletSlot.restock = 0;
   if (!palletSlot.unit) palletSlot.unit = '箱';
 
-  const tableName = tableKey === 'shelfBlackTable' ? '黑色MUG+IC' : '白色BK/CH';
+  const tableName = tableKey === 'shelfBlackTable' ? '零散货架一区' : '零散货架二区';
   toast(`✅ 整箱 -${boxes}箱 → ${tableName} ${tgt.location} +${sets}套`);
   pendingRestock = null;
   hideSheets();
@@ -3990,9 +3979,9 @@ document.querySelectorAll('#save-sheet .action-row').forEach(b => {
 
 function buildExportSummaryText() {
   const tables = [
-    [(state.meta?.shelfBlack?.title) || '黑色MUG+IC', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
-    [(state.meta?.shelfWhite?.title) || '白色BK/CH', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
-    [(state.meta?.pallet?.title) || '整箱货堆', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
+    [(state.meta?.shelfBlack?.title) || '零散货架一区', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
+    [(state.meta?.shelfWhite?.title) || '零散货架二区', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
+    [(state.meta?.pallet?.title) || '整箱堆货区', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
   ];
   let lines = [`📦 库存标注汇总 — ${dateStamp()}`];
   for (const [tableName, t, ck, sk, meta] of tables) {
@@ -4022,9 +4011,9 @@ function downloadCSV() {
   const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','颜色','数量','单位']];
   let n = 0;
   const tables = [
-    [(state.meta?.shelfBlack?.title) || '黑色MUG+IC零散货架', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
-    [(state.meta?.shelfWhite?.title) || '白色BK/CH零散货架', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
-    [(state.meta?.pallet?.title) || '整箱货堆', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
+    [(state.meta?.shelfBlack?.title) || '零散货架一区', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
+    [(state.meta?.shelfWhite?.title) || '零散货架二区', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
+    [(state.meta?.pallet?.title) || '整箱堆货区', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
   ];
   for (const [tableName, t, ck, sk, meta] of tables) {
     for (const a of t.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
@@ -4117,9 +4106,9 @@ function makeCsvBlob() {
   const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','颜色','数量','单位']];
   let n = 0;
   const tables = [
-    [(state.meta?.shelfBlack?.title) || '黑色MUG+IC', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
-    [(state.meta?.shelfWhite?.title) || '白色BK/CH', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
-    [(state.meta?.pallet?.title) || '整箱货堆', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
+    [(state.meta?.shelfBlack?.title) || '零散货架一区', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
+    [(state.meta?.shelfWhite?.title) || '零散货架二区', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
+    [(state.meta?.pallet?.title) || '整箱堆货区', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
   ];
   for (const [tableName, t, ck, sk, meta] of tables) {
     for (const a of t.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
