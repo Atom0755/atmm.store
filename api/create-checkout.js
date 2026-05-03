@@ -76,7 +76,6 @@ module.exports = async function handler(req, res) {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_end: 'now' },
       success_url: `${origin}/?checkout=success`,
       cancel_url:  `${origin}/?checkout=canceled`,
       metadata: { warehouse_id: warehouseId, plan_key: planKey },
