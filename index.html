@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Atom盘库补货">
 <title>Atom盘库补货表手机版</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231a1a1a'/%3E%3Ctext x='16' y='23' font-family='system-ui' font-size='19' font-weight='700' fill='%23faf8f3' text-anchor='middle'%3E库%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231a1a1a'/%3E%3Ctext x='90' y='118' font-family='system-ui' font-size='80' font-weight='700' fill='%23faf8f3' text-anchor='middle'%3E库%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -937,6 +938,13 @@
   .plan-desc { display:block; font-size:11px; font-weight:400; color:var(--muted); margin-top:4px; clear:both; line-height:1.4; }
   .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
+  /* === Warehouse switcher === */
+  #wh-switch-btn { display:none; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; gap:3px; }
+  .wh-switch-row { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .wh-switch-row:active { background:var(--ink); color:var(--paper); }
+  .wh-switch-row.wh-current { border-color:var(--red); background:rgba(214,51,64,0.05); }
+  .wh-switch-row .wh-role-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--ink); color:var(--paper); flex-shrink:0; }
+  .wh-switch-row.wh-current .wh-role-tag { background:var(--red); }
   #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
   #invite-form input, #invite-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
   /* ZEHEM.AI footer brand bar */
@@ -1016,6 +1024,7 @@
     <button class="tool" data-view="grid">总览</button>
     <button class="tool" id="legend-btn">图例</button>
     <button class="tool" id="reset-btn">重置</button>
+    <button id="wh-switch-btn" class="tool" onclick="_openWhSwitch()">🏭 <span id="wh-name-label">仓库</span> ▾</button>
     <button id="auth-trigger-btn" class="tool auth-trigger-btn" onclick="_openAuthModal()">👤 登录 / 试用</button>
   </div>
 
@@ -1140,6 +1149,25 @@
         <button class="action-row" data-act="upload-append-only" style="background: #e8f5e8; border-color: var(--green);"><span class="ico">📚</span><div style="flex:1;"><div style="font-weight:700;">仅扩充型号库 (推荐)</div><div style="font-size:11px; color:var(--muted);">不动货架,只加到型号库以备拍照匹配</div></div></button>
         <button class="action-row" data-act="upload-append"><span class="ico">➕</span><div style="flex:1;"><div style="font-weight:700;">追加到货架</div><div style="font-size:11px; color:var(--muted);">填进零散货架的空位</div></div></button>
         <button class="action-row" data-act="upload-replace" style="background: #ffe5e5; border-color: var(--red);"><span class="ico">🔄</span><div style="flex:1;"><div style="font-weight:700;">替换全部 (危险)</div><div style="font-size:11px; color:var(--muted);">清空两表重建</div></div></button>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Warehouse switcher sheet -->
+<div class="sheet-backdrop" id="wh-switch-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3 style="margin-bottom:16px;">🏭 切换仓库</h3>
+      <div id="wh-switch-list"></div>
+      <div style="margin-top:4px; padding-top:12px; border-top:1px solid var(--line);">
+        <button class="action-row" onclick="hideSheets(); setTimeout(_doNewWarehousePrompt, 150);">
+          <span class="ico">➕</span>
+          <div style="flex:1;"><div style="font-weight:700;">新建仓库</div><div style="font-size:11px;color:var(--muted);">创建另一个独立仓库账户</div></div>
+        </button>
       </div>
     </div>
     <div class="sheet-footer">
@@ -4742,7 +4770,7 @@ const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const _STRIPE_PK = 'pk_test_51TSuQEE6TJzfSMV6fTefIFNS3YFFSXK9rvvdhr8ap7UyW36oJAlQWmCgVLOOGKH98GMF4NtPcyT8uPSQMjWrQvka00lqjGxTZP';
 const sb = window.supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
-let _user = null, _warehouse = null, _role = null, _subscription = null;
+let _user = null, _warehouse = null, _role = null, _subscription = null, _memberships = [];
 let _supabaseSaveTimer = null;
 let _inviteWarehouseId = null, _inviteRole = null;
 
@@ -4803,6 +4831,7 @@ async function _doCreateWarehouse() {
   _authErr('err-create-wh', '');
   const { error } = await sb.from('warehouses').insert({ name, owner_id: _user.id });
   if (error) { _authErr('err-create-wh', error.message); return; }
+  localStorage.removeItem('lastWarehouseId'); // pick the new warehouse on reload
   await _onSignIn(_user); // reload with new warehouse
 }
 
@@ -4828,16 +4857,100 @@ async function _doAcceptInvite() {
 // ── Sign out ──
 async function _doLogout() {
   await sb.auth.signOut();
-  _user = null; _warehouse = null; _role = null; _subscription = null;
+  _user = null; _warehouse = null; _role = null; _subscription = null; _memberships = [];
+  localStorage.removeItem('lastWarehouseId');
   loadState(); render();
   _closeAuthModal();
   _showAuth('login');
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (trigBtn) trigBtn.style.display = '';
+  const swBtn = document.getElementById('wh-switch-btn');
+  if (swBtn) swBtn.style.display = 'none';
   hideSheets();
 }
 
 // ── Auth modal open / close / pulse ──
+// === Warehouse switcher (Phase 4) ===
+function _updateWarehouseSwitcherUI() {
+  const btn   = document.getElementById('wh-switch-btn');
+  const label = document.getElementById('wh-name-label');
+  const trigBtn = document.getElementById('auth-trigger-btn');
+  if (!_warehouse) return;
+  if (btn) btn.style.display = '';
+  if (trigBtn) trigBtn.style.display = 'none';
+  if (label) {
+    const name = _warehouse.name || '仓库';
+    label.textContent = name.length > 7 ? name.slice(0, 6) + '…' : name;
+  }
+}
+
+function _openWhSwitch() {
+  const list = document.getElementById('wh-switch-list');
+  if (!list) return;
+  const roleLabel = r => r === 'boss' ? '👑 老板' : r === 'manager' ? '🔑 经理' : '👷 操作员';
+  list.innerHTML = _memberships.map(m => {
+    const wh = m.warehouses;
+    if (!wh) return '';
+    const isCurrent = wh.id === _warehouse?.id;
+    return `<div class="wh-switch-row ${isCurrent ? 'wh-current' : ''}" onclick="switchWarehouse('${wh.id}')">
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:700; font-size:14px;">${escapeHtml(wh.name || '未知仓库')}</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:2px;">${escapeHtml(wh.code || '')}</div>
+      </div>
+      <span class="wh-role-tag">${roleLabel(m.role)}</span>
+      ${isCurrent ? '<span style="color:var(--red);font-size:11px;font-weight:700;margin-left:4px;">当前</span>' : ''}
+    </div>`;
+  }).join('');
+  showSheet('wh-switch-sheet');
+}
+
+async function switchWarehouse(warehouseId) {
+  if (warehouseId === _warehouse?.id) { hideSheets(); return; }
+  const m = _memberships.find(m => m.warehouses?.id === warehouseId);
+  if (!m || !m.warehouses) return;
+  hideSheets();
+  toast('⏳ 正在切换仓库...');
+  // Save current state before switching
+  if (_warehouse && _user) await _cloudSave();
+  // Switch
+  _warehouse = m.warehouses;
+  _role      = m.role;
+  localStorage.setItem('lastWarehouseId', warehouseId);
+  // Load subscription for new warehouse
+  const { data: sub } = await sb.from('subscriptions')
+    .select('*').eq('warehouse_id', _warehouse.id).single();
+  _subscription = sub;
+  // Load new warehouse state from cloud
+  const cloudLoaded = await _cloudLoad();
+  if (!cloudLoaded) {
+    // New/empty warehouse — start fresh
+    const today = new Date().toISOString().slice(0, 10);
+    state = { models: [], zones: [
+      { id:'shelfBlack', name:'零散货架一区', type:'shelf',  aisles: buildEmptyShelfTable().aisles,  filler:'', date: today },
+      { id:'shelfWhite', name:'零散货架二区', type:'shelf',  aisles: buildEmptyShelfTable().aisles,  filler:'', date: today },
+      { id:'pallet',     name:'整箱堆货区',   type:'pallet', aisles: buildEmptyPalletTable().aisles, filler:'', date: today },
+    ]};
+  }
+  _applyPermissions();
+  _updateWarehouseSwitcherUI();
+  render();
+  toast(`✅ 已切换到: ${_warehouse.name}`);
+}
+
+function _doNewWarehousePrompt() {
+  const name = prompt('新仓库名称:', '我的仓库');
+  if (!name || !name.trim()) return;
+  _doCreateNamedWarehouse(name.trim());
+}
+
+async function _doCreateNamedWarehouse(name) {
+  if (!_user) return;
+  const { error } = await sb.from('warehouses').insert({ name, owner_id: _user.id });
+  if (error) { toast('❌ 创建失败: ' + error.message); return; }
+  toast('✅ 仓库已创建，正在加载...');
+  await _onSignIn(_user);
+}
+
 function _openAuthModal() {
   _showAuth('login');
   document.getElementById('auth-overlay').classList.remove('hidden');
@@ -4887,7 +5000,12 @@ async function _onSignIn(user) {
     return;
   }
 
-  const m = memberships[0];
+  _memberships = memberships;
+
+  // Pick last-used warehouse if remembered, otherwise first membership
+  const lastId = localStorage.getItem('lastWarehouseId');
+  const preferred = lastId ? memberships.find(m => m.warehouses?.id === lastId) : null;
+  const m = preferred || memberships[0];
   _warehouse = m.warehouses;
   _role      = m.role;
 
@@ -4908,6 +5026,7 @@ async function _onSignIn(user) {
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (trigBtn) trigBtn.style.display = 'none';
 
+  _updateWarehouseSwitcherUI();
   render();
   toast('👋 ' + (_role === 'boss' ? '👑 老板' : _role === 'manager' ? '🔑 经理' : '👷 操作员') + ' — ' + (user.email || ''));
 }
