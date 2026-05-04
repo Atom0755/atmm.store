@@ -358,6 +358,47 @@
   .slot-num.empty-num { border-style: dotted; opacity: 0.4; }
 
   /* === Product info row (image + EN/CN names) — appears below the main row === */
+  .product-img-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 50px;
+    flex-shrink: 0;
+  }
+  .loc-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-all;
+    padding: 1px 3px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    -webkit-tap-highlight-color: transparent;
+    max-width: 50px;
+  }
+  .loc-code:active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  /* Grid view loc code */
+  .grid-slot .gloc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 6.5px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+    flex-shrink: 0;
+    width: 26px;
+    text-align: right;
+    cursor: pointer;
+    word-break: break-all;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .grid-slot .gloc:active { color: var(--red); }
   .slot-info-row {
     grid-column: 1 / -1;
     display: grid;
@@ -1571,6 +1612,23 @@ function buildInitial() {
 function getModel(id) { return state.models.find(m => m.id === id); }
 function getActiveZone() { return state.zones.find(z => z.id === currentTable) || state.zones[0]; }
 function isShelfTable(id) { return (state.zones.find(z => z.id === (id||currentTable)))?.type === 'shelf'; }
+
+// Generate a compact, unique location code for a slot.
+// Format — shelf: [ZonePrefix]A-1-03  pallet: [ZonePrefix]A·P2·L1
+function makeLocationCode(zoneId, ai, ci, si) {
+  const zone = state.zones.find(z => z.id === zoneId);
+  if (!zone) return '';
+  const sameType = state.zones.filter(z => z.type === zone.type);
+  const typeIdx = sameType.indexOf(zone);
+  const circled = ['①','②','③','④','⑤','⑥','⑦','⑧'];
+  const prefix = sameType.length > 1 ? (circled[typeIdx] || `${typeIdx+1}·`) : '';
+  const aisleCode = String.fromCharCode(65 + ai); // A, B, C…
+  if (zone.type === 'shelf') {
+    return `${prefix}${aisleCode}-${ci+1}-${String(si+1).padStart(2,'0')}`;
+  } else {
+    return `${prefix}${aisleCode}·P${ci+1}·L${si+1}`;
+  }
+}
 function getActiveTable() { return getActiveZone(); }
 function getContainerKey() { return isShelfTable(currentTable) ? 'shelves' : 'pallets'; }
 function getSlotsKey() { return isShelfTable(currentTable) ? 'slots' : 'layers'; }
@@ -1690,11 +1748,15 @@ function renderListView() {
           const dimensionUnit = (m && m.dimensionUnit) ? m.dimensionUnit : 'IN';
           const weight = (m && m.weight) ? m.weight : '';
           const weightUnit = (m && m.weightUnit) ? m.weightUnit : 'LB';
+          const locCode = makeLocationCode(currentTable, ai, ci, si);
           const imgInner = imgUrl
             ? `<img src="${escapeHtml(imgUrl)}" alt="">`
             : `<span class="img-plus">+</span>`;
           infoRowHtml = `<div class="slot-info-row">
-            <div class="product-img-cell ${imgUrl ? 'has-img' : ''}" data-mid="${slot.modelId}" title="点击上传产品图片">${imgInner}</div>
+            <div class="product-img-col">
+              <div class="product-img-cell ${imgUrl ? 'has-img' : ''}" data-mid="${slot.modelId}" title="点击上传产品图片">${imgInner}</div>
+              <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击复制">${escapeHtml(locCode)}</div>
+            </div>
             <div class="product-names">
               <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
               <div class="product-name cn ${cnName ? '' : 'empty'}" data-field="cnName" data-mid="${slot.modelId}">${cnName ? escapeHtml(cnName) : '中文名称 (点击输入)'}</div>
@@ -1781,14 +1843,14 @@ function renderGridView() {
           gs.className = 'grid-slot' + (slot.modelId ? '' : ' empty');
           gs.dataset.ai = ai; gs.dataset.ci = ci; gs.dataset.si = si; if (slot.modelId) gs.dataset.mid = slot.modelId;
           const m = slot.modelId ? getModel(slot.modelId) : null;
-          const num = slotSerial[`${ai}|${ci}|${si}`];
+          const locCode = slot.modelId ? makeLocationCode(currentTable, ai, ci, si) : '';
           const modelHtml = slot.modelId
             ? `<div class="gmodel" draggable="true" data-mid="${slot.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-table="${currentTable}">${escapeHtml(m ? m.name : '?')}</div>`
             : `<div class="gmodel">${isShelf ? '空' : '—'}</div>`;
           const colorHtml = slot.modelId
             ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
             : `<div class="gcolor" style="visibility:hidden"></div>`;
-          gs.innerHTML = `<div class="gnum">${slot.modelId ? num : ''}</div>${modelHtml}${colorHtml}`;
+          gs.innerHTML = `<div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}`;
           cont.appendChild(gs);
         });
         flatRow.appendChild(cont);
@@ -1822,14 +1884,14 @@ function renderGridView() {
         gs.className = 'grid-slot' + (slot.modelId ? '' : ' empty');
         gs.dataset.ai = ai; gs.dataset.ci = ci; gs.dataset.si = si; if (slot.modelId) gs.dataset.mid = slot.modelId;
         const m = slot.modelId ? getModel(slot.modelId) : null;
-        const num = slotSerial[`${ai}|${ci}|${si}`];
+        const locCode = slot.modelId ? makeLocationCode(currentTable, ai, ci, si) : '';
         const modelHtml = slot.modelId
           ? `<div class="gmodel" draggable="true" data-mid="${slot.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-table="${currentTable}">${escapeHtml(m ? m.name : '?')}</div>`
           : `<div class="gmodel">${isShelf ? '空' : '—'}</div>`;
         const colorHtml = slot.modelId
           ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
           : `<div class="gcolor" style="visibility:hidden"></div>`;
-        gs.innerHTML = `<div class="gnum">${slot.modelId ? num : ''}</div>${modelHtml}${colorHtml}`;
+        gs.innerHTML = `<div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}`;
         cont.appendChild(gs);
       });
       containers.appendChild(cont);
@@ -1864,6 +1926,7 @@ function attachListHandlers(root) {
   root.querySelectorAll('.product-name[data-mid]').forEach(el => attachProductNameHandler(el));
   // NEW: dimension/weight boxes — click value to edit, click unit to cycle
   root.querySelectorAll('.dim-box[data-mid], .weight-box[data-mid]').forEach(el => attachDimWeightBoxHandler(el));
+  root.querySelectorAll('.loc-code[data-loc]').forEach(el => attachLocCodeHandler(el));
   root.querySelectorAll('.dim-weight-unit[data-mid]').forEach(el => attachDimWeightUnitHandler(el));
   // NEW: qty-cell — double-tap opens 4-method input picker for the quantity
   root.querySelectorAll('.qty-cell[data-ai]').forEach(el => attachQtyCellHandlers(el));
@@ -2025,6 +2088,7 @@ function attachGridHandlers(root) {
     }
   });
   root.querySelectorAll('.gcolor[data-ai]').forEach(el => attachColorCellHandlers(el));
+  root.querySelectorAll('.gloc[data-loc]').forEach(el => attachLocCodeHandler(el));
   root.querySelectorAll('.editable').forEach(el => makeEditable(el));
 }
 
@@ -2306,6 +2370,27 @@ function attachDimWeightUnitHandler(el) {
   el.addEventListener('click', (e) => {
     if (touchHandled) return;
     cycle(e);
+  });
+}
+
+// === Location code — tap to copy to clipboard ===
+function attachLocCodeHandler(el) {
+  let touchHandled = false;
+  const onTap = (e) => {
+    e.stopPropagation();
+    const code = el.dataset.loc;
+    if (!code) return;
+    copyToClipboard(code);
+    toast(`📋 已复制库位编号: ${code}`);
+  };
+  el.addEventListener('touchend', (e) => {
+    touchHandled = true;
+    onTap(e);
+    setTimeout(() => { touchHandled = false; }, 400);
+  }, { passive: false });
+  el.addEventListener('click', (e) => {
+    if (touchHandled) return;
+    onTap(e);
   });
 }
 
@@ -4354,17 +4439,18 @@ function shareToEmail() {
 }
 
 function makeCsvBlob() {
-  const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','英文名','中文名','尺寸','尺寸单位','重量','重量单位','颜色','数量','单位']];
+  const rows = [['#','库位编号','表','填表人','日期','通道','货架/托盘','位置','型号','英文名','中文名','尺寸','尺寸单位','重量','重量单位','颜色','数量','单位']];
   let n = 0;
   for (const zone of state.zones) {
     const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
     const sk = zone.type === 'shelf' ? 'slots' : 'layers';
-    for (const a of zone.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
+    zone.aisles.forEach((a, ai) => a[ck].forEach((c, ci) => c[sk].forEach((slot, si) => {
       n++; const m = slot.modelId ? getModel(slot.modelId) : null;
-      rows.push([n, zone.name, zone.filler||'', zone.date||'', a.name, c.name, i+1,
+      const locCode = slot.modelId ? makeLocationCode(zone.id, ai, ci, si) : '';
+      rows.push([n, locCode, zone.name, zone.filler||'', zone.date||'', a.name, c.name, si+1,
         m?.name||'', m?.enName||'', m?.cnName||'', m?.dimensions||'', m?.dimensionUnit||'', m?.weight||'', m?.weightUnit||'',
         slot.color||'', slot.qty||0, slot.unit||'']);
-    });
+    })));
   }
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   return new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8' });
