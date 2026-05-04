@@ -44,6 +44,10 @@
   }
   .table-tab small { display: block; font-size: 9px; font-weight: 500; margin-top: 2px; opacity: 0.7; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
   .table-tab.active small { opacity: 0.85; font-size: 10px; font-weight: 700; }
+  .add-zone-tab { flex-shrink: 0; padding: 8px 12px; background: transparent; border: 0; cursor: pointer; color: var(--muted); font-size: 20px; font-weight: 300; border-bottom: 3px solid transparent; line-height: 1; }
+  .add-zone-tab:hover { color: var(--red); }
+  .zone-del-btn { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 10px; padding: 0 0 0 3px; line-height: 1; vertical-align: middle; }
+  .zone-del-btn:hover { color: var(--red); }
   .toolbar { flex-shrink: 0; padding: 8px 12px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .toolbar::-webkit-scrollbar { display: none; }
   .tool { flex-shrink: 0; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
@@ -895,10 +899,8 @@
     <button class="icon-btn" id="save-btn" title="保存">💾</button>
   </header>
 
-  <div class="table-tabs">
-    <button class="table-tab active" data-table="shelfBlack">零散货架一区<small>SHELF ZONE 1</small></button>
-    <button class="table-tab" data-table="shelfWhite">零散货架二区<small>SHELF ZONE 2</small></button>
-    <button class="table-tab" data-table="pallet">整箱堆货区<small>PALLET ZONE</small></button>
+  <div class="table-tabs" id="table-tabs-bar">
+    <!-- dynamically rendered by renderTabs() -->
   </div>
 
   <div class="toolbar">
@@ -909,61 +911,8 @@
     <button id="auth-trigger-btn" class="tool auth-trigger-btn" onclick="_openAuthModal()">👤 登录 / 试用</button>
   </div>
 
-  <main>
-    <div class="table-pane active" data-table-pane="shelfBlack">
-      <div class="meta-bar">
-        <div class="meta-title editable" data-meta-title="shelfBlack">零散货架一区</div>
-        <div class="meta-fields">
-          <label>填表人 <input type="text" data-meta="filler" data-table-meta="shelfBlack" placeholder="姓名"></label>
-          <label>日期 <input type="date" data-meta="date" data-table-meta="shelfBlack"></label>
-          <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
-        </div>
-      </div>
-      <div class="search-bar">
-        <input type="text" class="search-input" data-search="shelfBlack" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
-        <button class="search-icon-btn" data-search-input-btn="shelfBlack" title="拍照/手写/语音搜索">📷</button>
-        <button class="search-clear" data-search-clear="shelfBlack">✕</button>
-      </div>
-      <div class="search-results-info" data-search-info="shelfBlack" style="display:none;"></div>
-      <div class="list-view" id="shelfBlack-list"></div>
-      <div class="grid-view" id="shelfBlack-grid"></div>
-    </div>
-    <div class="table-pane" data-table-pane="shelfWhite">
-      <div class="meta-bar">
-        <div class="meta-title editable" data-meta-title="shelfWhite">零散货架二区</div>
-        <div class="meta-fields">
-          <label>填表人 <input type="text" data-meta="filler" data-table-meta="shelfWhite" placeholder="姓名"></label>
-          <label>日期 <input type="date" data-meta="date" data-table-meta="shelfWhite"></label>
-          <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
-        </div>
-      </div>
-      <div class="search-bar">
-        <input type="text" class="search-input" data-search="shelfWhite" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
-        <button class="search-icon-btn" data-search-input-btn="shelfWhite" title="拍照/手写/语音搜索">📷</button>
-        <button class="search-clear" data-search-clear="shelfWhite">✕</button>
-      </div>
-      <div class="search-results-info" data-search-info="shelfWhite" style="display:none;"></div>
-      <div class="list-view" id="shelfWhite-list"></div>
-      <div class="grid-view" id="shelfWhite-grid"></div>
-    </div>
-    <div class="table-pane" data-table-pane="pallet">
-      <div class="meta-bar">
-        <div class="meta-title editable" data-meta-title="pallet">整箱堆货区</div>
-        <div class="meta-fields">
-          <label>填表人 <input type="text" data-meta="filler" data-table-meta="pallet" placeholder="姓名"></label>
-          <label>日期 <input type="date" data-meta="date" data-table-meta="pallet"></label>
-          <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
-        </div>
-      </div>
-      <div class="search-bar">
-        <input type="text" class="search-input" data-search="pallet" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
-        <button class="search-icon-btn" data-search-input-btn="pallet" title="拍照/手写/语音搜索">📷</button>
-        <button class="search-clear" data-search-clear="pallet">✕</button>
-      </div>
-      <div class="search-results-info" data-search-info="pallet" style="display:none;"></div>
-      <div class="list-view" id="pallet-list"></div>
-      <div class="grid-view" id="pallet-grid"></div>
-    </div>
+  <main id="main-panes">
+    <!-- dynamically rendered by renderPanes() -->
   </main>
   <div class="delete-zone" id="delete-zone">🗑️ 拖到这里删除整箱(已搬走)</div>
 </div>
@@ -1097,20 +1046,32 @@
     <div class="sheet-body">
       <h3>补货到哪张零散表?</h3>
       <div id="restock-choose-info" style="background:#fff8d6; border:2px solid var(--ink); border-radius:10px; padding:12px; margin-bottom:14px; font-size:14px; line-height:1.5;"></div>
-      <div class="actions-list">
-        <button class="action-row" data-restock-target="shelfBlackTable">
-          <span class="ico">⬛</span>
-          <div><div style="font-weight:700;">黑色 MUG+IC 货架</div><div id="restock-black-info" style="font-size:11px; color:var(--muted);"></div></div>
-        </button>
-        <button class="action-row" data-restock-target="shelfWhiteTable">
-          <span class="ico">⬜</span>
-          <div><div style="font-weight:700;">白色 BK/CH 货架</div><div id="restock-white-info" style="font-size:11px; color:var(--muted);"></div></div>
-        </button>
+      <div class="actions-list" id="restock-zone-list">
+        <!-- dynamically populated by showRestockTableChoice() -->
       </div>
     </div>
     <div class="sheet-footer">
       <button class="sheet-cancel" data-close>取消(不补货)</button>
     </div>
+  </div>
+</div>
+
+<!-- Add zone modal -->
+<div class="sheet-backdrop modal-style" id="add-zone-sheet">
+  <div class="sheet" style="max-height:60vh;">
+    <div class="sheet-body">
+      <h3>新增区域 / Add Zone</h3>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:13px; margin-bottom:6px;">区域名称</label>
+        <input id="new-zone-name" type="text" placeholder="如：零散货架三区" style="width:100%; padding:10px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; font-family:inherit; box-sizing:border-box;">
+      </div>
+      <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:8px;">选择区域类型</div>
+      <div style="display:flex; gap:10px;">
+        <button class="action-row" id="add-zone-shelf-btn" style="flex:1;"><span class="ico">📦</span><div><div style="font-weight:700;">货架区 Shelf</div><div style="font-size:11px; color:var(--muted);">零散货品，按货架层摆放</div></div></button>
+        <button class="action-row" id="add-zone-pallet-btn" style="flex:1;"><span class="ico">🏗</span><div><div style="font-weight:700;">托盘区 Pallet</div><div style="font-size:11px; color:var(--muted);">整箱堆货，按托盘摆放</div></div></button>
+      </div>
+    </div>
+    <div class="sheet-footer"><button class="sheet-cancel" data-close>取消</button></div>
   </div>
 </div>
 
@@ -1427,30 +1388,41 @@ let state = null;
 let currentTable = 'shelfBlack';
 
 function newSlot() { return { modelId: null, color: null, qty: 0, unit: null, restock: 0 }; }
+
+function buildEmptyShelfTable() {
+  return { aisles: SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) })) };
+}
+function buildEmptyPalletTable() {
+  return { aisles: PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) })) };
+}
+
+function migrateV1toV2(old) {
+  const today = new Date().toISOString().slice(0, 10);
+  const meta = old.meta || {};
+  return {
+    models: old.models || [],
+    zones: [
+      { id:'shelfBlack', name:meta.shelfBlack?.title||'零散货架一区', type:'shelf',  aisles:(old.shelfBlackTable||buildEmptyShelfTable()).aisles, filler:meta.shelfBlack?.filler||'', date:meta.shelfBlack?.date||today },
+      { id:'shelfWhite', name:meta.shelfWhite?.title||'零散货架二区', type:'shelf',  aisles:(old.shelfWhiteTable||buildEmptyShelfTable()).aisles, filler:meta.shelfWhite?.filler||'', date:meta.shelfWhite?.date||today },
+      { id:'pallet',     name:meta.pallet?.title||'整箱堆货区',       type:'pallet', aisles:(old.palletTable||buildEmptyPalletTable()).aisles,   filler:meta.pallet?.filler||'',      date:meta.pallet?.date||today },
+    ],
+  };
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem('inventoryV3');
     if (raw) {
-      state = JSON.parse(raw);
-      if (state.models && state.shelfBlackTable && state.shelfWhiteTable && state.palletTable) {
-        // Migrate: ensure all slots have restock field, all models have boxToSetRatio
-        migrateState();
-        return;
-      }
+      const parsed = JSON.parse(raw);
+      if (parsed.zones) { state = parsed; migrateState(); return; }
+      if (parsed.models && parsed.shelfBlackTable) { state = migrateV1toV2(parsed); migrateState(); return; }
     }
     const oldRaw = localStorage.getItem('inventoryV2');
     if (oldRaw) {
       const old = JSON.parse(oldRaw);
-      if (old.models && old.shelfTable && old.palletTable) {
-        state = {
-          models: old.models,
-          shelfBlackTable: old.shelfTable,
-          shelfWhiteTable: buildEmptyShelfTable(),
-          palletTable: old.palletTable,
-          meta: { shelfBlack: { filler: '', date: '' }, shelfWhite: { filler: '', date: '' }, pallet: { filler: '', date: '' } }
-        };
-        migrateState();
-        return;
+      if (old.models && old.shelfTable) {
+        state = migrateV1toV2({ models:old.models, shelfBlackTable:old.shelfTable, shelfWhiteTable:buildEmptyShelfTable(), palletTable:old.palletTable, meta:{} });
+        migrateState(); return;
       }
     }
   } catch(e) {}
@@ -1458,24 +1430,16 @@ function loadState() {
 }
 
 function migrateState() {
-  // Ensure all models have boxToSetRatio
-  if (state.models) state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
-  // Ensure all slots have restock and unit fields
-  const tables = [state.shelfBlackTable, state.shelfWhiteTable];
-  for (const t of tables) {
-    if (!t) continue;
-    for (const a of (t.aisles || [])) for (const c of (a.shelves || [])) for (const s of (c.slots || [])) {
-      if (s.restock === undefined) s.restock = 0;
-      if (s.unit === undefined) s.unit = null;
+  state.models?.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
+  (state.zones||[]).forEach(z => {
+    if (z.type === 'shelf') {
+      for (const a of (z.aisles||[])) for (const c of (a.shelves||[])) for (const s of (c.slots||[])) { if (s.restock===undefined) s.restock=0; if (s.unit===undefined) s.unit=null; }
+    } else {
+      for (const a of (z.aisles||[])) for (const c of (a.pallets||[])) for (const s of (c.layers||[])) { if (s.restock===undefined) s.restock=0; if (s.unit===undefined) s.unit=null; }
     }
-  }
-  if (state.palletTable) {
-    for (const a of (state.palletTable.aisles || [])) for (const c of (a.pallets || [])) for (const s of (c.layers || [])) {
-      if (s.restock === undefined) s.restock = 0;
-      if (s.unit === undefined) s.unit = null;
-    }
-  }
+  });
 }
+
 function saveState() {
   try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {}
   if (typeof _warehouse !== 'undefined' && _warehouse) {
@@ -1483,9 +1447,7 @@ function saveState() {
     _supabaseSaveTimer = setTimeout(_cloudSave, 2000);
   }
 }
-function buildEmptyShelfTable() {
-  return { aisles: SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) })) };
-}
+
 function buildInitial() {
   const models = INITIAL_MODELS.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n }));
   const shelfBlackAisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
@@ -1531,77 +1493,51 @@ function buildInitial() {
   const today = new Date().toISOString().slice(0, 10);
   return {
     models,
-    shelfBlackTable: { aisles: shelfBlackAisles },
-    shelfWhiteTable: { aisles: shelfWhiteAisles },
-    palletTable: { aisles: palletAisles },
-    meta: {
-      shelfBlack: { filler: '', date: today, title: '零散货架一区' },
-      shelfWhite: { filler: '', date: today, title: '零散货架二区' },
-      pallet: { filler: '', date: today, title: '整箱堆货区' }
-    }
+    zones: [
+      { id:'shelfBlack', name:'零散货架一区', type:'shelf',  aisles:shelfBlackAisles, filler:'', date:today },
+      { id:'shelfWhite', name:'零散货架二区', type:'shelf',  aisles:shelfWhiteAisles, filler:'', date:today },
+      { id:'pallet',     name:'整箱堆货区',   type:'pallet', aisles:palletAisles,     filler:'', date:today },
+    ],
   };
 }
 
 function getModel(id) { return state.models.find(m => m.id === id); }
-function isShelfTable(t) { return t === 'shelfBlack' || t === 'shelfWhite'; }
-function getActiveTable() {
-  if (currentTable === 'shelfBlack') return state.shelfBlackTable;
-  if (currentTable === 'shelfWhite') return state.shelfWhiteTable;
-  return state.palletTable;
-}
+function getActiveZone() { return state.zones.find(z => z.id === currentTable) || state.zones[0]; }
+function isShelfTable(id) { return (state.zones.find(z => z.id === (id||currentTable)))?.type === 'shelf'; }
+function getActiveTable() { return getActiveZone(); }
 function getContainerKey() { return isShelfTable(currentTable) ? 'shelves' : 'pallets'; }
 function getSlotsKey() { return isShelfTable(currentTable) ? 'slots' : 'layers'; }
 function getSlot(ai, ci, si) { return getActiveTable().aisles[ai][getContainerKey()][ci][getSlotsKey()][si]; }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function render() { renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); }
+function render() { renderTabs(); renderPanes(); renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); }
 
 function renderMetaBars() {
-  if (!state.meta) state.meta = { shelfBlack:{filler:'',date:'',title:'零散货架一区'}, shelfWhite:{filler:'',date:'',title:'零散货架二区'}, pallet:{filler:'',date:'',title:'整箱堆货区'} };
-  const defaults = { shelfBlack: '零散货架一区', shelfWhite: '零散货架二区', pallet: '整箱堆货区' };
-  ['shelfBlack','shelfWhite','pallet'].forEach(key => {
-    if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title: defaults[key] };
-    if (!state.meta[key].title) state.meta[key].title = defaults[key];
-    const fillerInp = document.querySelector(`input[data-meta="filler"][data-table-meta="${key}"]`);
-    const dateInp = document.querySelector(`input[data-meta="date"][data-table-meta="${key}"]`);
-    const titleEl = document.querySelector(`.meta-title[data-meta-title="${key}"]`);
-    if (fillerInp && document.activeElement !== fillerInp) fillerInp.value = state.meta[key].filler || '';
-    if (dateInp && document.activeElement !== dateInp) dateInp.value = state.meta[key].date || '';
-    if (titleEl && titleEl.contentEditable !== 'true') titleEl.textContent = state.meta[key].title || defaults[key];
+  (state.zones||[]).forEach(z => {
+    const fillerInp = document.querySelector(`input[data-meta="filler"][data-table-meta="${z.id}"]`);
+    const dateInp   = document.querySelector(`input[data-meta="date"][data-table-meta="${z.id}"]`);
+    const titleEl   = document.querySelector(`.meta-title[data-meta-title="${z.id}"]`);
+    if (fillerInp && document.activeElement !== fillerInp) fillerInp.value = z.filler || '';
+    if (dateInp   && document.activeElement !== dateInp)   dateInp.value   = z.date   || '';
+    if (titleEl   && titleEl.contentEditable !== 'true')   titleEl.textContent = z.name;
   });
 }
 
-document.querySelectorAll('input[data-meta]').forEach(inp => {
-  inp.addEventListener('input', () => {
-    const key = inp.dataset.tableMeta;
-    const field = inp.dataset.meta;
-    if (!state.meta) state.meta = {};
-    if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title:'' };
-    state.meta[key][field] = inp.value;
-    saveState();
-  });
+// Meta inputs & save — event delegation on #main-panes (works for dynamically created panes)
+document.getElementById('main-panes').addEventListener('input', e => {
+  const inp = e.target.closest('input[data-meta]');
+  if (!inp) return;
+  const zone = state.zones.find(z => z.id === inp.dataset.tableMeta);
+  if (zone) { zone[inp.dataset.meta] = inp.value; saveState(); }
+});
+document.getElementById('main-panes').addEventListener('click', e => {
+  const btn = e.target.closest('[data-meta-save]');
+  if (!btn) return;
+  e.preventDefault(); e.stopPropagation();
+  if (!_user) { _pulseLoginBtn(); return; }
+  saveState(); showSheet('save-sheet');
 });
 
-// SAVE buttons inside each meta-bar — open save sheet
-document.querySelectorAll('[data-meta-save]').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!_user) { _pulseLoginBtn(); return; }
-    saveState();
-    showSheet('save-sheet');
-  });
-});
-
-document.querySelectorAll('.meta-title[data-meta-title]').forEach(el => {
-  let lastTap = 0;
-  el.addEventListener('dblclick', (e) => { e.preventDefault(); startEditMetaTitle(el); });
-  el.addEventListener('touchend', (e) => {
-    const now = Date.now();
-    if (now - lastTap < 350) { e.preventDefault(); startEditMetaTitle(el); }
-    lastTap = now;
-  });
-});
 function startEditMetaTitle(el) {
   el.contentEditable = 'true';
   el.focus();
@@ -1611,9 +1547,9 @@ function startEditMetaTitle(el) {
     el.contentEditable = 'false';
     el.removeEventListener('blur', finish); el.removeEventListener('keydown', onKey);
     const txt = el.textContent.trim();
-    const key = el.dataset.metaTitle;
-    if (!state.meta[key]) state.meta[key] = { filler:'', date:'', title:'' };
-    if (txt) state.meta[key].title = txt;
+    const zid = el.dataset.metaTitle;
+    const zone = state.zones.find(z => z.id === zid);
+    if (zone && txt) { zone.name = txt; renderTabs(); }
     render();
   };
   const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } if (e.key === 'Escape') { e.preventDefault(); render(); } };
@@ -2422,10 +2358,7 @@ function openColorPicker(ai, ci, si) {
         return;
       }
       // Direct table access — don't go through getSlot which depends on currentTable
-      let tableData;
-      if (targetTable === 'shelfBlack') tableData = state.shelfBlackTable;
-      else if (targetTable === 'shelfWhite') tableData = state.shelfWhiteTable;
-      else if (targetTable === 'pallet') tableData = state.palletTable;
+      const tableData = state.zones.find(z => z.id === targetTable);
 
       const containerKey = (targetTable === 'pallet') ? 'pallets' : 'shelves';
       const slotsKey = (targetTable === 'pallet') ? 'layers' : 'slots';
@@ -2673,15 +2606,14 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   const ratio = m.boxToSetRatio || 1;
   const sets = boxes * ratio;
 
-  // Find the model in scattered shelf tables
+  // Find the model in all shelf zones
   const targets = [];
-  ['shelfBlackTable', 'shelfWhiteTable'].forEach(tableKey => {
-    const table = state[tableKey];
-    table.aisles.forEach((aisle, ai) => {
+  state.zones.filter(z => z.type === 'shelf').forEach(zone => {
+    zone.aisles.forEach((aisle, ai) => {
       aisle.shelves.forEach((shelf, ci) => {
         shelf.slots.forEach((slot, si) => {
           if (slot.modelId === m.id) {
-            targets.push({ table: tableKey, ai, ci, si, location: `${aisle.name}通道-${shelf.name}` });
+            targets.push({ zoneId: zone.id, ai, ci, si, location: `${aisle.name}-${shelf.name}` });
           }
         });
       });
@@ -2699,72 +2631,61 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
 
   pendingRestock = { palletAi, palletCi, palletSi, modelId: m.id, modelName: m.name, boxes, sets, ratio, targets };
 
-  // Group by table
-  const blackTargets = targets.filter(t => t.table === 'shelfBlackTable');
-  const whiteTargets = targets.filter(t => t.table === 'shelfWhiteTable');
-
-  // If only one table has it, skip the table-choice dialog
-  if (blackTargets.length === 0 && whiteTargets.length > 0) {
-    confirmRestock('shelfWhiteTable');
-  } else if (whiteTargets.length === 0 && blackTargets.length > 0) {
-    confirmRestock('shelfBlackTable');
+  // Group by zone
+  const byZone = {};
+  targets.forEach(t => { if (!byZone[t.zoneId]) byZone[t.zoneId] = []; byZone[t.zoneId].push(t); });
+  const zoneIds = Object.keys(byZone);
+  if (zoneIds.length === 1) {
+    confirmRestock(zoneIds[0]);
   } else {
-    // Both tables have it — ask user
-    showRestockTableChoice(blackTargets, whiteTargets);
+    showRestockTableChoice(byZone);
   }
 }
 
-function showRestockTableChoice(blackTargets, whiteTargets) {
-  const sheet = document.getElementById('restock-choose-sheet');
-  if (!sheet) return;
+function showRestockTableChoice(byZone) {
   document.getElementById('restock-choose-info').innerHTML =
     `<b>${escapeHtml(pendingRestock.modelName)}</b> · 补货 <b style="color:var(--red);">${pendingRestock.boxes} 箱</b> = <b style="color:#2f7028;">${pendingRestock.sets} 套</b><br>
      <span style="font-size:11px; color:var(--muted);">(换算 1 箱 = ${pendingRestock.ratio} 套)</span>`;
-  document.getElementById('restock-black-info').textContent = `黑色 MUG+IC (${blackTargets.length} 个位置)`;
-  document.getElementById('restock-white-info').textContent = `白色 BK/CH (${whiteTargets.length} 个位置)`;
+  const listEl = document.getElementById('restock-zone-list');
+  listEl.innerHTML = Object.entries(byZone).map(([zid, ts]) => {
+    const zone = state.zones.find(z => z.id === zid);
+    return `<button class="action-row" data-restock-zone="${escapeHtml(zid)}"><span class="ico">📦</span><div><div style="font-weight:700;">${escapeHtml(zone?.name||zid)}</div><div style="font-size:11px;color:var(--muted);">${ts.length} 个位置</div></div></button>`;
+  }).join('');
+  listEl.querySelectorAll('[data-restock-zone]').forEach(btn => {
+    btn.addEventListener('click', () => confirmRestock(btn.dataset.restockZone));
+    btn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); confirmRestock(btn.dataset.restockZone); }, { passive: false });
+  });
   showSheet('restock-choose-sheet');
 }
 
-function confirmRestock(tableKey) {
+function confirmRestock(zoneId) {
   if (!pendingRestock) { hideSheets(); return; }
-  const { palletAi, palletCi, palletSi, modelId, boxes, sets, targets } = pendingRestock;
-  const palletSlot = state.palletTable.aisles[palletAi].pallets[palletCi].layers[palletSi];
-  const targetsInTable = targets.filter(t => t.table === tableKey);
+  const { palletAi, palletCi, palletSi, boxes, sets, targets } = pendingRestock;
+  const palletZone = state.zones.find(z => z.type === 'pallet') || state.zones[state.zones.length-1];
+  const palletSlot = palletZone.aisles[palletAi].pallets[palletCi].layers[palletSi];
+  const targetsInZone = targets.filter(t => t.zoneId === zoneId);
 
-  if (targetsInTable.length === 0) {
-    toast('⚠️ 该表中无此型号');
+  if (targetsInZone.length === 0) {
+    toast('⚠️ 该区中无此型号');
     pendingRestock = null; hideSheets(); render(); return;
   }
 
-  // Add all sets to the FIRST matching slot (simplest predictable behavior)
-  const tgt = targetsInTable[0];
-  const tgtSlot = state[tableKey].aisles[tgt.ai].shelves[tgt.ci].slots[tgt.si];
-  const oldQty = tgtSlot.qty || 0;
-  tgtSlot.qty = oldQty + sets;
-  // Also default unit to 套 if not set
+  const tgt = targetsInZone[0];
+  const tgtZone = state.zones.find(z => z.id === tgt.zoneId);
+  const tgtSlot = tgtZone.aisles[tgt.ai].shelves[tgt.ci].slots[tgt.si];
+  tgtSlot.qty = (tgtSlot.qty || 0) + sets;
   if (!tgtSlot.unit) tgtSlot.unit = '套';
 
-  // Deduct from pallet
   palletSlot.qty = Math.max(0, (palletSlot.qty || 0) - boxes);
   palletSlot.restock = 0;
   if (!palletSlot.unit) palletSlot.unit = '箱';
 
-  const tableName = tableKey === 'shelfBlackTable' ? '零散货架一区' : '零散货架二区';
-  toast(`✅ 整箱 -${boxes}箱 → ${tableName} ${tgt.location} +${sets}套`);
+  const zoneName = tgtZone?.name || zoneId;
+  toast(`✅ 整箱 -${boxes}箱 → ${zoneName} ${tgt.location} +${sets}套`);
   pendingRestock = null;
   hideSheets();
   render();
 }
-
-// Bind restock target choice buttons
-document.querySelectorAll('[data-restock-target]').forEach(btn => {
-  const handler = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    confirmRestock(btn.dataset.restockTarget);
-  };
-  btn.addEventListener('click', handler);
-  btn.addEventListener('touchend', handler, { passive: false });
-});
 
 function openUnitEditor(ai, ci, si) {
   pendingSlot = { ai, ci, si };
@@ -3778,14 +3699,6 @@ function moveShelf(srcAi, srcCi, tgtAi, tgtCi) {
   render();
 }
 
-document.querySelectorAll('.table-tab').forEach(b => {
-  b.addEventListener('click', () => {
-    currentTable = b.dataset.table;
-    document.querySelectorAll('.table-tab').forEach(x => x.classList.toggle('active', x.dataset.table === currentTable));
-    document.querySelectorAll('.table-pane').forEach(x => x.classList.toggle('active', x.dataset.tablePane === currentTable));
-    render();
-  });
-});
 document.querySelectorAll('.tool[data-view]').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.tool[data-view]').forEach(x => x.classList.remove('active'));
@@ -4320,7 +4233,7 @@ function toast(msg, ms = 3000) {
 }
 
 // =============== SEARCH HIGHLIGHT ===============
-const searchQueries = { shelfBlack: '', shelfWhite: '', pallet: '' };
+const searchQueries = {};
 
 function applySearchHighlight() {
   const q = (searchQueries[currentTable] || '').trim().toLowerCase();
@@ -4389,53 +4302,155 @@ function applySearchHighlight() {
   }
 }
 
-// Bind search inputs
-document.querySelectorAll('.search-input').forEach(inp => {
-  inp.addEventListener('input', (e) => {
-    const tbl = inp.dataset.search;
-    searchQueries[tbl] = e.target.value;
-    const clearBtn = document.querySelector(`[data-search-clear="${tbl}"]`);
-    if (clearBtn) clearBtn.classList.toggle('show', !!e.target.value);
-    if (tbl === currentTable) applySearchHighlight();
-  });
+// Search inputs — event delegation on #main-panes (handles dynamically created panes)
+document.getElementById('main-panes').addEventListener('input', e => {
+  const inp = e.target.closest('.search-input');
+  if (!inp) return;
+  const tbl = inp.dataset.search;
+  searchQueries[tbl] = e.target.value;
+  const clearBtn = document.querySelector(`[data-search-clear="${tbl}"]`);
+  if (clearBtn) clearBtn.classList.toggle('show', !!e.target.value);
+  if (tbl === currentTable) applySearchHighlight();
 });
-document.querySelectorAll('[data-search-clear]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tbl = btn.dataset.searchClear;
+document.getElementById('main-panes').addEventListener('click', e => {
+  const btn = e.target.closest('[data-search-clear]');
+  if (!btn) return;
+  const tbl = btn.dataset.searchClear;
+  const inp = document.querySelector(`[data-search="${tbl}"]`);
+  if (inp) { inp.value = ''; searchQueries[tbl] = ''; }
+  btn.classList.remove('show');
+  if (tbl === currentTable) applySearchHighlight();
+});
+document.getElementById('main-panes').addEventListener('click', e => {
+  const btn = e.target.closest('[data-search-input-btn]');
+  if (!btn) return;
+  const tbl = btn.dataset.searchInputBtn;
+  pendingModelTarget = null;
+  modelPickerCallback = (model) => {
     const inp = document.querySelector(`[data-search="${tbl}"]`);
-    if (inp) { inp.value = ''; searchQueries[tbl] = ''; }
-    btn.classList.remove('show');
-    if (tbl === currentTable) applySearchHighlight();
-  });
+    if (inp) {
+      inp.value = model.name;
+      searchQueries[tbl] = model.name;
+      const clearBtn = document.querySelector(`[data-search-clear="${tbl}"]`);
+      if (clearBtn) clearBtn.classList.add('show');
+      if (tbl === currentTable) applySearchHighlight();
+    }
+  };
+  selectedSuggestionId = null;
+  switchInputMethod('type');
+  document.getElementById('camera-title').textContent = '🔍 搜索型号 (拍照/打字/手写/语音)';
+  document.getElementById('model-search').value = '';
+  const ratioInp = document.getElementById('model-ratio-input');
+  if (ratioInp) ratioInp.value = 1;
+  renderSuggestions('');
+  showSheet('camera-sheet');
+  setTimeout(() => { document.getElementById('model-search').focus(); }, 200);
 });
-// Search via 4-input methods (camera/handwrite/voice picker)
-document.querySelectorAll('[data-search-input-btn]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tbl = btn.dataset.searchInputBtn;
-    // Open the model picker but redirect its result to the search input
-    pendingModelTarget = null;
-    modelPickerCallback = (model) => {
-      const inp = document.querySelector(`[data-search="${tbl}"]`);
-      if (inp) {
-        inp.value = model.name;
-        searchQueries[tbl] = model.name;
-        const clearBtn = document.querySelector(`[data-search-clear="${tbl}"]`);
-        if (clearBtn) clearBtn.classList.add('show');
-        if (tbl === currentTable) applySearchHighlight();
+
+// ── Dynamic zones UI ──
+function renderTabs() {
+  const bar = document.getElementById('table-tabs-bar');
+  if (!bar || !state?.zones) return;
+  bar.innerHTML = state.zones.map(z => {
+    const delBtn = state.zones.length > 1
+      ? `<button class="zone-del-btn" data-del-zone="${z.id}" title="删除此区域">✕</button>`
+      : '';
+    return `<button class="table-tab ${z.id===currentTable?'active':''}" data-tab-zone="${z.id}">${escapeHtml(z.name)}<small>${z.type==='shelf'?'货架区':'托盘区'}</small>${delBtn}</button>`;
+  }).join('') + `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>`;
+
+  bar.querySelectorAll('[data-tab-zone]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      if (e.target.closest('[data-del-zone]')) return;
+      switchZone(btn.dataset.tabZone);
+    });
+  });
+  bar.querySelectorAll('[data-del-zone]').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); _removeZone(btn.dataset.delZone); });
+  });
+  document.getElementById('add-zone-tab-btn')?.addEventListener('click', _showAddZoneSheet);
+}
+
+function renderPanes() {
+  const main = document.getElementById('main-panes');
+  if (!main || !state?.zones) return;
+  state.zones.forEach(z => {
+    if (!document.querySelector(`[data-table-pane="${z.id}"]`)) {
+      const pane = document.createElement('div');
+      pane.className = 'table-pane';
+      pane.setAttribute('data-table-pane', z.id);
+      pane.innerHTML = `
+        <div class="meta-bar">
+          <div class="meta-title editable" data-meta-title="${z.id}">${escapeHtml(z.name)}</div>
+          <div class="meta-fields">
+            <label>填表人 <input type="text" data-meta="filler" data-table-meta="${z.id}" placeholder="姓名"></label>
+            <label>日期 <input type="date" data-meta="date" data-table-meta="${z.id}"></label>
+            <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
+          </div>
+        </div>
+        <div class="search-bar">
+          <input type="text" class="search-input" data-search="${z.id}" placeholder="🔍 搜索型号(高亮闪光显示)..." autocomplete="off">
+          <button class="search-icon-btn" data-search-input-btn="${z.id}" title="拍照/手写/语音搜索">📷</button>
+          <button class="search-clear" data-search-clear="${z.id}">✕</button>
+        </div>
+        <div class="search-results-info" data-search-info="${z.id}" style="display:none;"></div>
+        <div class="list-view" id="${z.id}-list"></div>
+        <div class="grid-view" id="${z.id}-grid"></div>`;
+      main.appendChild(pane);
+      const titleEl = pane.querySelector('.meta-title');
+      if (titleEl) {
+        titleEl.addEventListener('dblclick', e => { e.preventDefault(); startEditMetaTitle(titleEl); });
+        let lastTap = 0;
+        titleEl.addEventListener('touchend', e => {
+          const now = Date.now();
+          if (now - lastTap < 350) { e.preventDefault(); startEditMetaTitle(titleEl); }
+          lastTap = now;
+        });
       }
-      // Don't actually create a slot — just use the name for searching
-    };
-    selectedSuggestionId = null;
-    switchInputMethod('type');
-    document.getElementById('camera-title').textContent = '🔍 搜索型号 (拍照/打字/手写/语音)';
-    document.getElementById('model-search').value = '';
-    const ratioInp = document.getElementById('model-ratio-input');
-    if (ratioInp) ratioInp.value = 1;
-    renderSuggestions('');
-    showSheet('camera-sheet');
-    setTimeout(() => { document.getElementById('model-search').focus(); }, 200);
+    }
   });
-});
+  document.querySelectorAll('[data-table-pane]').forEach(pane => {
+    const zid = pane.getAttribute('data-table-pane');
+    if (!state.zones.find(z => z.id === zid)) pane.remove();
+    else pane.classList.toggle('active', zid === currentTable);
+  });
+}
+
+function switchZone(zid) {
+  if (!state.zones.find(z => z.id === zid)) return;
+  currentTable = zid;
+  render();
+}
+
+function _showAddZoneSheet() {
+  const inp = document.getElementById('new-zone-name');
+  if (inp) inp.value = '';
+  showSheet('add-zone-sheet');
+}
+
+function _addZone(type) {
+  const name = (document.getElementById('new-zone-name')?.value.trim()) || (type === 'shelf' ? '新货架区' : '新托盘区');
+  const id = 'zone_' + Date.now();
+  const aisles = type === 'shelf' ? buildEmptyShelfTable().aisles : buildEmptyPalletTable().aisles;
+  state.zones.push({ id, name, type, aisles, filler: '', date: new Date().toISOString().slice(0,10) });
+  hideSheets();
+  currentTable = id;
+  render();
+  toast(`新增区域"${name}"`);
+}
+
+function _removeZone(zid) {
+  if (state.zones.length <= 1) { toast('⚠️ 至少保留一个区域'); return; }
+  const zone = state.zones.find(z => z.id === zid);
+  if (!confirm(`确定删除"${zone?.name}"？此操作不可撤销。`)) return;
+  state.zones = state.zones.filter(z => z.id !== zid);
+  if (currentTable === zid) currentTable = state.zones[0].id;
+  document.querySelector(`[data-table-pane="${zid}"]`)?.remove();
+  render();
+  toast('区域已删除');
+}
+
+document.getElementById('add-zone-shelf-btn')?.addEventListener('click', () => _addZone('shelf'));
+document.getElementById('add-zone-pallet-btn')?.addEventListener('click', () => _addZone('pallet'));
 
 // ================================================================
 // SUPABASE · AUTH · CLOUD SYNC · PERMISSIONS
@@ -4623,14 +4638,18 @@ async function _cloudLoad() {
       .select('models,shelf_black_table,shelf_white_table,pallet_table,meta')
       .eq('warehouse_id', _warehouse.id).single();
     if (!data || !Array.isArray(data.models)) return false;
-    const hasAisles = t => t && Array.isArray(t.aisles) && t.aisles.length > 0;
-    state = {
-      models:          data.models,
-      shelfBlackTable: hasAisles(data.shelf_black_table) ? data.shelf_black_table : buildEmptyShelfTable(),
-      shelfWhiteTable: hasAisles(data.shelf_white_table) ? data.shelf_white_table : buildEmptyShelfTable(),
-      palletTable:     hasAisles(data.pallet_table)      ? data.pallet_table      : buildInitial().palletTable,
-      meta:            data.meta || {}
-    };
+    if (data.meta?.zones) {
+      state = { models: data.models, zones: data.meta.zones };
+    } else {
+      const hasAisles = t => t && Array.isArray(t.aisles) && t.aisles.length > 0;
+      state = migrateV1toV2({
+        models: data.models,
+        shelfBlackTable: hasAisles(data.shelf_black_table) ? data.shelf_black_table : buildEmptyShelfTable(),
+        shelfWhiteTable: hasAisles(data.shelf_white_table) ? data.shelf_white_table : buildEmptyShelfTable(),
+        palletTable:     hasAisles(data.pallet_table)      ? data.pallet_table      : buildEmptyPalletTable(),
+        meta: data.meta || {}
+      });
+    }
     state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
     return true;
   } catch(e) { return false; }
@@ -4640,13 +4659,16 @@ async function _cloudLoad() {
 async function _cloudSave() {
   if (!_warehouse || !_user) return;
   try {
+    const zSB = state.zones.find(z => z.id === 'shelfBlack');
+    const zSW = state.zones.find(z => z.id === 'shelfWhite');
+    const zPL = state.zones.find(z => z.id === 'pallet');
     await sb.from('warehouse_state').upsert({
       warehouse_id:      _warehouse.id,
       models:            state.models,
-      shelf_black_table: state.shelfBlackTable,
-      shelf_white_table: state.shelfWhiteTable,
-      pallet_table:      state.palletTable,
-      meta:              state.meta,
+      shelf_black_table: zSB ? { aisles: zSB.aisles } : null,
+      shelf_white_table: zSW ? { aisles: zSW.aisles } : null,
+      pallet_table:      zPL ? { aisles: zPL.aisles } : null,
+      meta:              { zones: state.zones },
       updated_at:        new Date().toISOString()
     }, { onConflict: 'warehouse_id' });
   } catch(e) { console.warn('Cloud save failed:', e); }
