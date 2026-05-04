@@ -1305,8 +1305,24 @@
     <div class="sheet-body">
       <h3>⚙️ 设置 / Settings</h3>
 
-      <!-- Warehouse info -->
-      <div style="margin-bottom:18px;">
+      <!-- Current user row -->
+      <div id="settings-user-row" style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:14px;">
+        <div style="flex:1; min-width:0;">
+          <div id="settings-display-name" style="font-weight:700; font-size:14px; margin-bottom:2px;"></div>
+          <div id="settings-user-email" style="font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+        </div>
+        <button onclick="_toggleRenameForm()" style="font-size:12px; padding:5px 10px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); cursor:pointer; white-space:nowrap; flex-shrink:0;">改名</button>
+      </div>
+      <div id="settings-rename-form" style="display:none; margin-bottom:14px; background:var(--bg); border-radius:10px; padding:12px; border:1.5px solid var(--line);">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">新用户名（在公司内唯一，用于"填表人"自动填写）</div>
+        <div style="display:flex; gap:8px;">
+          <input id="rename-input" type="text" placeholder="输入用户名..." style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
+          <button onclick="_confirmRename()" style="padding:8px 14px; background:var(--red); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit;">确认</button>
+        </div>
+      </div>
+
+      <!-- Warehouse info (boss only: invite code) -->
+      <div id="wh-invite-section" style="margin-bottom:18px;">
         <div class="team-section-title">🏪 仓库信息</div>
         <div class="wh-code-box">
           <span id="wh-code-display">—</span>
@@ -4665,13 +4681,14 @@ document.getElementById('main-panes').addEventListener('click', e => {
 function renderTabs() {
   const bar = document.getElementById('table-tabs-bar');
   if (!bar || !state?.zones) return;
-  const canMgr = _canManage();
+  // Zone add/delete: boss only (or unauthenticated demo). Managers cannot add/delete zones.
+  const canZone = !_role || _role === 'boss';
   bar.innerHTML = state.zones.map(z => {
-    const delBtn = (canMgr && state.zones.length > 1)
+    const delBtn = (canZone && state.zones.length > 1)
       ? `<button class="zone-del-btn" data-del-zone="${z.id}" title="删除此区域">✕</button>`
       : '';
     return `<button class="table-tab ${z.id===currentTable?'active':''}" data-tab-zone="${z.id}">${escapeHtml(z.name)}<small>${z.type==='shelf'?'货架区':'托盘区'}</small>${delBtn}</button>`;
-  }).join('') + (canMgr ? `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>` : '');
+  }).join('') + (canZone ? `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>` : '');
 
   bar.querySelectorAll('[data-tab-zone]').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -4776,6 +4793,7 @@ const _STRIPE_PK = 'pk_test_51TSuQEE6TJzfSMV6fTefIFNS3YFFSXK9rvvdhr8ap7UyW36oJAl
 const sb = window.supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
 let _user = null, _warehouse = null, _role = null, _subscription = null, _memberships = [];
+let _displayName = '';
 let _supabaseSaveTimer = null;
 let _inviteWarehouseId = null, _inviteRole = null;
 
@@ -4881,7 +4899,9 @@ function _updateWarehouseSwitcherUI() {
   const label = document.getElementById('wh-name-label');
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (!_warehouse) return;
-  if (btn) btn.style.display = 'block';      // explicit — CSS has display:none so '' would fall back to it
+  // Multi-warehouse switch: boss only, and only if they have >1 warehouse
+  const canSwitch = _role === 'boss' && _memberships.length > 1;
+  if (btn) btn.style.display = canSwitch ? 'block' : 'none';
   if (trigBtn) trigBtn.style.display = 'none';
   if (label) {
     const name = _warehouse.name || '仓库';
@@ -4920,6 +4940,7 @@ async function switchWarehouse(warehouseId) {
   // Switch
   _warehouse = m.warehouses;
   _role      = m.role;
+  _displayName = m.display_name || _user?.user_metadata?.display_name || '';
   localStorage.setItem('lastWarehouseId', warehouseId);
   // Load subscription for new warehouse
   const { data: sub } = await sb.from('subscriptions')
@@ -4939,6 +4960,7 @@ async function switchWarehouse(warehouseId) {
   _applyPermissions();
   _updateWarehouseSwitcherUI();
   render();
+  _autoFillFiller();
   toast(`✅ 已切换到: ${_warehouse.name}`);
 }
 
@@ -4995,7 +5017,7 @@ async function _onSignIn(user) {
   // Get membership(s)
   const { data: memberships } = await sb
     .from('warehouse_members')
-    .select('role, warehouse_id, warehouses(*)')
+    .select('role, display_name, warehouse_id, warehouses(*)')
     .eq('user_id', user.id);
 
   if (!memberships || memberships.length === 0) {
@@ -5013,6 +5035,7 @@ async function _onSignIn(user) {
   const m = preferred || memberships[0];
   _warehouse = m.warehouses;
   _role      = m.role;
+  _displayName = m.display_name || user.user_metadata?.display_name || '';
 
   // Load subscription
   const { data: sub } = await sb.from('subscriptions')
@@ -5033,7 +5056,8 @@ async function _onSignIn(user) {
 
   _updateWarehouseSwitcherUI();
   render();
-  toast('👋 ' + (_role === 'boss' ? '👑 老板' : _role === 'manager' ? '🔑 经理' : '👷 操作员') + ' — ' + (user.email || ''));
+  _autoFillFiller();
+  toast('👋 ' + (_role === 'boss' ? '👑 老板' : _role === 'manager' ? '🔑 经理' : '👷 操作员') + ' — ' + (_displayName || user.email || ''));
 }
 
 // ── Cloud load ──
@@ -5083,14 +5107,18 @@ async function _cloudSave() {
 // ── Permissions ──
 function _applyPermissions() {
   const isOp   = _role === 'operator';
+  const isMgr  = _role === 'manager';
   const isBoss = _role === 'boss';
 
-  // Operators: read-only — no model management or structural changes
+  // Operators: no model upload
   document.getElementById('upload-btn').style.display = isOp ? 'none' : '';
-  document.getElementById('reset-btn').style.display  = isOp ? 'none' : '';
+  // Operators and managers: no reset
+  document.getElementById('reset-btn').style.display  = (isOp || isMgr) ? 'none' : '';
 
-  // Only boss sees team management panel
+  // Boss only: team management + invite code sharing
   document.getElementById('team-mgmt-section').style.display = isBoss ? '' : 'none';
+  const inviteSec = document.getElementById('wh-invite-section');
+  if (inviteSec) inviteSec.style.display = isBoss ? '' : 'none';
 }
 // Runtime permission checks called by delete/edit handlers
 // _canManage: null role = demo/unauthenticated = full access; operator = read-only structural view
@@ -5100,6 +5128,21 @@ window._canManageAisle = window._canManage;
 
 // ── Settings sheet: populate and open ──
 async function _openSettings() {
+  // User row (only visible when logged in)
+  const userRow = document.getElementById('settings-user-row');
+  const nameEl  = document.getElementById('settings-display-name');
+  const emailEl = document.getElementById('settings-user-email');
+  const renameInp = document.getElementById('rename-input');
+  if (userRow) userRow.style.display = _user ? 'flex' : 'none';
+  if (nameEl)  nameEl.textContent  = _displayName || '';
+  if (emailEl) emailEl.textContent = _user?.email || '';
+  if (renameInp) renameInp.value   = _displayName || '';
+  const renameForm = document.getElementById('settings-rename-form');
+  if (renameForm) renameForm.style.display = 'none';
+
+  // Apply role-based visibility in settings
+  _applyPermissions();
+
   // Warehouse code
   document.getElementById('wh-code-display').textContent = _warehouse?.code || '—';
 
@@ -5128,7 +5171,7 @@ async function _openSettings() {
     listEl.innerHTML = (members || []).map(m =>
       `<div class="team-member-row">
         <span style="flex:1">${m.display_name || m.user_id}</span>
-        <span class="team-member-role">${m.role === 'boss' ? '👑' : m.role === 'manager' ? '🔑' : '👷'} ${m.role}</span>
+        <span class="team-member-role">${m.role === 'boss' ? '👑 老板' : m.role === 'manager' ? '🔑 经理' : '👷 操作员'}</span>
         ${m.user_id !== _user?.id ? `<button onclick="_removeMember('${m.user_id}')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;">✕</button>` : ''}
       </div>`
     ).join('');
@@ -5138,6 +5181,66 @@ async function _openSettings() {
 }
 function _copyCode() {
   navigator.clipboard.writeText(_warehouse?.code || '').then(() => toast('邀请码已复制'));
+}
+
+// ── Username / display name ──
+function _getMyDisplayName() {
+  return _displayName || _user?.email || '';
+}
+
+function _autoFillFiller() {
+  if (!_user) return;
+  const name = _getMyDisplayName();
+  (state.zones || []).forEach(z => { if (!z.filler) z.filler = name; });
+  renderMetaBars();
+}
+
+function _toggleRenameForm() {
+  const form = document.getElementById('settings-rename-form');
+  if (!form) return;
+  const showing = form.style.display !== 'none';
+  form.style.display = showing ? 'none' : '';
+  if (!showing) setTimeout(() => document.getElementById('rename-input')?.focus(), 50);
+}
+
+async function _confirmRename() {
+  const inp = document.getElementById('rename-input');
+  const name = (inp?.value || '').trim();
+  if (!name) { toast('用户名不能为空'); return; }
+
+  // Find all warehouses in the same company (same boss)
+  const { data: bossRec } = await sb.from('warehouse_members')
+    .select('user_id').eq('warehouse_id', _warehouse.id).eq('role', 'boss').single();
+  const bossId = bossRec?.user_id;
+  let whIds = _memberships.map(m => m.warehouses?.id || m.warehouse_id).filter(Boolean);
+  if (bossId) {
+    const { data: bossWhs } = await sb.from('warehouse_members')
+      .select('warehouse_id').eq('user_id', bossId).eq('role', 'boss');
+    if (bossWhs?.length) whIds = [...new Set([...whIds, ...bossWhs.map(r => r.warehouse_id)])];
+  }
+
+  // Uniqueness check (exclude self)
+  const { data: taken } = await sb.from('warehouse_members')
+    .select('user_id').in('warehouse_id', whIds).eq('display_name', name).neq('user_id', _user.id);
+  if (taken && taken.length > 0) { toast('❌ 此用户名已被公司成员占用，请换一个'); return; }
+
+  // Update all this user's memberships in the company
+  const myWhIds = _memberships.map(m => m.warehouses?.id || m.warehouse_id).filter(Boolean);
+  await sb.from('warehouse_members').update({ display_name: name })
+    .eq('user_id', _user.id).in('warehouse_id', myWhIds);
+
+  // Update local state
+  _displayName = name;
+  _memberships.forEach(m => { m.display_name = name; });
+
+  // Refresh settings user row
+  const nameEl = document.getElementById('settings-display-name');
+  if (nameEl) nameEl.textContent = name;
+  document.getElementById('settings-rename-form').style.display = 'none';
+
+  // Auto-fill empty filler fields
+  _autoFillFiller();
+  toast('✅ 用户名已更新为: ' + name);
 }
 async function _removeMember(uid) {
   if (!confirm('确定要移除此成员?')) return;
