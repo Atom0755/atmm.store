@@ -659,6 +659,8 @@
   .sheet-backdrop.modal-style .sheet { border-radius: 16px; max-height: 92vh; max-width: 460px; width: calc(100% - 24px); border-bottom: 1px solid var(--line); animation: fadeIn .2s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } }
   @keyframes slideUp { from { transform: translateY(100%); } }
+  @keyframes logoutShake { 0%,100%{transform:translateX(0) scale(1)} 20%{transform:translateX(-5px) scale(1.02)} 40%{transform:translateX(5px) scale(1.02)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+  .logout-busy { animation: logoutShake .4s ease; opacity:0.7; pointer-events:none; }
   .sheet h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; color: var(--muted); }
   .color-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
   .color-opt {
@@ -3998,9 +4000,15 @@ document.querySelectorAll('.tool[data-view]').forEach(b => {
   });
 });
 
-function showSheet(id) { document.getElementById(id).classList.add('show'); }
+function showSheet(id) {
+  document.getElementById(id).classList.add('show');
+  const footer = document.getElementById('zehem-footer');
+  if (footer) footer.style.display = 'none';
+}
 function hideSheets() {
   document.querySelectorAll('.sheet-backdrop').forEach(s => s.classList.remove('show'));
+  const footer = document.getElementById('zehem-footer');
+  if (footer) footer.style.display = '';
   stopCamera();
   stopVoice();
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
@@ -4878,18 +4886,18 @@ async function _doAcceptInvite() {
 }
 
 // ── Sign out ──
-async function _doLogout() {
-  await sb.auth.signOut();
-  _user = null; _warehouse = null; _role = null; _subscription = null; _memberships = [];
-  localStorage.removeItem('lastWarehouseId');
-  loadState(); render();
-  _closeAuthModal();
-  _showAuth('login');
-  const trigBtn = document.getElementById('auth-trigger-btn');
-  if (trigBtn) trigBtn.style.display = '';
-  const swBtn = document.getElementById('wh-switch-btn');
-  if (swBtn) swBtn.style.display = 'none'; // re-hide via inline style so CSS default takes effect
-  hideSheets();
+let _loggingOut = false;
+function _doLogout() {
+  if (_loggingOut) return;
+  _loggingOut = true;
+  // Immediate visual feedback — shake the button, then reload
+  const btn = document.querySelector('[onclick="_doLogout()"]');
+  if (btn) btn.classList.add('logout-busy');
+  toast('正在退出...');
+  // Fire signOut without awaiting — then reload page immediately
+  sb.auth.signOut().catch(() => {}).finally(() => location.reload());
+  // Reload anyway after 600ms in case signOut hangs
+  setTimeout(() => location.reload(), 600);
 }
 
 // ── Auth modal open / close / pulse ──
@@ -5188,10 +5196,12 @@ function _getMyDisplayName() {
   return _displayName || _user?.email || '';
 }
 
-function _autoFillFiller() {
+function _autoFillFiller(replaceOld = null) {
   if (!_user) return;
   const name = _getMyDisplayName();
-  (state.zones || []).forEach(z => { if (!z.filler) z.filler = name; });
+  (state.zones || []).forEach(z => {
+    if (!z.filler || z.filler === replaceOld) z.filler = name;
+  });
   renderMetaBars();
 }
 
@@ -5207,6 +5217,7 @@ async function _confirmRename() {
   const inp = document.getElementById('rename-input');
   const name = (inp?.value || '').trim();
   if (!name) { toast('用户名不能为空'); return; }
+  const oldFill = _getMyDisplayName(); // capture before updating
 
   // Find all warehouses in the same company (same boss)
   const { data: bossRec } = await sb.from('warehouse_members')
@@ -5238,8 +5249,8 @@ async function _confirmRename() {
   if (nameEl) nameEl.textContent = name;
   document.getElementById('settings-rename-form').style.display = 'none';
 
-  // Auto-fill empty filler fields
-  _autoFillFiller();
+  // Replace filler fields that were auto-set (empty or had old email/name)
+  _autoFillFiller(oldFill);
   toast('✅ 用户名已更新为: ' + name);
 }
 async function _removeMember(uid) {
@@ -5318,7 +5329,7 @@ async function _initAuth() {
   // Listen for future auth changes
   sb.auth.onAuthStateChange(async (evt, session) => {
     if (evt === 'SIGNED_IN' && session?.user && !_user) await _onSignIn(session.user);
-    if (evt === 'SIGNED_OUT') _doLogout();
+    // SIGNED_OUT is handled by location.reload() in _doLogout — no action needed here
   });
 
   // Handle Stripe checkout return
