@@ -361,7 +361,7 @@
   .slot-info-row {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: 50px 1fr;
+    grid-template-columns: 50px 1fr auto;
     gap: 8px;
     align-items: stretch;
     padding: 6px 0 4px 0;
@@ -436,6 +436,73 @@
   .product-name input:focus { background: #fff8d6; }
   .product-name.en { font-weight: 600; color: var(--ink); }
   .product-name.cn { font-weight: 500; color: rgba(0,0,0,0.75); }
+  /* === Dimension / Weight boxes === */
+  .product-dim-weight {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+  }
+  .dim-box, .weight-box {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    border: 1px dashed rgba(0,0,0,0.22);
+    border-radius: 5px;
+    padding: 3px 4px;
+    background: var(--paper);
+    font-size: 10px;
+    min-height: 20px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dim-weight-label {
+    font-size: 8px;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .dim-weight-value {
+    flex: 1;
+    text-align: center;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 10px;
+    min-width: 22px;
+    word-break: break-all;
+  }
+  .dim-weight-value.empty { color: rgba(0,0,0,0.28); font-weight: 400; }
+  .dim-weight-value input {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-size: 10px;
+    font-family: inherit;
+    padding: 0;
+    outline: none;
+    text-align: center;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .dim-weight-value input:focus { background: #fff8d6; border-radius: 2px; }
+  .dim-weight-unit {
+    border: none;
+    background: rgba(0,0,0,0.07);
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: 800;
+    padding: 1px 3px;
+    cursor: pointer;
+    color: var(--ink);
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.4;
+  }
+  .dim-weight-unit:active { background: var(--ink); color: var(--paper); }
   /* Autocomplete suggestions popup */
   .name-suggest {
     position: absolute;
@@ -1619,6 +1686,10 @@ function renderListView() {
           const enName = (m && m.enName) ? m.enName : '';
           const cnName = (m && m.cnName) ? m.cnName : '';
           const imgUrl = (m && m.imageUrl) ? m.imageUrl : '';
+          const dimensions = (m && m.dimensions) ? m.dimensions : '';
+          const dimensionUnit = (m && m.dimensionUnit) ? m.dimensionUnit : 'IN';
+          const weight = (m && m.weight) ? m.weight : '';
+          const weightUnit = (m && m.weightUnit) ? m.weightUnit : 'LB';
           const imgInner = imgUrl
             ? `<img src="${escapeHtml(imgUrl)}" alt="">`
             : `<span class="img-plus">+</span>`;
@@ -1627,6 +1698,18 @@ function renderListView() {
             <div class="product-names">
               <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
               <div class="product-name cn ${cnName ? '' : 'empty'}" data-field="cnName" data-mid="${slot.modelId}">${cnName ? escapeHtml(cnName) : '中文名称 (点击输入)'}</div>
+            </div>
+            <div class="product-dim-weight">
+              <div class="dim-box" data-mid="${slot.modelId}" data-field="dimensions">
+                <span class="dim-weight-label">尺寸</span>
+                <span class="dim-weight-value ${dimensions ? '' : 'empty'}">${dimensions ? escapeHtml(dimensions) : '—'}</span>
+                <button class="dim-weight-unit" data-mid="${slot.modelId}" data-field="dimensionUnit" data-units="IN,CM">${dimensionUnit}</button>
+              </div>
+              <div class="weight-box" data-mid="${slot.modelId}" data-field="weight">
+                <span class="dim-weight-label">重量</span>
+                <span class="dim-weight-value ${weight ? '' : 'empty'}">${weight ? escapeHtml(weight) : '—'}</span>
+                <button class="dim-weight-unit" data-mid="${slot.modelId}" data-field="weightUnit" data-units="LB,KG,G">${weightUnit}</button>
+              </div>
             </div>
           </div>`;
         }
@@ -1779,6 +1862,9 @@ function attachListHandlers(root) {
   root.querySelectorAll('.product-img-cell[data-mid]').forEach(el => attachProductImageHandler(el));
   // NEW: product name cells (EN/CN) — click to edit, with autocomplete
   root.querySelectorAll('.product-name[data-mid]').forEach(el => attachProductNameHandler(el));
+  // NEW: dimension/weight boxes — click value to edit, click unit to cycle
+  root.querySelectorAll('.dim-box[data-mid], .weight-box[data-mid]').forEach(el => attachDimWeightBoxHandler(el));
+  root.querySelectorAll('.dim-weight-unit[data-mid]').forEach(el => attachDimWeightUnitHandler(el));
   // NEW: qty-cell — double-tap opens 4-method input picker for the quantity
   root.querySelectorAll('.qty-cell[data-ai]').forEach(el => attachQtyCellHandlers(el));
   // NEW: restock-cell (pallets only) — double-tap opens restock input + flow
@@ -2154,6 +2240,74 @@ document.addEventListener('click', (e) => {
     removeNameSuggest();
   }
 });
+
+// === Dimension / Weight box handlers ===
+function attachDimWeightBoxHandler(el) {
+  el.addEventListener('click', (e) => {
+    if (e.target.classList.contains('dim-weight-unit')) return; // unit button handles itself
+    e.stopPropagation();
+    const valueEl = el.querySelector('.dim-weight-value');
+    if (!valueEl || valueEl.querySelector('input')) return; // already editing
+    const mid = el.dataset.mid;
+    const field = el.dataset.field; // 'dimensions' or 'weight'
+    const m = getModel(mid);
+    if (!m) return;
+    const currentValue = (m && m[field]) ? m[field] : '';
+    valueEl.classList.remove('empty');
+    valueEl.textContent = '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentValue;
+    input.placeholder = field === 'dimensions' ? '0×0×0' : '0.0';
+    valueEl.appendChild(input);
+    setTimeout(() => { input.focus(); try { input.select(); } catch(err) {} }, 30);
+    const finish = () => {
+      const newVal = (input.value || '').trim();
+      const mm = getModel(mid);
+      if (mm) {
+        if (newVal) mm[field] = newVal;
+        else delete mm[field];
+        saveState();
+      }
+      if (newVal) {
+        valueEl.classList.remove('empty');
+        valueEl.textContent = newVal;
+      } else {
+        valueEl.classList.add('empty');
+        valueEl.textContent = '—';
+      }
+    };
+    input.addEventListener('blur', () => setTimeout(finish, 80));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') input.blur(); });
+  });
+}
+
+function attachDimWeightUnitHandler(el) {
+  const cycle = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const mid = el.dataset.mid;
+    const field = el.dataset.field; // 'dimensionUnit' or 'weightUnit'
+    const units = el.dataset.units.split(',');
+    const m = getModel(mid);
+    if (!m) return;
+    const current = m[field] || units[0];
+    const next = units[(units.indexOf(current) + 1) % units.length];
+    m[field] = next;
+    el.textContent = next;
+    saveState();
+  };
+  let touchHandled = false;
+  el.addEventListener('touchend', (e) => {
+    touchHandled = true;
+    cycle(e);
+    setTimeout(() => { touchHandled = false; }, 400);
+  }, { passive: false });
+  el.addEventListener('click', (e) => {
+    if (touchHandled) return;
+    cycle(e);
+  });
+}
 
 // NEW: Quantity cell — double-tap opens the multi-input number picker
 // Single tap also opens it (numbers don't have a meaningful single-tap action)
