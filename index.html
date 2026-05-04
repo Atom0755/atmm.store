@@ -1717,6 +1717,7 @@ function renderListView() {
   const t = getActiveTable();
   if (!t.aisles.length) { root.innerHTML = `<div style="text-align:center; padding:40px; color:var(--muted);">暂无数据,点右下 + 添加</div>`; return; }
   const ck = getContainerKey(), sk = getSlotsKey();
+  const canMgr = _canManage();
   let serial = 0;
   t.aisles.forEach((aisle, ai) => {
     const ablock = document.createElement('div');
@@ -1724,13 +1725,13 @@ function renderListView() {
     const containerLabel = isShelf ? '货架' : '托盘';
     ablock.innerHTML = `<div class="aisle-header">
       <span class="aisle-name editable" data-ai="${ai}">${isShelf ? '货架 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
-      <button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button>
-      <button class="mini-btn delete-btn" data-act="del-aisle" data-ai="${ai}" title="删除此${isShelf?'货架':'排'}" style="margin-left:4px;">✕</button></div>`;
+      ${canMgr ? `<button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button>` : ''}
+      ${canMgr ? `<button class="mini-btn delete-btn" data-act="del-aisle" data-ai="${ai}" title="删除此${isShelf?'货架':'排'}" style="margin-left:4px;">✕</button>` : ''}</div>`;
     aisle[ck].forEach((container, ci) => {
       const cblock = document.createElement('div');
       cblock.className = 'container-block' + (isShelf ? '' : ' pallet');
       // FIX: Delete button (✕ 删) on every container — works for shelves and pallets
-      const deleteBtn = `<button class="mini-btn delete-btn" data-act="del-container" data-ai="${ai}" data-ci="${ci}" title="删除整层 / 整个托盘">✕ 删</button>`;
+      const deleteBtn = canMgr ? `<button class="mini-btn delete-btn" data-act="del-container" data-ai="${ai}" data-ci="${ci}" title="删除整层 / 整个托盘">✕ 删</button>` : '';
       // FIX (二): No "+" in the row header anymore — moved to the BOTTOM divider below
       cblock.innerHTML = `<div class="container-name">
         <span class="shelf-drag-handle" data-ai="${ai}" data-ci="${ci}" data-table="${currentTable}" title="按住拖动整层">⠿</span>
@@ -1811,7 +1812,9 @@ function renderListView() {
       const dividerLabel = isShelf ? '复制此层 / 在下方插入新层' : '复制此托盘 / 插入新托盘';
       const divider = document.createElement('div');
       divider.className = 'add-divider';
-      divider.innerHTML = `<button class="add-divider-btn" data-ai="${ai}" data-ci="${ci}" title="${dividerLabel}">+</button><span class="add-divider-hint">${dividerLabel}</span>`;
+      divider.innerHTML = canMgr
+        ? `<button class="add-divider-btn" data-ai="${ai}" data-ci="${ci}" title="${dividerLabel}">+</button><span class="add-divider-hint">${dividerLabel}</span>`
+        : '';
       cblock.appendChild(divider);
       ablock.appendChild(cblock);
     });
@@ -4662,12 +4665,13 @@ document.getElementById('main-panes').addEventListener('click', e => {
 function renderTabs() {
   const bar = document.getElementById('table-tabs-bar');
   if (!bar || !state?.zones) return;
+  const canMgr = _canManage();
   bar.innerHTML = state.zones.map(z => {
-    const delBtn = state.zones.length > 1
+    const delBtn = (canMgr && state.zones.length > 1)
       ? `<button class="zone-del-btn" data-del-zone="${z.id}" title="删除此区域">✕</button>`
       : '';
     return `<button class="table-tab ${z.id===currentTable?'active':''}" data-tab-zone="${z.id}">${escapeHtml(z.name)}<small>${z.type==='shelf'?'货架区':'托盘区'}</small>${delBtn}</button>`;
-  }).join('') + `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>`;
+  }).join('') + (canMgr ? `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>` : '');
 
   bar.querySelectorAll('[data-tab-zone]').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -4866,7 +4870,7 @@ async function _doLogout() {
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (trigBtn) trigBtn.style.display = '';
   const swBtn = document.getElementById('wh-switch-btn');
-  if (swBtn) swBtn.style.display = 'none';
+  if (swBtn) swBtn.style.display = 'none'; // re-hide via inline style so CSS default takes effect
   hideSheets();
 }
 
@@ -4877,7 +4881,7 @@ function _updateWarehouseSwitcherUI() {
   const label = document.getElementById('wh-name-label');
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (!_warehouse) return;
-  if (btn) btn.style.display = '';
+  if (btn) btn.style.display = 'block';      // explicit — CSS has display:none so '' would fall back to it
   if (trigBtn) trigBtn.style.display = 'none';
   if (label) {
     const name = _warehouse.name || '仓库';
@@ -5081,17 +5085,18 @@ function _applyPermissions() {
   const isOp   = _role === 'operator';
   const isBoss = _role === 'boss';
 
-  // Operators cannot manage models or aisles
-  if (isOp) {
-    document.getElementById('upload-btn').style.display = 'none';
-    document.getElementById('reset-btn').style.display  = 'none';
-  }
+  // Operators: read-only — no model management or structural changes
+  document.getElementById('upload-btn').style.display = isOp ? 'none' : '';
+  document.getElementById('reset-btn').style.display  = isOp ? 'none' : '';
+
   // Only boss sees team management panel
   document.getElementById('team-mgmt-section').style.display = isBoss ? '' : 'none';
 }
 // Runtime permission checks called by delete/edit handlers
-window._canDelete      = () => _role === 'boss' || _role === 'manager';
-window._canManageAisle = () => _role === 'boss' || _role === 'manager';
+// _canManage: null role = demo/unauthenticated = full access; operator = read-only structural view
+window._canManage      = () => !_role || _role === 'boss' || _role === 'manager';
+window._canDelete      = window._canManage;
+window._canManageAisle = window._canManage;
 
 // ── Settings sheet: populate and open ──
 async function _openSettings() {
