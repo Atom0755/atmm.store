@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -1090,7 +1090,7 @@
       <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em;">⬆️ 上传新型号清单 / UPLOAD NEW LIST</div>
       <div class="actions-list">
         <button class="action-row" data-act="upload-paste"><span class="ico">⌨️</span><div style="flex:1;"><div style="font-weight:700;">手动粘贴清单</div><div style="font-size:11px; color:var(--muted);">从微信、邮件、便签复制后粘贴</div></div></button>
-        <button class="action-row" data-act="upload-file"><span class="ico">📁</span><div style="flex:1;"><div style="font-weight:700;">从本地选文件</div><div style="font-size:11px; color:var(--muted);">支持 .txt / .csv / .json (本地、iCloud、Drive 都从这里选)</div></div></button>
+        <button class="action-row" data-act="upload-file"><span class="ico">📁</span><div style="flex:1;"><div style="font-weight:700;">从本地选文件</div><div style="font-size:11px; color:var(--muted);">支持 .xlsx / .xls / .wps / .csv / .txt / .json</div></div></button>
         <button class="action-row" data-act="upload-share"><span class="ico">📤</span><div style="flex:1;"><div style="font-weight:700;">从分享菜单接收</div><div style="font-size:11px; color:var(--muted);">微信/邮件里 → 分享 → "在 Safari 中打开"</div></div></button>
       </div>
 
@@ -1913,7 +1913,7 @@ function attachListHandlers(root) {
       e.stopPropagation();
       const ai = +el.dataset.ai, ci = +el.dataset.ci, act = el.dataset.act;
       if (act === 'add-layer') {
-        state.palletTable.aisles[ai].pallets[ci].layers.push(newSlot());
+        getActiveTable().aisles[ai].pallets[ci].layers.push(newSlot());
         toast('已加一层'); render();
       } else if (act === 'del-container' || act === 'del-pallet') {
         requestDeleteContainer(ai, ci);
@@ -2741,7 +2741,9 @@ function chineseToNumber(text) {
 let pendingRestock = null; // { palletAi, palletCi, palletSi, modelId, boxes, sets, targets: [{table, ai, ci, si}] }
 
 function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
-  const palletSlot = state.palletTable.aisles[palletAi].pallets[palletCi].layers[palletSi];
+  const palletZone = state.zones.find(z => z.type === 'pallet');
+  if (!palletZone) { toast('⚠️ 找不到托盘区'); return; }
+  const palletSlot = palletZone.aisles[palletAi].pallets[palletCi].layers[palletSi];
   if (!palletSlot.modelId) {
     toast('⚠️ 此格无型号'); palletSlot.restock = 0; render(); return;
   }
@@ -4067,6 +4069,36 @@ if (_libExportBtn) _libExportBtn.addEventListener('click', () => {
   toast(`已导出 ${state.models.length} 个型号`);
 });
 
+// Lazy-load SheetJS (xlsx) only when user uploads a spreadsheet file
+let _xlsxLib = null;
+function loadSheetJS() {
+  if (_xlsxLib) return Promise.resolve(_xlsxLib);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload = () => { _xlsxLib = window.XLSX; resolve(_xlsxLib); };
+    s.onerror = () => reject(new Error('无法加载表格解析库'));
+    document.head.appendChild(s);
+  });
+}
+
+// Extract model names from a SheetJS workbook
+function xlsxToModelLines(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (!data.length) return [];
+  // Pick the column with the most non-empty, non-pure-numeric values (heuristic for model name col)
+  const numCols = Math.max(...data.map(r => r.length), 1);
+  let bestCol = 0, bestScore = -1;
+  for (let col = 0; col < Math.min(numCols, 6); col++) {
+    let score = 0;
+    for (const row of data) { const v = String(row[col] || '').trim(); if (v && isNaN(Number(v)) && v.length > 1) score++; }
+    if (score > bestScore) { bestScore = score; bestCol = col; }
+  }
+  const colValues = data.map(row => String(row[bestCol] || '').trim()).filter(v => v);
+  return parseModelLines(colValues.join('\n'));
+}
+
 function parseModelLines(txt) {
   if (!txt) return [];
   // Try JSON first (for re-importing exported lib)
@@ -4099,11 +4131,11 @@ function applyImportMode(mode) {
   } else if (mode === 'append') {
     const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 1 }));
     state.models.push(...newModels);
-    for (const tableKey of ['shelfBlackTable', 'shelfWhiteTable']) {
+    for (const zone of state.zones.filter(z => z.type === 'shelf')) {
       let mi = 0;
-      outer: for (const a of state[tableKey].aisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) if (!s.slots[i].modelId) { s.slots[i].modelId = newModels[mi].id; mi++; if (mi >= newModels.length) break outer; }
+      outer: for (const a of zone.aisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) if (!s.slots[i].modelId) { s.slots[i].modelId = newModels[mi].id; mi++; if (mi >= newModels.length) break outer; }
       if (mi < newModels.length) {
-        const la = state[tableKey].aisles[state[tableKey].aisles.length-1];
+        const la = zone.aisles[zone.aisles.length-1];
         while (mi < newModels.length) {
           const idx = la.shelves.length;
           const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
@@ -4116,14 +4148,14 @@ function applyImportMode(mode) {
   } else if (mode === 'replace') {
     if (!confirm('⚠️ 确认清空所有数据并用此清单重建?\nThis will erase ALL data.')) return;
     state.models = lines.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n, boxToSetRatio: 1 }));
-    for (const tableKey of ['shelfBlackTable', 'shelfWhiteTable']) {
-      state[tableKey].aisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
+    for (const zone of state.zones.filter(z => z.type === 'shelf')) {
+      zone.aisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
       let mi = 0;
-      for (const a of state[tableKey].aisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) {
+      for (const a of zone.aisles) for (const s of a.shelves) for (let i=0;i<s.slots.length;i++) {
         if (mi < state.models.length) { s.slots[i].modelId = state.models[mi].id; mi++; }
       }
       if (mi < state.models.length) {
-        const la = state[tableKey].aisles[state[tableKey].aisles.length-1];
+        const la = zone.aisles[zone.aisles.length-1];
         while (mi < state.models.length) {
           const idx = la.shelves.length;
           const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
@@ -4132,7 +4164,8 @@ function applyImportMode(mode) {
         }
       }
     }
-    state.palletTable.aisles = PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) }));
+    const palletZone = state.zones.find(z => z.type === 'pallet');
+    if (palletZone) palletZone.aisles = PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) }));
     toast(`✅ 已用 ${lines.length} 个型号重建`);
   }
   pendingImportLines = null;
@@ -4156,18 +4189,32 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
     } else if (act === 'upload-file') {
       const inp = document.createElement('input');
       inp.type = 'file';
-      inp.accept = '.txt,.csv,.json,text/plain,text/csv,application/json';
-      inp.onchange = e => {
+      inp.accept = '.txt,.csv,.json,.xls,.xlsx,.wps,.et,.ods,text/plain,text/csv,application/json';
+      inp.onchange = async e => {
         const f = e.target.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = () => {
-          const lines = parseModelLines(r.result);
-          if (!lines.length) { toast('文件未识别到型号'); return; }
-          pendingImportLines = lines;
-          toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
-        };
-        r.onerror = () => toast('读取失败');
-        r.readAsText(f);
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (['xls','xlsx','wps','et','ods'].includes(ext)) {
+          toast('📊 正在解析电子表格...');
+          try {
+            const XLSX = await loadSheetJS();
+            const ab = await f.arrayBuffer();
+            const wb = XLSX.read(ab, { type: 'array' });
+            const lines = xlsxToModelLines(wb);
+            if (!lines.length) { toast('表格未识别到型号，请确认第一列含型号名称'); return; }
+            pendingImportLines = lines;
+            toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
+          } catch(err) { toast('❌ 解析失败: ' + err.message); }
+        } else {
+          const r = new FileReader();
+          r.onload = () => {
+            const lines = parseModelLines(r.result);
+            if (!lines.length) { toast('文件未识别到型号'); return; }
+            pendingImportLines = lines;
+            toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
+          };
+          r.onerror = () => toast('读取失败');
+          r.readAsText(f);
+        }
       };
       inp.click();
     } else if (act === 'upload-share') {
@@ -4200,19 +4247,16 @@ document.querySelectorAll('#save-sheet .action-row').forEach(b => {
 });
 
 function buildExportSummaryText() {
-  const tables = [
-    [(state.meta?.shelfBlack?.title) || '零散货架一区', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
-    [(state.meta?.shelfWhite?.title) || '零散货架二区', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
-    [(state.meta?.pallet?.title) || '整箱堆货区', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
-  ];
   let lines = [`📦 库存标注汇总 — ${dateStamp()}`];
-  for (const [tableName, t, ck, sk, meta] of tables) {
+  for (const zone of state.zones) {
+    const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+    const sk = zone.type === 'shelf' ? 'slots' : 'layers';
     lines.push('');
-    lines.push(`【${tableName}】`);
-    if (meta.filler) lines.push(`填表人: ${meta.filler}`);
-    if (meta.date) lines.push(`日期: ${meta.date}`);
+    lines.push(`【${zone.name}】`);
+    if (zone.filler) lines.push(`填表人: ${zone.filler}`);
+    if (zone.date) lines.push(`日期: ${zone.date}`);
     let cnt = { red: 0, yellow: 0, green: 0, total: 0, untagged: 0 };
-    for (const a of t.aisles) for (const c of a[ck]) for (const slot of c[sk]) {
+    for (const a of zone.aisles) for (const c of a[ck]) for (const slot of c[sk]) {
       if (!slot.modelId) continue;
       cnt.total++;
       if (slot.color === 'red') cnt.red++;
@@ -4230,22 +4274,7 @@ function downloadJSON() {
   triggerDownload(blob, `inventory-${dateStamp()}.json`); toast('已下载 JSON');
 }
 function downloadCSV() {
-  const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','颜色','数量','单位']];
-  let n = 0;
-  const tables = [
-    [(state.meta?.shelfBlack?.title) || '零散货架一区', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
-    [(state.meta?.shelfWhite?.title) || '零散货架二区', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
-    [(state.meta?.pallet?.title) || '整箱堆货区', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
-  ];
-  for (const [tableName, t, ck, sk, meta] of tables) {
-    for (const a of t.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
-      n++; const m = slot.modelId ? getModel(slot.modelId) : null;
-      rows.push([n, tableName, meta.filler || '', meta.date || '', a.name, c.name, i+1, m?.name || '', slot.color || '', slot.qty || 0, slot.unit || '']);
-    });
-  }
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
-  triggerDownload(blob, `inventory-${dateStamp()}.csv`); toast('已下载 CSV');
+  triggerDownload(makeCsvBlob(), `inventory-${dateStamp()}.csv`); toast('已下载 CSV');
 }
 
 // SHARE TO WECHAT — uses Web Share API (system share sheet, includes WeChat if installed)
@@ -4325,21 +4354,20 @@ function shareToEmail() {
 }
 
 function makeCsvBlob() {
-  const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','颜色','数量','单位']];
+  const rows = [['#','表','填表人','日期','通道','货架/托盘','位置','型号','英文名','中文名','尺寸','尺寸单位','重量','重量单位','颜色','数量','单位']];
   let n = 0;
-  const tables = [
-    [(state.meta?.shelfBlack?.title) || '零散货架一区', state.shelfBlackTable, 'shelves', 'slots', state.meta?.shelfBlack || {}],
-    [(state.meta?.shelfWhite?.title) || '零散货架二区', state.shelfWhiteTable, 'shelves', 'slots', state.meta?.shelfWhite || {}],
-    [(state.meta?.pallet?.title) || '整箱堆货区', state.palletTable, 'pallets', 'layers', state.meta?.pallet || {}]
-  ];
-  for (const [tableName, t, ck, sk, meta] of tables) {
-    for (const a of t.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
+  for (const zone of state.zones) {
+    const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+    const sk = zone.type === 'shelf' ? 'slots' : 'layers';
+    for (const a of zone.aisles) for (const c of a[ck]) c[sk].forEach((slot, i) => {
       n++; const m = slot.modelId ? getModel(slot.modelId) : null;
-      rows.push([n, tableName, meta.filler || '', meta.date || '', a.name, c.name, i+1, m?.name || '', slot.color || '', slot.qty || 0, slot.unit || '']);
+      rows.push([n, zone.name, zone.filler||'', zone.date||'', a.name, c.name, i+1,
+        m?.name||'', m?.enName||'', m?.cnName||'', m?.dimensions||'', m?.dimensionUnit||'', m?.weight||'', m?.weightUnit||'',
+        slot.color||'', slot.qty||0, slot.unit||'']);
     });
   }
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  return new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
+  return new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8' });
 }
 
 function copyToClipboard(text) {
@@ -4359,7 +4387,21 @@ function loadJSON() {
   inp.onchange = (e) => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = () => { try { const data = JSON.parse(r.result); if (data.models && data.shelfBlackTable && data.shelfWhiteTable && data.palletTable) { if (!data.meta) data.meta = { shelfBlack:{}, shelfWhite:{}, pallet:{} }; state = data; render(); toast('已导入'); } else toast('文件格式错误 (需要 v3 格式)'); } catch(e) { toast('解析失败'); } };
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (!data.models) { toast('文件格式错误'); return; }
+        if (data.zones) {
+          state = { models: data.models, zones: data.zones };
+          render(); toast('✅ 已导入');
+        } else if (data.shelfBlackTable || data.shelfWhiteTable || data.palletTable) {
+          state = migrateV1toV2(data);
+          render(); toast('✅ 已导入 (旧格式已自动迁移)');
+        } else {
+          toast('文件格式错误');
+        }
+      } catch(err) { toast('解析失败: ' + err.message); }
+    };
     r.readAsText(f);
   };
   inp.click();
