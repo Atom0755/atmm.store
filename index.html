@@ -2471,25 +2471,39 @@ function attachLocCodeHandler(el) {
 // === QR + Barcode lazy loaders & renderer ===
 let _qrLib = null, _jsBarcodeLib = null, _currentLocCode = '';
 
-function _loadQRCodeLib() {
-  if (_qrLib) return Promise.resolve(_qrLib);
+function _tryLoadScript(url, ms) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-    s.onload = () => { _qrLib = window.QRCode; resolve(_qrLib); };
-    s.onerror = () => reject(new Error('无法加载QR码库'));
+    const t = setTimeout(() => reject(new Error('timeout')), ms || 7000);
+    s.onload  = () => { clearTimeout(t); resolve(); };
+    s.onerror = () => { clearTimeout(t); reject(new Error('onerror')); };
+    s.src = url;
     document.head.appendChild(s);
   });
 }
+function _loadWithFallback(urls, getGlobal, errMsg) {
+  async function attempt(i) {
+    if (i >= urls.length) throw new Error(errMsg);
+    try { await _tryLoadScript(urls[i]); return getGlobal(); }
+    catch { return attempt(i + 1); }
+  }
+  return attempt(0);
+}
+
+function _loadQRCodeLib() {
+  if (_qrLib) return Promise.resolve(_qrLib);
+  return _loadWithFallback([
+    'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js',
+    'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+    'https://unpkg.com/qrcode@1.4.4/build/qrcode.min.js',
+  ], () => { _qrLib = window.QRCode; return _qrLib; }, '无法加载QR码库');
+}
 function _loadJsBarcodeLib() {
   if (_jsBarcodeLib) return Promise.resolve(_jsBarcodeLib);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
-    s.onload = () => { _jsBarcodeLib = window.JsBarcode; resolve(_jsBarcodeLib); };
-    s.onerror = () => reject(new Error('无法加载条码库'));
-    document.head.appendChild(s);
-  });
+  return _loadWithFallback([
+    'https://unpkg.com/jsbarcode@3.11.6/dist/JsBarcode.all.min.js',
+    'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js',
+  ], () => { _jsBarcodeLib = window.JsBarcode; return _jsBarcodeLib; }, '无法加载条码库');
 }
 
 function _locToAscii(code) {
