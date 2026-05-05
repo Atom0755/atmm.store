@@ -374,15 +374,16 @@
     font-weight: 700;
     color: var(--muted);
     letter-spacing: 0.03em;
-    text-align: center;
+    text-align: left;
     line-height: 1.2;
     word-break: break-all;
-    padding: 1px 3px;
+    padding: 1px 4px;
     border-radius: 3px;
     cursor: pointer;
     border: 1px solid transparent;
     -webkit-tap-highlight-color: transparent;
-    max-width: 50px;
+    display: inline-block;
+    margin-top: 5px;
   }
   .loc-code:active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   /* Grid view loc code */
@@ -1379,7 +1380,11 @@
   <div class="sheet" style="max-height:88vh; border-radius:16px; border-bottom:1px solid var(--line);">
     <div class="sheet-body" style="text-align:center; padding-bottom:14px;">
       <h3>📍 库位编号</h3>
-      <div id="loccode-title" style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; letter-spacing:.1em; padding:8px 16px; background:var(--aisle-bg); border-radius:8px; display:inline-block; margin-bottom:20px;"></div>
+      <div id="loccode-title" style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; letter-spacing:.1em; padding:8px 16px; background:var(--aisle-bg); border-radius:8px; display:inline-block; margin-bottom:8px;"></div>
+      <div style="font-size:10px; color:var(--muted); margin-bottom:18px; line-height:1.7;">
+        格式：<b>区域</b>-<b>通道</b>-<b>列</b>-<b>格位</b><br>
+        如 <span style="font-family:'JetBrains Mono',monospace; font-weight:700;">1-A-2-03</span> = 第1货架区 · A通道 · 第2列 · 03格位
+      </div>
 
       <div style="margin-bottom:18px;">
         <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">QR 二维码 · 手机扫描</div>
@@ -1690,19 +1695,18 @@ function getActiveZone() { return state.zones.find(z => z.id === currentTable) |
 function isShelfTable(id) { return (state.zones.find(z => z.id === (id||currentTable)))?.type === 'shelf'; }
 
 // Generate a compact, unique location code for a slot.
-// Format — shelf: [ZonePrefix]A-1-03  pallet: [ZonePrefix]A·P2·L1
+// Format — shelf: [N-]A-1-03  pallet: [N-]A-P2-L1  (N = zone index when >1 same-type zones)
 function makeLocationCode(zoneId, ai, ci, si) {
   const zone = state.zones.find(z => z.id === zoneId);
   if (!zone) return '';
   const sameType = state.zones.filter(z => z.type === zone.type);
   const typeIdx = sameType.indexOf(zone);
-  const circled = ['①','②','③','④','⑤','⑥','⑦','⑧'];
-  const prefix = sameType.length > 1 ? (circled[typeIdx] || `${typeIdx+1}·`) : '';
+  const prefix = sameType.length > 1 ? `${typeIdx+1}-` : '';
   const aisleCode = String.fromCharCode(65 + ai); // A, B, C…
   if (zone.type === 'shelf') {
     return `${prefix}${aisleCode}-${ci+1}-${String(si+1).padStart(2,'0')}`;
   } else {
-    return `${prefix}${aisleCode}·P${ci+1}·L${si+1}`;
+    return `${prefix}${aisleCode}-P${ci+1}-L${si+1}`;
   }
 }
 function getActiveTable() { return getActiveZone(); }
@@ -1832,11 +1836,11 @@ function renderListView() {
           infoRowHtml = `<div class="slot-info-row">
             <div class="product-img-col">
               <div class="product-img-cell ${imgUrl ? 'has-img' : ''}" data-mid="${slot.modelId}" title="点击上传产品图片">${imgInner}</div>
-              <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码">${escapeHtml(locCode)}</div>
             </div>
             <div class="product-names">
               <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
               <div class="product-name cn ${cnName ? '' : 'empty'}" data-field="cnName" data-mid="${slot.modelId}">${cnName ? escapeHtml(cnName) : '中文名称 (点击输入)'}</div>
+              <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码&#10;格式：区域-通道-列-格位&#10;如 1-A-2-03 = 第1货架区·A通道·第2列·03格位&#10;无前缀时表示仓库只有一个同类区域">${escapeHtml(locCode)}</div>
             </div>
             <div class="product-dim-weight">
               <div class="dim-box" data-mid="${slot.modelId}" data-field="dimensions">
@@ -2507,9 +2511,8 @@ function _loadJsBarcodeLib() {
 }
 
 function _locToAscii(code) {
-  // Code128 only supports ASCII — replace circled numbers and middle dots
-  const map = {'①':'1','②':'2','③':'3','④':'4','⑤':'5','⑥':'6','⑦':'7','⑧':'8','·':'-'};
-  return code.replace(/[①②③④⑤⑥⑦⑧·]/g, c => map[c] || c);
+  // Code128: new format is already ASCII; keep as safety net for any legacy codes
+  return code.replace(/[①②③④⑤⑥⑦⑧]/g, c => String('①②③④⑤⑥⑦⑧'.indexOf(c)+1)).replace(/·/g,'-');
 }
 
 async function openLocCodeSheet(code) {
