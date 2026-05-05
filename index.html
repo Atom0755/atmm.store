@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Atom盘库补货">
-<title>Atom盘库补货表手机版</title>
+<meta name="apple-mobile-web-app-title" content="ZEHEM仓管表">
+<title>ZEHEM哲亨智能仓管表手机版</title>
 <link rel="icon" type="image/png" href="ZEHEM-LOGO-28.png">
 <link rel="icon" sizes="32x32" type="image/png" href="ZEHEM-LOGO-28.png">
 <link rel="apple-touch-icon" href="ZEHEM-LOGO-28.png">
@@ -1011,7 +1011,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>Atom 盘库补货表 <span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;">手机版</span></h1>
+    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em;">v1.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2509,29 +2509,24 @@ async function openLocCodeSheet(code) {
   try {
     await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
 
-    // QR code → canvas → <img>
-    const qrCanvas = document.createElement('canvas');
-    await QRCode.toCanvas(qrCanvas, code, {
+    // QR code — toDataURL returns a Promise<string> directly; avoids canvas tainting
+    const qrDataUrl = await _qrLib.toDataURL(code, {
       width: 220, margin: 2,
       color: { dark: '#1a1a1a', light: '#faf8f3' }
     });
-    document.getElementById('loccode-qr-img').src = qrCanvas.toDataURL();
+    document.getElementById('loccode-qr-img').src = qrDataUrl;
 
-    // Barcode → temp SVG → serialize → <img>
-    const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    document.body.appendChild(tmpSvg);
-    JsBarcode(tmpSvg, _locToAscii(code), {
+    // Barcode — render to the img element directly; JsBarcode sets img.src automatically
+    const barImgEl = document.getElementById('loccode-bar-img');
+    _jsBarcodeLib(barImgEl, _locToAscii(code), {
       format: 'CODE128', width: 2.4, height: 72,
       displayValue: true, text: code,
       fontOptions: 'bold', fontSize: 14,
       margin: 12, background: '#faf8f3', lineColor: '#1a1a1a'
     });
-    const svgStr = new XMLSerializer().serializeToString(tmpSvg);
-    document.body.removeChild(tmpSvg);
-    document.getElementById('loccode-bar-img').src =
-      'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
   } catch (err) {
     toast('⚠️ 生成失败: ' + err.message);
+    console.error('loccode gen error:', err);
   }
 }
 
@@ -2543,11 +2538,13 @@ function _copyLocCode() {
 async function _downloadLocLabel() {
   const qrEl  = document.getElementById('loccode-qr-img');
   const barEl = document.getElementById('loccode-bar-img');
-  if (!qrEl.src || !barEl.src) { toast('请稍候，码正在生成…'); return; }
+  const hasQR  = qrEl.src  && qrEl.src  !== location.href && qrEl.src  !== '';
+  const hasBar = barEl.src && barEl.src !== location.href && barEl.src !== '';
+  if (!hasQR || !hasBar) { toast('请稍候，码正在生成…'); return; }
   toast('⏳ 正在生成标签图片…');
 
   const loadImg = src => new Promise(res => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
+    const img = new Image();
     img.onload = () => res(img); img.onerror = () => res(null);
     img.src = src;
   });
@@ -2559,40 +2556,47 @@ async function _downloadLocLabel() {
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
 
-  // Background
   ctx.fillStyle = '#faf8f3';
   ctx.fillRect(0, 0, W, H);
-
-  // Border
   ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 2;
   ctx.strokeRect(1, 1, W - 2, H - 2);
-
-  // Title text
   ctx.fillStyle = '#1a1a1a';
   ctx.font = 'bold 30px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(_currentLocCode, W / 2, PAD + TITLE_H / 2);
-
-  // Divider
   ctx.strokeStyle = '#ddd5c7'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(PAD, PAD + TITLE_H); ctx.lineTo(W - PAD, PAD + TITLE_H); ctx.stroke();
-
-  // QR code image
-  const qrX = (W - QR) / 2;
-  if (qrImage) ctx.drawImage(qrImage, qrX, PAD + TITLE_H + PAD, QR, QR);
-
-  // Barcode image
+  if (qrImage)  ctx.drawImage(qrImage,  (W - QR) / 2, PAD + TITLE_H + PAD, QR, QR);
   if (barImage) ctx.drawImage(barImage, PAD, PAD + TITLE_H + PAD + QR + PAD, W - PAD * 2, BAR_H);
 
-  cv.toBlob(blob => {
+  cv.toBlob(async blob => {
     if (!blob) { toast('⚠️ 图片生成失败'); return; }
+    const filename = `库位-${_locToAscii(_currentLocCode)}.png`;
+
+    // Chrome/Edge 桌面版：弹出系统保存路径选择框
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'PNG 标签图片', accept: { 'image/png': ['.png'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        toast('✅ 标签已保存到选定位置');
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // 用户取消了
+        // 不支持则继续用普通下载
+      }
+    }
+    // 手机 / Firefox 回退：直接下载到系统下载文件夹
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `库位-${_locToAscii(_currentLocCode)}.png`;
+    a.download = filename;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-    toast('✅ 标签已下载');
+    toast('✅ 标签已下载（见下载文件夹）');
   }, 'image/png');
 }
 
