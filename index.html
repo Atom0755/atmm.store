@@ -1374,6 +1374,35 @@
   </div>
 </div>
 
+<!-- Location Code QR / Barcode Sheet -->
+<div class="sheet-backdrop modal-style" id="loccode-sheet">
+  <div class="sheet" style="max-height:88vh; border-radius:16px; border-bottom:1px solid var(--line);">
+    <div class="sheet-body" style="text-align:center; padding-bottom:14px;">
+      <h3>📍 库位编号</h3>
+      <div id="loccode-title" style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; letter-spacing:.1em; padding:8px 16px; background:var(--aisle-bg); border-radius:8px; display:inline-block; margin-bottom:20px;"></div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">QR 二维码 · 手机扫描</div>
+        <img id="loccode-qr-img" src="" alt="QR" style="display:block; margin:0 auto; border-radius:10px; width:190px; height:190px; background:var(--bg); image-rendering:pixelated;">
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">条形码 · 扫码枪识别</div>
+        <img id="loccode-bar-img" src="" alt="Barcode" style="display:block; margin:0 auto; max-width:100%; border-radius:8px; background:var(--bg); min-height:80px;">
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:4px;">
+        <button onclick="_copyLocCode()" style="flex:1; padding:11px; background:var(--ink); color:var(--paper); border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;">📋 复制编号</button>
+        <button onclick="_downloadLocLabel()" style="flex:1; padding:11px; background:var(--bg); color:var(--ink); border:1.5px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;">⬇️ 下载标签</button>
+      </div>
+      <div style="font-size:10px; color:var(--muted); margin-top:8px;">长按图片可直接保存到相册</div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="legend-sheet">
   <div class="sheet">
     <div class="sheet-body">
@@ -1803,7 +1832,7 @@ function renderListView() {
           infoRowHtml = `<div class="slot-info-row">
             <div class="product-img-col">
               <div class="product-img-cell ${imgUrl ? 'has-img' : ''}" data-mid="${slot.modelId}" title="点击上传产品图片">${imgInner}</div>
-              <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击复制">${escapeHtml(locCode)}</div>
+              <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码">${escapeHtml(locCode)}</div>
             </div>
             <div class="product-names">
               <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
@@ -1900,7 +1929,7 @@ function renderGridView() {
           const colorHtml = slot.modelId
             ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
             : `<div class="gcolor" style="visibility:hidden"></div>`;
-          gs.innerHTML = `<div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}`;
+          gs.innerHTML = `<div class="gloc" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}`;
           cont.appendChild(gs);
         });
         flatRow.appendChild(cont);
@@ -2423,25 +2452,148 @@ function attachDimWeightUnitHandler(el) {
   });
 }
 
-// === Location code — tap to copy to clipboard ===
+// === Location code — tap to open QR/barcode sheet ===
 function attachLocCodeHandler(el) {
   let touchHandled = false;
   const onTap = (e) => {
     e.stopPropagation();
     const code = el.dataset.loc;
-    if (!code) return;
-    copyToClipboard(code);
-    toast(`📋 已复制库位编号: ${code}`);
+    if (code) openLocCodeSheet(code);
   };
   el.addEventListener('touchend', (e) => {
     touchHandled = true;
     onTap(e);
     setTimeout(() => { touchHandled = false; }, 400);
   }, { passive: false });
-  el.addEventListener('click', (e) => {
-    if (touchHandled) return;
-    onTap(e);
+  el.addEventListener('click', (e) => { if (touchHandled) return; onTap(e); });
+}
+
+// === QR + Barcode lazy loaders & renderer ===
+let _qrLib = null, _jsBarcodeLib = null, _currentLocCode = '';
+
+function _loadQRCodeLib() {
+  if (_qrLib) return Promise.resolve(_qrLib);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+    s.onload = () => { _qrLib = window.QRCode; resolve(_qrLib); };
+    s.onerror = () => reject(new Error('无法加载QR码库'));
+    document.head.appendChild(s);
   });
+}
+function _loadJsBarcodeLib() {
+  if (_jsBarcodeLib) return Promise.resolve(_jsBarcodeLib);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
+    s.onload = () => { _jsBarcodeLib = window.JsBarcode; resolve(_jsBarcodeLib); };
+    s.onerror = () => reject(new Error('无法加载条码库'));
+    document.head.appendChild(s);
+  });
+}
+
+function _locToAscii(code) {
+  // Code128 only supports ASCII — replace circled numbers and middle dots
+  const map = {'①':'1','②':'2','③':'3','④':'4','⑤':'5','⑥':'6','⑦':'7','⑧':'8','·':'-'};
+  return code.replace(/[①②③④⑤⑥⑦⑧·]/g, c => map[c] || c);
+}
+
+async function openLocCodeSheet(code) {
+  if (!code) return;
+  _currentLocCode = code;
+  document.getElementById('loccode-title').textContent = code;
+  document.getElementById('loccode-qr-img').src = '';
+  document.getElementById('loccode-bar-img').src = '';
+  showSheet('loccode-sheet');
+
+  try {
+    await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
+
+    // QR code → canvas → <img>
+    const qrCanvas = document.createElement('canvas');
+    await QRCode.toCanvas(qrCanvas, code, {
+      width: 220, margin: 2,
+      color: { dark: '#1a1a1a', light: '#faf8f3' }
+    });
+    document.getElementById('loccode-qr-img').src = qrCanvas.toDataURL();
+
+    // Barcode → temp SVG → serialize → <img>
+    const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    document.body.appendChild(tmpSvg);
+    JsBarcode(tmpSvg, _locToAscii(code), {
+      format: 'CODE128', width: 2.4, height: 72,
+      displayValue: true, text: code,
+      fontOptions: 'bold', fontSize: 14,
+      margin: 12, background: '#faf8f3', lineColor: '#1a1a1a'
+    });
+    const svgStr = new XMLSerializer().serializeToString(tmpSvg);
+    document.body.removeChild(tmpSvg);
+    document.getElementById('loccode-bar-img').src =
+      'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+  } catch (err) {
+    toast('⚠️ 生成失败: ' + err.message);
+  }
+}
+
+function _copyLocCode() {
+  copyToClipboard(_currentLocCode);
+  toast('📋 已复制: ' + _currentLocCode);
+}
+
+async function _downloadLocLabel() {
+  const qrEl  = document.getElementById('loccode-qr-img');
+  const barEl = document.getElementById('loccode-bar-img');
+  if (!qrEl.src || !barEl.src) { toast('请稍候，码正在生成…'); return; }
+  toast('⏳ 正在生成标签图片…');
+
+  const loadImg = src => new Promise(res => {
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = () => res(img); img.onerror = () => res(null);
+    img.src = src;
+  });
+  const [qrImage, barImage] = await Promise.all([loadImg(qrEl.src), loadImg(barEl.src)]);
+
+  const W = 400, PAD = 20, TITLE_H = 54, QR = 200, BAR_H = 110;
+  const H = PAD + TITLE_H + PAD + QR + PAD + BAR_H + PAD;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#faf8f3';
+  ctx.fillRect(0, 0, W, H);
+
+  // Border
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, W - 2, H - 2);
+
+  // Title text
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = 'bold 30px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(_currentLocCode, W / 2, PAD + TITLE_H / 2);
+
+  // Divider
+  ctx.strokeStyle = '#ddd5c7'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD, PAD + TITLE_H); ctx.lineTo(W - PAD, PAD + TITLE_H); ctx.stroke();
+
+  // QR code image
+  const qrX = (W - QR) / 2;
+  if (qrImage) ctx.drawImage(qrImage, qrX, PAD + TITLE_H + PAD, QR, QR);
+
+  // Barcode image
+  if (barImage) ctx.drawImage(barImage, PAD, PAD + TITLE_H + PAD + QR + PAD, W - PAD * 2, BAR_H);
+
+  cv.toBlob(blob => {
+    if (!blob) { toast('⚠️ 图片生成失败'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `库位-${_locToAscii(_currentLocCode)}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('✅ 标签已下载');
+  }, 'image/png');
 }
 
 // NEW: Quantity cell — double-tap opens the multi-input number picker
