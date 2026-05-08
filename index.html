@@ -649,7 +649,10 @@
   .grid-pallets { display: grid; grid-template-columns: repeat(var(--pcols, 2), minmax(0, 1fr)); gap: 4px; }
   .grid-container { background: var(--shelf-bg); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; min-width: 0; }
   .grid-container.pallet { background: var(--pallet-bg); }
-  .grid-container-name { padding: 2px 4px; background: rgba(0,0,0,0.07); font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: var(--muted); text-align: center; }
+  .grid-container-name { padding: 2px 4px; background: rgba(0,0,0,0.07); font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; color: var(--muted); text-align: center; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .grid-container-name:active { cursor: grabbing; }
+  .grid-container.grid-cont-dragging { opacity: 0.35; }
+  .grid-container.grid-cont-drop-target { outline: 2px solid var(--ink); border-radius: 5px; }
   .grid-slot { padding: 3px 4px; border-bottom: 1px dashed rgba(0,0,0,0.1); background: var(--paper); min-height: 30px; display: flex; align-items: center; gap: 3px; font-size: 9px; line-height: 1.15; }
   .grid-slot:last-child { border-bottom: 0; }
   .grid-slot.dragover { background: #fff8d6; }
@@ -1698,8 +1701,8 @@
           · <b>单击</b>单位框 → 选单位(套/个/对...)<br>
           · <b>双击</b>表标题 / 通道名 / 货架层名 → 修改<br>
           · <b>长按拖动</b>型号 → 移到其他位置<br>
-          · <b>长按层名</b>(整行) → 整层拖到别处(序号自动重排)<br>
-          · 每层<b>底部 +</b> → 复制此整层(含所有型号、颜色、数量)插到下方<br>
+          · <b>长按列名</b>(整行) → 整列拖到别处(序号自动重排)<br>
+          · 每列<b>底部 +</b> → 复制此整列(含所有型号、颜色、数量)插到下方<br>
           · 整箱表上 <b>拖到底部</b> → 删除(整箱搬走)<br>
           · 顶部 <b>💾</b> 或表内 <b>Save 保存</b> → 导出/分享到微信/Drive/邮箱
         </div>
@@ -2058,7 +2061,7 @@ function renderListView() {
       const cblock = document.createElement('div');
       cblock.className = 'container-block' + (isShelf ? '' : ' pallet');
       // FIX: Delete button (✕ 删) on every container — works for shelves and pallets
-      const deleteBtn = canMgr ? `<button class="mini-btn delete-btn" data-act="del-container" data-ai="${ai}" data-ci="${ci}" title="删除整层 / 整个托盘">✕ 删</button>` : '';
+      const deleteBtn = canMgr ? `<button class="mini-btn delete-btn" data-act="del-container" data-ai="${ai}" data-ci="${ci}" title="删除整列 / 整个托盘">✕ 删</button>` : '';
       // FIX (二): No "+" in the row header anymore — moved to the BOTTOM divider below
       cblock.innerHTML = `<div class="container-name">
         <span class="shelf-drag-handle" data-ai="${ai}" data-ci="${ci}" data-table="${currentTable}" title="按住拖动整列">⠿</span>
@@ -2146,7 +2149,7 @@ function renderListView() {
         cblock.appendChild(addSlotRow);
       }
       // FIX (二): "+" divider at the BOTTOM of each container — clicks duplicate this entire layer (with all slot data) below
-      const dividerLabel = isShelf ? '复制此层 / 在下方插入新层' : '复制此托盘 / 插入新托盘';
+      const dividerLabel = isShelf ? '复制此列 / 在下方插入新列' : '复制此托盘 / 插入新托盘';
       const divider = document.createElement('div');
       divider.className = 'add-divider';
       divider.innerHTML = canMgr
@@ -2202,6 +2205,7 @@ function renderGridView() {
         // Each container becomes its own column item — show aisle prefix so user sees 左·上 / A·A1板 etc
         const cont = document.createElement('div');
         cont.className = 'grid-container' + (isShelf ? '' : ' pallet');
+        cont.dataset.ai = ai; cont.dataset.ci = ci;
         // Show "aisle·container" if there are multiple aisles, otherwise just container name
         const headerName = t.aisles.length > 1
           ? `${escapeHtml(aisle.name)}·${escapeHtml(container.name)}`
@@ -2247,6 +2251,7 @@ function renderGridView() {
     aisle[ck].forEach((container, ci) => {
       const cont = document.createElement('div');
       cont.className = 'grid-container' + (isShelf ? '' : ' pallet');
+      cont.dataset.ai = ai; cont.dataset.ci = ci;
       cont.innerHTML = `<div class="grid-container-name editable" data-ai="${ai}" data-ci="${ci}">${escapeHtml(container.name)}</div>`;
       container[sk].forEach((slot, si) => {
         const gs = document.createElement('div');
@@ -2384,7 +2389,7 @@ function attachListHandlers(root) {
       const ai = +el.dataset.ai, ci = +el.dataset.ci, act = el.dataset.act;
       if (act === 'add-layer') {
         getActiveTable().aisles[ai].pallets[ci].layers.push(newSlot());
-        toast('已加一层'); render();
+        toast('已加一格位'); render();
       } else if (act === 'del-container' || act === 'del-pallet') {
         requestDeleteContainer(ai, ci);
       } else if (act === 'del-aisle') {
@@ -2521,6 +2526,9 @@ function attachGridHandlers(root) {
   root.querySelectorAll('.gcolor[data-ai]').forEach(el => attachColorCellHandlers(el));
   root.querySelectorAll('.gloc[data-loc]').forEach(el => attachLocCodeHandler(el));
   root.querySelectorAll('.editable').forEach(el => makeEditable(el));
+  if (_canManage()) {
+    root.querySelectorAll('.grid-container').forEach(cont => addGridContainerDrag(cont));
+  }
 }
 
 function attachUnitCellHandlers(el) {
@@ -4369,7 +4377,7 @@ function addShelfAfter(ai, ci) {
     const newName = SHELF_NAMES[newIdx] || ('第' + (newIdx + 1) + '层');
     const newShelf = { name: newName, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) };
     list.splice(ci + 1, 0, newShelf);
-    toast('已在该层后插入新层');
+    toast('已在该列后插入新列');
   } else {
     const list = t.aisles[ai].pallets;
     const newIdx = list.length;
@@ -4500,6 +4508,98 @@ function addShelfDrag(dragArea, handleEl) {
       document.querySelectorAll('.shelf-drop-target').forEach(x => x.classList.remove('shelf-drop-target'));
     });
   }
+}
+
+function addGridContainerDrag(cont) {
+  const header = cont.querySelector('.grid-container-name');
+  if (!header) return;
+  let ghost = null, longPressTimer = null, dragging = false, startX = 0, startY = 0;
+
+  header.addEventListener('touchstart', (e) => {
+    if (e.target.contentEditable === 'true') return;
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    longPressTimer = setTimeout(() => {
+      dragging = true;
+      cont.classList.add('grid-cont-dragging');
+      const rect = cont.getBoundingClientRect();
+      ghost = cont.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed', zIndex: '300', pointerEvents: 'none',
+        background: 'var(--paper)', border: '2px solid var(--ink)',
+        borderRadius: '8px', boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+        left: rect.left + 'px', top: (t.clientY - 20) + 'px',
+        width: rect.width + 'px', opacity: '0.92', maxHeight: '150px', overflow: 'hidden'
+      });
+      document.body.appendChild(ghost);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 420);
+  }, { passive: true });
+
+  header.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!dragging && Math.hypot(t.clientX - startX, t.clientY - startY) > 10) clearTimeout(longPressTimer);
+    if (dragging && ghost) {
+      e.preventDefault();
+      ghost.style.top = (t.clientY - 20) + 'px';
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.style.display = '';
+      document.querySelectorAll('.grid-cont-drop-target').forEach(x => x.classList.remove('grid-cont-drop-target'));
+      const target = under?.closest('.grid-container');
+      if (target && !target.classList.contains('grid-cont-dragging')) target.classList.add('grid-cont-drop-target');
+    }
+  }, { passive: false });
+
+  header.addEventListener('touchend', (e) => {
+    clearTimeout(longPressTimer);
+    if (dragging) {
+      const t = e.changedTouches[0];
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.remove(); ghost = null;
+      cont.classList.remove('grid-cont-dragging');
+      document.querySelectorAll('.grid-cont-drop-target').forEach(x => x.classList.remove('grid-cont-drop-target'));
+      const target = under?.closest('.grid-container');
+      if (target && !target.isSameNode(cont)) {
+        moveShelf(+cont.dataset.ai, +cont.dataset.ci, +target.dataset.ai, +target.dataset.ci);
+      }
+      dragging = false;
+    }
+  });
+
+  header.addEventListener('touchcancel', () => {
+    clearTimeout(longPressTimer);
+    if (ghost) { ghost.remove(); ghost = null; }
+    dragging = false;
+    cont.classList.remove('grid-cont-dragging');
+  });
+
+  // Desktop HTML5 drag
+  header.setAttribute('draggable', 'true');
+  header.addEventListener('dragstart', (e) => {
+    e.stopPropagation();
+    e.dataTransfer.setData('text/grid-container', JSON.stringify({ ai: +cont.dataset.ai, ci: +cont.dataset.ci }));
+    e.dataTransfer.effectAllowed = 'move';
+    cont.classList.add('grid-cont-dragging');
+  });
+  header.addEventListener('dragend', () => {
+    cont.classList.remove('grid-cont-dragging');
+    document.querySelectorAll('.grid-cont-drop-target').forEach(x => x.classList.remove('grid-cont-drop-target'));
+  });
+  cont.addEventListener('dragover', (e) => {
+    if (e.dataTransfer.types.includes('text/grid-container')) { e.preventDefault(); cont.classList.add('grid-cont-drop-target'); }
+  });
+  cont.addEventListener('dragleave', () => cont.classList.remove('grid-cont-drop-target'));
+  cont.addEventListener('drop', (e) => {
+    e.preventDefault();
+    cont.classList.remove('grid-cont-drop-target');
+    const data = e.dataTransfer.getData('text/grid-container');
+    if (!data) return;
+    const { ai: srcAi, ci: srcCi } = JSON.parse(data);
+    if (srcAi === +cont.dataset.ai && srcCi === +cont.dataset.ci) return;
+    moveShelf(srcAi, srcCi, +cont.dataset.ai, +cont.dataset.ci);
+  });
 }
 
 function moveShelf(srcAi, srcCi, tgtAi, tgtCi) {
