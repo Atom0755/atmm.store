@@ -33,8 +33,27 @@ module.exports = async function handler(req, res) {
     const customer = await stripe.customers.retrieve(sub.stripe_customer_id, {
       expand: ['invoice_settings.default_payment_method']
     });
-    const pm = customer.invoice_settings?.default_payment_method;
+
+    let pm = customer.invoice_settings?.default_payment_method;
+
+    // If no default set, try listing payment methods (e.g. after Setup Session)
+    if (!pm || typeof pm === 'string') {
+      const pmList = await stripe.paymentMethods.list({
+        customer: sub.stripe_customer_id,
+        type: 'card',
+        limit: 1,
+      });
+      if (pmList.data.length > 0) {
+        pm = pmList.data[0];
+        // Set it as the default for future charges
+        await stripe.customers.update(sub.stripe_customer_id, {
+          invoice_settings: { default_payment_method: pm.id },
+        });
+      }
+    }
+
     if (!pm || typeof pm === 'string') return res.json({ card: null });
+
     res.json({
       card: {
         brand: pm.card?.brand || 'card',

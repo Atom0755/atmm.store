@@ -5624,32 +5624,29 @@ async function _openSettings() {
     if (subSumEl) subSumEl.textContent = `${planLabel} · 剩余${daysLeft}天`;
   }
 
-  // Payment method (fetch from Stripe via API)
+  // Payment method (fetch from Stripe via API — always fetch for boss, not just paid plans)
   const pmEl = document.getElementById('settings-pm-display');
-  if (pmEl) {
-    const isPaid = _subscription?.plan && _subscription.plan !== 'trial';
-    if (isPaid && _warehouse?.id) {
-      pmEl.textContent = '加载中…';
-      sb.auth.getSession().then(({ data }) => {
-        const token = data.session?.access_token;
-        fetch(`/api/get-payment-method?warehouse_id=${_warehouse.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(r => r.json()).then(d => {
-          if (d.card) {
-            const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
-            pmEl.textContent = `${brand} •••• ${d.card.last4}`;
-            const addBtn = document.getElementById('pay-panel-card')?.querySelector('[onclick="_addCard()"]');
-            const manageBtn = document.getElementById('manage-card-btn');
-            if (addBtn) addBtn.style.display = 'none';
-            if (manageBtn) { manageBtn.style.display = 'flex'; manageBtn.onclick = _openPortal; }
-          } else {
-            pmEl.textContent = '未绑定支付方式';
-          }
-        }).catch(() => { pmEl.textContent = '—'; });
-      });
-    } else {
-      pmEl.textContent = '未绑定支付方式';
-    }
+  if (pmEl && _warehouse?.id) {
+    pmEl.textContent = '加载中…';
+    sb.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      fetch(`/api/get-payment-method?warehouse_id=${_warehouse.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(r => r.json()).then(d => {
+        if (d.card) {
+          const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
+          pmEl.textContent = `${brand} •••• ${d.card.last4}`;
+          const addBtn = document.getElementById('pay-panel-card')?.querySelector('button[onclick="_addCard()"]');
+          const manageBtn = document.getElementById('manage-card-btn');
+          if (addBtn) addBtn.style.display = 'none';
+          if (manageBtn) { manageBtn.style.display = 'flex'; manageBtn.onclick = _openPortal; }
+        } else {
+          pmEl.textContent = '未绑定支付方式';
+        }
+      }).catch(() => { pmEl.textContent = '—'; });
+    });
+  } else if (pmEl) {
+    pmEl.textContent = '未绑定支付方式';
   }
 
   // Referral code (based on user ID)
@@ -5966,6 +5963,10 @@ async function _initAuth() {
   // Handle Stripe checkout return
   if (params.get('checkout') === 'success') { history.replaceState({}, '', '/'); toast('✅ 订阅成功！欢迎升级到付费版'); }
   if (params.get('checkout') === 'canceled') { history.replaceState({}, '', '/'); toast('已取消订阅流程'); }
+  if (params.get('card') === 'saved')    { history.replaceState({}, '', '/'); toast('✅ 银行卡已保存'); setTimeout(_openSettings, 400); }
+  if (params.get('card') === 'canceled') { history.replaceState({}, '', '/'); toast('已取消添加银行卡'); }
+  if (params.get('topup') === 'success') { history.replaceState({}, '', '/'); toast('✅ 充值成功！余额已更新'); setTimeout(_openSettings, 400); }
+  if (params.get('topup') === 'canceled') { history.replaceState({}, '', '/'); toast('已取消充值'); }
 }
 
 // ── Wire up settings button ──
