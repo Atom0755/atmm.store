@@ -1,12 +1,8 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
-const TOPUP_OPTIONS = {
-  20:  2000,
-  50:  5000,
-  100: 10000,
-  200: 20000,
-};
+const MIN_TOPUP_USD = 1;
+const MAX_TOPUP_USD = 9999;
 
 async function creditWallet(sb, warehouseId, topupCents, amountUsd, paymentIntentId) {
   const { data: existing } = await sb.from('warehouse_transactions')
@@ -53,8 +49,10 @@ module.exports = async function handler(req, res) {
   const { warehouseId, amountUsd } = req.body || {};
   if (!warehouseId || !amountUsd) return res.status(400).json({ error: 'Missing fields' });
 
-  const amountCents = TOPUP_OPTIONS[amountUsd];
-  if (!amountCents) return res.status(400).json({ error: 'Invalid amount. Choose: 20, 50, 100, 200' });
+  const amountNum = Number(amountUsd);
+  if (!amountNum || amountNum < MIN_TOPUP_USD || amountNum > MAX_TOPUP_USD)
+    return res.status(400).json({ error: `充值金额须在 $${MIN_TOPUP_USD}–$${MAX_TOPUP_USD} 之间` });
+  const amountCents = Math.round(amountNum * 100);
 
   const { data: member } = await sb.from('warehouse_members')
     .select('role').eq('warehouse_id', warehouseId).eq('user_id', user.id).single();

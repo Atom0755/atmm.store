@@ -1397,11 +1397,15 @@
             <span style="font-size:11px; color:var(--muted);">可用余额</span>
           </div>
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:8px;">充值金额</div>
-          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
             <button class="plan-btn" style="flex:1; min-width:60px; margin:0; padding:10px 6px; text-align:center;" onclick="_startTopup(20)">$20</button>
             <button class="plan-btn" style="flex:1; min-width:60px; margin:0; padding:10px 6px; text-align:center;" onclick="_startTopup(50)">$50</button>
             <button class="plan-btn" style="flex:1; min-width:60px; margin:0; padding:10px 6px; text-align:center;" onclick="_startTopup(100)">$100</button>
             <button class="plan-btn" style="flex:1; min-width:60px; margin:0; padding:10px 6px; text-align:center;" onclick="_startTopup(200)">$200</button>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
+            <input id="topup-custom-amt" type="number" min="1" placeholder="自定义金额 $（最少 $1）" style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
+            <button onclick="_startTopupCustom()" style="padding:8px 14px; background:var(--ink); color:var(--paper); border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">充值</button>
           </div>
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">兑换为 Credits（$1 = 12 Credits）</div>
           <div style="display:flex; gap:8px; align-items:center;">
@@ -5724,6 +5728,11 @@ async function _addCard() {
   }
 }
 let _pendingTopupAmount = null;
+function _startTopupCustom() {
+  const val = parseFloat(document.getElementById('topup-custom-amt')?.value || '0');
+  if (!val || val < 1) { toast('请输入至少 $1'); return; }
+  _startTopup(Math.floor(val));
+}
 function _startTopup(amountUsd) {
   if (!_warehouse?.id) { toast('请先选择仓库'); return; }
   _pendingTopupAmount = amountUsd;
