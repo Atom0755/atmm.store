@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATMM 管理后台</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1a1a1a; --paper: #fff; --bg: #f5f4f0; --line: #e0ddd6;
+    --red: #d94f3b; --green: #2e7d52; --yellow: #c8860a; --muted: #888;
+    --blue: #2563eb;
+  }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; min-height: 100vh; }
+
+  /* ── Login ── */
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  .login-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+  .login-card h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .login-card p  { font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+  .login-card input { display: block; width: 100%; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 14px; margin-bottom: 12px; outline: none; font-family: inherit; }
+  .login-card input:focus { border-color: var(--ink); }
+  .login-card button { display: block; width: 100%; padding: 12px; background: var(--ink); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .login-card button:hover { opacity: .88; }
+  #login-error { font-size: 12px; color: var(--red); margin-top: 10px; min-height: 18px; }
+
+  /* ── Dashboard ── */
+  #dashboard { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .dash-header h1 { font-size: 20px; font-weight: 800; }
+  .dash-header span { font-size: 12px; color: var(--muted); }
+  #logout-btn { padding: 7px 16px; background: transparent; border: 1.5px solid var(--line); border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  #logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* stat cards */
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 800; }
+
+  /* chart */
+  .section { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .section h2 { font-size: 13px; font-weight: 700; margin-bottom: 16px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  #chart-wrap { overflow-x: auto; }
+  #chart-svg { display: block; min-width: 400px; }
+
+  /* table */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--line); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-active  { background: #d1fae5; color: #065f46; }
+  .badge-trial   { background: #fef3c7; color: #92400e; }
+  .badge-canceled{ background: #fee2e2; color: #991b1b; }
+  .badge-past_due{ background: #ffedd5; color: #9a3412; }
+  .sort-btn { cursor: pointer; user-select: none; }
+  .sort-btn:hover { color: var(--ink); }
+
+  #loading { text-align: center; padding: 60px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>⚙️ ATMM 管理后台</h1>
+    <p>仅限平台管理员访问</p>
+    <input type="email"    id="adm-email" placeholder="管理员邮箱" autocomplete="username">
+    <input type="password" id="adm-pass"  placeholder="密码" autocomplete="current-password">
+    <button onclick="doLogin()">登录</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div>
+      <h1>⚙️ ATMM 管理后台</h1>
+      <span id="adm-email-label"></span>
+    </div>
+    <button id="logout-btn" onclick="doLogout()">退出登录</button>
+  </div>
+
+  <div id="loading">加载数据中…</div>
+
+  <div id="dash-content" style="display:none">
+    <!-- Stat cards -->
+    <div class="stat-row">
+      <div class="stat-card"><div class="label">注册用户</div><div class="value" id="s-users">—</div></div>
+      <div class="stat-card"><div class="label">仓库数</div><div class="value" id="s-wh">—</div></div>
+      <div class="stat-card"><div class="label">付费仓库</div><div class="value" id="s-paid">—</div></div>
+      <div class="stat-card"><div class="label">今日新增</div><div class="value" id="s-today">—</div></div>
+    </div>
+
+    <!-- Daily chart -->
+    <div class="section">
+      <h2>每日新增用户（近60天）</h2>
+      <div id="chart-wrap"><svg id="chart-svg" height="120"></svg></div>
+    </div>
+
+    <!-- Table -->
+    <div class="section">
+      <h2>仓库明细</h2>
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <input id="tbl-search" oninput="filterTable()" placeholder="搜索邮箱/仓库名…" style="padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; width:220px; font-family:inherit; outline:none;">
+        <select id="tbl-status" onchange="filterTable()" style="padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff;">
+          <option value="">全部状态</option>
+          <option value="active">已付费</option>
+          <option value="trial">试用中</option>
+          <option value="canceled">已取消</option>
+          <option value="past_due">逾期</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table id="main-table">
+          <thead>
+            <tr>
+              <th class="sort-btn" onclick="sortTable('owner_email')">邮箱 ↕</th>
+              <th class="sort-btn" onclick="sortTable('warehouse_name')">仓库名 ↕</th>
+              <th class="sort-btn" onclick="sortTable('registered_at')">注册时间 ↕</th>
+              <th class="sort-btn" onclick="sortTable('trial_ends_at')">试用截止 ↕</th>
+              <th class="sort-btn" onclick="sortTable('sub_status')">状态 ↕</th>
+              <th class="sort-btn" onclick="sortTable('plan')">方案 ↕</th>
+              <th class="sort-btn" onclick="sortTable('period_end')">付费到期 ↕</th>
+              <th class="sort-btn" onclick="sortTable('member_count')">成员数 ↕</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+      <div id="tbl-count" style="font-size:12px; color:var(--muted); margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const _SUPA_URL  = 'https://vkwndhdqbmuyogieccph.supabase.co';
+const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrd25kaGRxYm11eW9naWVjY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDg2NzcsImV4cCI6MjA4MTkyNDY3N30.Q2Kf4rzJWJdWnYjpLRofmGUp6DNWBgFoDkFJ4yr473k';
+const ADMIN_EMAIL = 'atom22628@gmail.com';
+const sb = supabase.createClient(_SUPA_URL, _SUPA_ANON);
+
+let _allRows = [], _sortKey = 'registered_at', _sortAsc = false;
+
+// ── Auth ──────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('adm-email').value.trim();
+  const pass  = document.getElementById('adm-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (email !== ADMIN_EMAIL) { errEl.textContent = '无权限：不是管理员账号'; return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { errEl.textContent = error.message; return; }
+  showDashboard();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function showDashboard() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session || session.user.email !== ADMIN_EMAIL) return;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('adm-email-label').textContent = session.user.email;
+  loadStats(session.access_token);
+}
+
+// ── Data ──────────────────────────────────────────────────
+async function loadStats(token) {
+  try {
+    const res = await fetch('/api/admin-stats', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    renderStats(data);
+  } catch (e) {
+    document.getElementById('loading').textContent = '加载失败：' + e.message;
+  }
+}
+
+function renderStats(data) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('dash-content').style.display = 'block';
+
+  // Stat cards
+  const paid = (data.rows || []).filter(r => r.sub_status === 'active').length;
+  const today = (() => {
+    const d = new Date().toISOString().slice(0,10);
+    return (data.daily || []).find(x => x.date === d)?.count || 0;
+  })();
+  document.getElementById('s-users').textContent = data.total_users || 0;
+  document.getElementById('s-wh').textContent    = data.total_warehouses || 0;
+  document.getElementById('s-paid').textContent  = paid;
+  document.getElementById('s-today').textContent = today;
+
+  // Chart
+  renderChart(data.daily || []);
+
+  // Table
+  _allRows = data.rows || [];
+  renderTable(_allRows);
+}
+
+// ── Chart ─────────────────────────────────────────────────
+function renderChart(daily) {
+  const svg = document.getElementById('chart-svg');
+  if (!daily.length) { svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#aaa" font-size="12">暂无数据</text>'; return; }
+  const W = 900, H = 110, pad = { t: 10, b: 28, l: 28, r: 10 };
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const max = Math.max(...daily.map(d => d.count), 1);
+  const bw = Math.max(4, Math.floor(iw / daily.length) - 2);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W);
+
+  let bars = '', labels = '';
+  daily.forEach((d, i) => {
+    const x  = pad.l + i * (iw / daily.length) + (iw / daily.length - bw) / 2;
+    const bh = Math.max(2, (d.count / max) * ih);
+    const y  = pad.t + ih - bh;
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="2" fill="#1a1a1a" opacity="${d.count ? 0.85 : 0.12}">
+      <title>${d.date}: ${d.count} 人</title></rect>`;
+    if (i % Math.ceil(daily.length / 10) === 0) {
+      labels += `<text x="${(x + bw/2).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="#aaa">${d.date.slice(5)}</text>`;
+    }
+  });
+  svg.innerHTML = bars + labels;
+}
+
+// ── Table ─────────────────────────────────────────────────
+let _lastSort = '';
+function sortTable(key) {
+  if (_sortKey === key) _sortAsc = !_sortAsc;
+  else { _sortKey = key; _sortAsc = true; }
+  filterTable();
+}
+
+function filterTable() {
+  const q   = document.getElementById('tbl-search').value.toLowerCase();
+  const st  = document.getElementById('tbl-status').value;
+  let rows = _allRows.filter(r =>
+    (!q  || r.owner_email?.toLowerCase().includes(q) || r.warehouse_name?.toLowerCase().includes(q)) &&
+    (!st || r.sub_status === st)
+  );
+  rows.sort((a, b) => {
+    const av = a[_sortKey] ?? '', bv = b[_sortKey] ?? '';
+    return _sortAsc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+  });
+  renderTable(rows);
+}
+
+function renderTable(rows) {
+  const PLAN_LABEL = { basic:'基础版', standard:'标准版', premium:'高级版', trial:'试用' };
+  const STATUS_BADGE = {
+    active:   '<span class="badge badge-active">已付费</span>',
+    trial:    '<span class="badge badge-trial">试用中</span>',
+    canceled: '<span class="badge badge-canceled">已取消</span>',
+    past_due: '<span class="badge badge-past_due">逾期</span>',
+  };
+  const fmt = s => s ? s.slice(0,10) : '—';
+  const body = rows.map(r => `<tr>
+    <td>${esc(r.owner_email)}</td>
+    <td>${esc(r.warehouse_name)}</td>
+    <td>${fmt(r.registered_at)}</td>
+    <td>${fmt(r.trial_ends_at)}</td>
+    <td>${STATUS_BADGE[r.sub_status] || r.sub_status}</td>
+    <td>${PLAN_LABEL[r.plan] || r.plan}</td>
+    <td>${fmt(r.period_end)}</td>
+    <td style="text-align:center">${r.member_count}</td>
+  </tr>`).join('');
+  document.getElementById('tbl-body').innerHTML = body || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">暂无数据</td></tr>';
+  document.getElementById('tbl-count').textContent = `共 ${rows.length} 条`;
+}
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── Init ──────────────────────────────────────────────────
+sb.auth.onAuthStateChange((event, session) => {
+  if (session && session.user.email === ADMIN_EMAIL) showDashboard();
+});
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && session.user.email === ADMIN_EMAIL) showDashboard();
+})();
+</script>
+</body>
+</html>
