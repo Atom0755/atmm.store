@@ -203,6 +203,10 @@
   .list-view { padding: 10px 14px 100px; }
   .aisle-block { margin-bottom: 20px; }
   .aisle-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; font-weight: 700; font-size: 14px; }
+  .aisle-drag-handle { cursor: grab; padding: 0 6px 0 0; font-size: 14px; color: var(--muted); -webkit-touch-callout: none; }
+  .aisle-drag-handle:active { cursor: grabbing; color: var(--ink); }
+  .aisle-block.aisle-dragging { opacity: 0.4; }
+  .aisle-block.aisle-drop-target > .aisle-header { outline: 2px solid var(--ink); border-radius: 10px; }
   .aisle-header .add-child { background: var(--ink); color: var(--paper); border: 0; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; }
   .container-block { background: var(--shelf-bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 5px; overflow: hidden; }
   .container-block.pallet { background: var(--pallet-bg); }
@@ -1534,7 +1538,7 @@
           </div>
           <div class="help-item" onclick="this.classList.toggle('open')">
             <div class="help-q">库位编号格式是什么？<span class="help-arr">▶</span></div>
-            <div class="help-a">格式：<b>区域-通道-列-格位</b><br>例：<b>1-A-2-03</b> = 第1货架区 · A通道 · 第2列 · 03格位。只有1个同类区域时省略区域前缀。</div>
+            <div class="help-a">格式：<b>J/T-区域序号-货架/排-列序号-格位序号</b><br>例：<b>J-1-A-2-03</b> = 第1货架区·A货架·第2列·03格位；<b>T-2-A-1-3</b> = 第2托盘区·A排·第1托盘·第3层。J=货架区，T=托盘区。</div>
           </div>
           <div class="help-item" onclick="this.classList.toggle('open')">
             <div class="help-q">如何邀请团队成员？<span class="help-arr">▶</span></div>
@@ -1634,8 +1638,8 @@
       <h3>📍 库位编号</h3>
       <div id="loccode-title" style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; letter-spacing:.1em; padding:8px 16px; background:var(--aisle-bg); border-radius:8px; display:inline-block; margin-bottom:8px;"></div>
       <div style="font-size:10px; color:var(--muted); margin-bottom:18px; line-height:1.7;">
-        格式：<b>区域</b>-<b>通道</b>-<b>列</b>-<b>格位</b><br>
-        如 <span style="font-family:'JetBrains Mono',monospace; font-weight:700;">1-A-2-03</span> = 第1货架区 · A通道 · 第2列 · 03格位
+        格式：<b>J/T</b>-<b>区域序号</b>-<b>货架/排</b>-<b>列序号</b>-<b>格位序号</b><br>
+        如 <span style="font-family:'JetBrains Mono',monospace; font-weight:700;">J-1-A-2-03</span> = 第1货架区 · A货架 · 第2列 · 03格位
       </div>
 
       <div style="margin-bottom:18px;">
@@ -1958,19 +1962,19 @@ function getModel(id) { return state.models.find(m => m.id === id); }
 function getActiveZone() { return state.zones.find(z => z.id === currentTable) || state.zones[0]; }
 function isShelfTable(id) { return (state.zones.find(z => z.id === (id||currentTable)))?.type === 'shelf'; }
 
-// Generate a compact, unique location code for a slot.
-// Format — shelf: [N-]A-1-03  pallet: [N-]A-P2-L1  (N = zone index when >1 same-type zones)
+// 5-part location code: Type-ZoneIdx-Aisle-Col-Slot
+// Shelf: J-1-A-1-01  Pallet: T-1-A-1-1
 function makeLocationCode(zoneId, ai, ci, si) {
   const zone = state.zones.find(z => z.id === zoneId);
   if (!zone) return '';
   const sameType = state.zones.filter(z => z.type === zone.type);
-  const typeIdx = sameType.indexOf(zone);
-  const prefix = sameType.length > 1 ? `${typeIdx+1}-` : '';
+  const typeIdx = sameType.indexOf(zone) + 1;
+  const typeCode = zone.type === 'shelf' ? 'J' : 'T';
   const aisleCode = String.fromCharCode(65 + ai); // A, B, C…
   if (zone.type === 'shelf') {
-    return `${prefix}${aisleCode}-${ci+1}-${String(si+1).padStart(2,'0')}`;
+    return `${typeCode}-${typeIdx}-${aisleCode}-${ci+1}-${String(si+1).padStart(2,'0')}`;
   } else {
-    return `${prefix}${aisleCode}-P${ci+1}-L${si+1}`;
+    return `${typeCode}-${typeIdx}-${aisleCode}-${ci+1}-${si+1}`;
   }
 }
 function getActiveTable() { return getActiveZone(); }
@@ -2038,8 +2042,10 @@ function renderListView() {
     const ablock = document.createElement('div');
     ablock.className = 'aisle-block';
     const containerLabel = isShelf ? '货架' : '托盘';
+    ablock.dataset.ai = ai;
     ablock.innerHTML = `<div class="aisle-header">
-      <span class="aisle-name editable" data-ai="${ai}">${isShelf ? '货架 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
+      ${canMgr ? `<span class="aisle-drag-handle" data-ai="${ai}" title="按住拖动整排/货架">⠿</span>` : ''}
+      <span class="aisle-name editable" data-ai="${ai}" style="flex:1;">${isShelf ? '货架 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
       ${canMgr ? `<button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button>` : ''}
       ${canMgr ? `<button class="mini-btn delete-btn" data-act="del-aisle" data-ai="${ai}" title="删除此${isShelf?'货架':'排'}" style="margin-left:4px;">✕</button>` : ''}</div>`;
     aisle[ck].forEach((container, ci) => {
@@ -2299,6 +2305,24 @@ function attachListHandlers(root) {
   root.querySelectorAll('.container-name').forEach(row => {
     const handle = row.querySelector('.shelf-drag-handle');
     if (handle) addShelfDrag(row, handle);
+  });
+  root.querySelectorAll('.aisle-drag-handle').forEach(el => addAisleDrag(el));
+  root.querySelectorAll('.aisle-block').forEach(block => {
+    block.addEventListener('dragover', (e) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('text/aisle')) {
+        e.preventDefault(); block.classList.add('aisle-drop-target');
+      }
+    });
+    block.addEventListener('dragleave', () => block.classList.remove('aisle-drop-target'));
+    block.addEventListener('drop', (e) => {
+      const data = e.dataTransfer?.getData('text/aisle');
+      if (!data) return;
+      e.preventDefault();
+      const { ai: srcAi } = JSON.parse(data);
+      const tgtAi = +block.dataset.ai;
+      moveAisle(srcAi, tgtAi);
+      block.classList.remove('aisle-drop-target');
+    });
   });
   root.querySelectorAll('.container-block').forEach(block => {
     block.addEventListener('dragover', (e) => {
@@ -4425,8 +4449,92 @@ function moveShelf(srcAi, srcCi, tgtAi, tgtCi) {
   let insertCi = tgtCi;
   if (srcAi === tgtAi && tgtCi > srcCi) insertCi = tgtCi - 1;
   t.aisles[tgtAi][ck].splice(insertCi + 1, 0, item);
-  toast('已移动整层');
+  toast('已移动整列/托盘');
   render();
+}
+
+function moveAisle(srcAi, tgtAi) {
+  if (srcAi === tgtAi) return;
+  const t = getActiveTable();
+  const item = t.aisles.splice(srcAi, 1)[0];
+  const insertAt = tgtAi > srcAi ? tgtAi - 1 : tgtAi;
+  t.aisles.splice(insertAt + 1, 0, item);
+  toast('已移动整排/货架');
+  render();
+}
+
+function addAisleDrag(handle) {
+  let ghost = null, longPressTimer = null, dragging = false, startX = 0, startY = 0;
+  const block = handle.closest('.aisle-block');
+  block.addEventListener('touchstart', (e) => {
+    if (!e.target.closest('.aisle-drag-handle')) return;
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    longPressTimer = setTimeout(() => {
+      dragging = true;
+      block.classList.add('aisle-dragging');
+      const rect = block.getBoundingClientRect();
+      ghost = block.cloneNode(false);
+      ghost.innerHTML = block.querySelector('.aisle-header').outerHTML;
+      Object.assign(ghost.style, {
+        position: 'fixed', zIndex: '300', pointerEvents: 'none',
+        background: 'var(--paper)', border: '2px solid var(--ink)',
+        borderRadius: '10px', boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+        left: rect.left + 'px', top: (t.clientY - 20) + 'px',
+        width: rect.width + 'px', opacity: '0.92', padding: '4px 12px'
+      });
+      document.body.appendChild(ghost);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 420);
+  }, { passive: true });
+  block.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!dragging && Math.hypot(t.clientX - startX, t.clientY - startY) > 10) clearTimeout(longPressTimer);
+    if (dragging && ghost) {
+      e.preventDefault();
+      ghost.style.top = (t.clientY - 20) + 'px';
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.style.display = '';
+      document.querySelectorAll('.aisle-drop-target').forEach(x => x.classList.remove('aisle-drop-target'));
+      const target = under?.closest('.aisle-block');
+      if (target && !target.isSameNode(block)) target.classList.add('aisle-drop-target');
+    }
+  }, { passive: false });
+  block.addEventListener('touchend', (e) => {
+    clearTimeout(longPressTimer);
+    if (dragging) {
+      const t = e.changedTouches[0];
+      ghost.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      ghost.remove(); ghost = null;
+      block.classList.remove('aisle-dragging');
+      document.querySelectorAll('.aisle-drop-target').forEach(x => x.classList.remove('aisle-drop-target'));
+      const target = under?.closest('.aisle-block');
+      if (target && !target.isSameNode(block)) {
+        moveAisle(+handle.dataset.ai, +target.dataset.ai);
+      }
+      dragging = false;
+    }
+  });
+  block.addEventListener('touchcancel', () => {
+    clearTimeout(longPressTimer);
+    if (ghost) { ghost.remove(); ghost = null; }
+    dragging = false;
+    block.classList.remove('aisle-dragging');
+  });
+  handle.setAttribute('draggable', 'true');
+  handle.addEventListener('dragstart', (e) => {
+    if (e.dataTransfer) {
+      e.dataTransfer.setData('text/aisle', JSON.stringify({ ai: +handle.dataset.ai }));
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    block.classList.add('aisle-dragging');
+  });
+  handle.addEventListener('dragend', () => {
+    block.classList.remove('aisle-dragging');
+    document.querySelectorAll('.aisle-drop-target').forEach(x => x.classList.remove('aisle-drop-target'));
+  });
 }
 
 document.querySelectorAll('.tool[data-view]').forEach(b => {
@@ -5141,6 +5249,19 @@ function renderTabs() {
     btn.addEventListener('click', e => {
       if (e.target.closest('[data-del-zone]')) return;
       switchZone(btn.dataset.tabZone);
+    });
+    btn.addEventListener('dblclick', e => {
+      if (e.target.closest('[data-del-zone]')) return;
+      const zone = state.zones.find(z => z.id === btn.dataset.tabZone);
+      if (!zone || (_role && _role !== 'boss')) return;
+      const newName = prompt('修改区域名称:', zone.name);
+      if (newName && newName.trim()) {
+        zone.name = newName.trim();
+        const titleEl = document.querySelector(`.meta-title[data-meta-title="${zone.id}"]`);
+        if (titleEl) titleEl.textContent = zone.name;
+        renderTabs();
+        saveState();
+      }
     });
   });
   bar.querySelectorAll('[data-del-zone]').forEach(btn => {
