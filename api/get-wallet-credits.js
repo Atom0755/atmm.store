@@ -8,17 +8,22 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  console.log('[gwc] START url=', req.url, 'supabase=', process.env.SUPABASE_URL?.slice(0, 40));
+
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const token = (req.headers.authorization || '').replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  if (!token) { console.log('[gwc] no token'); return res.status(401).json({ error: 'Unauthorized' }); }
   const { data: { user }, error: authErr } = await sb.auth.getUser(token);
-  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+  if (authErr || !user) { console.log('[gwc] auth fail', authErr?.message); return res.status(401).json({ error: 'Unauthorized' }); }
 
   const warehouseId = req.query.warehouse_id;
   if (!warehouseId) return res.status(400).json({ error: 'Missing warehouse_id' });
 
-  const { data: member } = await sb.from('warehouse_members')
+  console.log('[gwc] user=', user.id, 'warehouseId=', warehouseId);
+
+  const { data: member, error: memberErr } = await sb.from('warehouse_members')
     .select('role').eq('warehouse_id', warehouseId).eq('user_id', user.id).single();
+  console.log('[gwc] member=', JSON.stringify(member), 'memberErr=', memberErr?.message);
   if (!member) return res.status(403).json({ error: 'Forbidden' });
 
   // Wallet balance

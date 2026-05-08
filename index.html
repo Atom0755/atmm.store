@@ -5788,6 +5788,7 @@ async function _loadWalletCredits() {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   const d = await r.json();
+  console.log('[wallet] status=' + r.status + ' body=' + JSON.stringify(d));
   const walDollars = ((d.wallet_cents || 0) / 100).toFixed(2);
   const creds = d.credits || 0;
   const walEl1 = document.getElementById('settings-wallet-display');

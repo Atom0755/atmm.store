@@ -99,7 +99,7 @@
       <h1>⚙️ ATMM 管理后台</h1>
       <span id="adm-email-label"></span>
     </div>
-    <button id="logout-btn" onclick="doLogout()">退出登录</button>
+    <button id="logout-btn" onclick="doBack()">返回</button>
   </div>
 
   <div id="loading">加载数据中…</div>
@@ -208,9 +208,8 @@ async function doLogin() {
   showDashboard();
 }
 
-async function doLogout() {
-  await sb.auth.signOut();
-  location.reload();
+function doBack() {
+  location.href = '/';
 }
 
 async function showDashboard() {
