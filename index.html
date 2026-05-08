@@ -1375,7 +1375,7 @@
           <span class="snr-arr" id="pay-arr-card">›</span>
         </div>
         <div id="pay-panel-card" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
-          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全保存并管理银行卡，每次付款无需重复输入。</div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全保存银行卡，可用于订阅及所有收费项目，无需每次重新输入卡号。</div>
           <button class="action-row" onclick="_openPortal()" style="margin-bottom:0;"><span class="ico">🔗</span>管理银行卡 / Manage Card</button>
         </div>
         <!-- 2. Wallet 钱包 -->
@@ -1421,11 +1421,10 @@
             <span style="font-size:11px; color:var(--muted);">Credits</span>
           </div>
           <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">汇率：$10 = 120 Credits（约 $0.083/Credit）</div>
-          <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">用于订阅（Credits 抵扣）</div>
-          <div style="font-size:12px; color:var(--muted); background:var(--paper); border-radius:8px; padding:8px; margin-bottom:10px; line-height:1.6;">
-            基础版 $10/月 = 120 Credits<br>
-            标准版 $60/月 = 720 Credits<br>
-            高级版 $168/月 = 2016 Credits
+          <div style="font-size:12px; color:var(--muted); background:var(--paper); border-radius:8px; padding:8px; margin-bottom:10px; line-height:1.7;">
+            Credits 可用于订阅、功能解锁等所有收费项目，<br>
+            余额长期有效，不会过期。<br>
+            <span style="color:var(--ink); font-weight:600;">$10 = 120 Credits &nbsp;·&nbsp; $50 = 600 Credits &nbsp;·&nbsp; $100 = 1200 Credits</span>
           </div>
           <div id="credit-tx-list" style="font-size:11px; color:var(--muted);"></div>
         </div>
