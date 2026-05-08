@@ -86,6 +86,7 @@ module.exports = async function handler(req, res) {
     const users = (authUsers || []).map(u => ({
       id:           u.id,
       email:        u.email || '',
+      phone:        u.phone || '',
       display_name: displayNameMap[u.id] || '',
       registered_at:u.created_at || null,
       wh_count:     userWhCount[u.id] || 0,

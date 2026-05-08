@@ -20,13 +20,17 @@ module.exports = async function handler(req, res) {
 
     const results = [];
     for (const u of anon) {
-      const { error } = await sb.auth.admin.deleteUser(u.id);
-      results.push({ id: u.id, ok: !error, err: error?.message });
+      try {
+        const { error } = await sb.auth.admin.deleteUser(u.id, false);
+        results.push({ id: u.id, phone: u.phone || '', ok: !error, err: error?.message || null });
+      } catch (e) {
+        results.push({ id: u.id, phone: u.phone || '', ok: false, err: e.message });
+      }
     }
 
     const deleted = results.filter(r => r.ok).length;
-    const failed  = results.filter(r => !r.ok).length;
-    res.json({ deleted, failed, total: anon.length, results });
+    const failed  = results.filter(r => !r.ok);
+    res.json({ deleted, failed: failed.length, total: anon.length, results, failDetails: failed });
   } catch (e) {
     console.error('admin-delete-anon error:', e);
     res.status(500).json({ error: e.message });
