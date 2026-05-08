@@ -279,7 +279,7 @@
   }
   .container-block.shelf-dragging { opacity: 0.4; }
   .container-block.shelf-drop-target { box-shadow: 0 -3px 0 var(--ink) inset, 0 3px 0 var(--ink) inset; }
-  .slot { display: grid; grid-template-columns: 32px 1fr 38px 48px 42px 26px; gap: 4px; align-items: center; padding: 7px 6px; border-bottom: 1px dashed rgba(0,0,0,0.1); min-height: 50px; background: var(--paper); }
+  .slot { display: grid; grid-template-columns: 32px 1fr 38px 48px 42px 26px; gap: 4px; align-items: center; padding: 7px 6px; border: 1.8px solid rgba(0,0,0,0.22); border-radius: 7px; margin-bottom: 5px; min-height: 50px; background: var(--paper); }
   .slot.pallet-slot { grid-template-columns: 32px 1fr 36px 44px 38px 44px 26px; }
   .del-slot-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--red); background: transparent; color: var(--red); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .1s; }
   .del-slot-btn:active { background: var(--red); color: #fff; }
@@ -287,6 +287,17 @@
   .add-slot-row .add-slot-btn { width: 24px; height: 24px; border-radius: 12px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform .12s; flex-shrink: 0; }
   .add-slot-row .add-slot-btn:active { transform: scale(0.88); background: var(--ink); color: var(--paper); }
   .add-slot-row .add-slot-hint { font-size: 10px; color: var(--muted); margin-left: 6px; font-weight: 600; }
+  .loc-code-row { display: flex; align-items: center; gap: 5px; }
+  .add-sub-model-btn { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; transition: background .1s; }
+  .add-sub-model-btn:active { background: var(--ink); color: var(--paper); }
+  .sub-model-block { grid-column: 1/-1; border-top: 2px dashed rgba(0,0,0,0.13); background: rgba(0,0,0,0.018); }
+  .sub-model-sep { padding: 3px 8px 1px; font-size: 9px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; }
+  .sub-slot-row { display: grid; grid-template-columns: 32px 1fr 38px 48px 42px 26px; gap: 4px; align-items: center; padding: 5px 6px 3px; }
+  .sub-slot-row.pallet-row { grid-template-columns: 32px 1fr 36px 44px 38px 44px 26px; }
+  .sub-slot-num { font-size: 10px; font-weight: 700; color: var(--muted); text-align: center; }
+  .del-sub-model-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--red); background: transparent; color: var(--red); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .1s; }
+  .del-sub-model-btn:active { background: var(--red); color: #fff; }
+  .sub-model-info { display: grid; grid-template-columns: 50px 1fr auto; gap: 6px; padding: 3px 6px 7px; align-items: start; }
   .slot.search-hit { animation: searchFlash 1.4s ease-in-out infinite; background: #fff8d6 !important; }
   .grid-slot.search-hit {
     animation: searchFlash 1.4s ease-in-out infinite;
@@ -1989,7 +2000,11 @@ function makeLocationCode(zoneId, ai, ci, si) {
 function getActiveTable() { return getActiveZone(); }
 function getContainerKey() { return isShelfTable(currentTable) ? 'shelves' : 'pallets'; }
 function getSlotsKey() { return isShelfTable(currentTable) ? 'slots' : 'layers'; }
-function getSlot(ai, ci, si) { return getActiveTable().aisles[ai][getContainerKey()][ci][getSlotsKey()][si]; }
+function getSlot(ai, ci, si, smi) {
+  const slot = getActiveTable().aisles[ai][getContainerKey()][ci][getSlotsKey()][si];
+  if (smi !== undefined && smi !== null && smi >= 0) return slot?.subModels?.[smi] ?? null;
+  return slot;
+}
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function render() { renderTabs(); renderPanes(); renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); }
@@ -2119,7 +2134,10 @@ function renderListView() {
             <div class="product-names">
               <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
               <div class="product-name cn ${cnName ? '' : 'empty'}" data-field="cnName" data-mid="${slot.modelId}">${cnName ? escapeHtml(cnName) : '中文名称 (点击输入)'}</div>
-              <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码&#10;格式：区域-通道-列-格位&#10;如 1-A-2-03 = 第1货架区·A通道·第2列·03格位&#10;无前缀时表示仓库只有一个同类区域">${escapeHtml(locCode)}</div>
+              <div class="loc-code-row">
+                <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码&#10;格式：区域-通道-列-格位&#10;如 1-A-2-03 = 第1货架区·A通道·第2列·03格位&#10;无前缀时表示仓库只有一个同类区域">${escapeHtml(locCode)}</div>
+                ${canMgr ? `<button class="add-sub-model-btn" data-ai="${ai}" data-ci="${ci}" data-si="${si}" title="在此库位添加附加型号">+</button>` : ''}
+              </div>
             </div>
             <div class="product-dim-weight">
               <div class="dim-box" data-mid="${slot.modelId}" data-field="dimensions">
@@ -2138,7 +2156,53 @@ function renderListView() {
         const delSlotHtml = _role === 'boss'
           ? `<button class="del-slot-btn" data-ai="${ai}" data-ci="${ci}" data-si="${si}" title="删除此格位 (老板专属)">✕</button>`
           : `<span></span>`;
-        cell.innerHTML = `<div class="slot-num">${slot.modelId ? serial : '—'}</div>${modelHtml}${colorHtml}${qtyHtml}${unitHtml}${restockHtml}${delSlotHtml}${infoRowHtml}`;
+        // Sub-models rendering
+        let subModelsHtml = '';
+        if (slot.subModels && slot.subModels.length > 0) {
+          slot.subModels.forEach((sm, smi) => {
+            const smm = sm.modelId ? getModel(sm.modelId) : null;
+            const smAbc = String.fromCharCode(97 + smi);
+            const smModelHtml = sm.modelId
+              ? `<div class="model-cell has-model sub-model-cell" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}" data-mid="${sm.modelId}">${escapeHtml(smm?.name||'?')}</div>`
+              : `<div class="model-cell empty-clickable sub-model-cell" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">空 (点击添加)</div>`;
+            const smColorHtml = sm.modelId
+              ? `<div class="color-cell sub-color-cell" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}"></div>`
+              : `<div class="color-cell" style="visibility:hidden"></div>`;
+            const smQtyHtml = sm.modelId
+              ? `<div class="qty-cell ${sm.qty>0?'has-qty':'empty-qty'} sub-qty-cell" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:'—'}</div>`
+              : `<div class="qty-cell" style="visibility:hidden"></div>`;
+            const smUnitHtml = sm.modelId
+              ? `<div class="unit-cell ${sm.unit?'has-unit':''} sub-unit-cell" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.unit?escapeHtml(sm.unit):'单位'}</div>`
+              : `<div class="unit-cell" style="visibility:hidden"></div>`;
+            const smRestockHtml = !isShelf ? `<div class="restock-cell" style="visibility:hidden"></div>` : '';
+            const smDelHtml = _role === 'boss'
+              ? `<button class="del-sub-model-btn" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}" title="删除附加型号">✕</button>`
+              : `<span></span>`;
+            let smInfoHtml = '';
+            if (sm.modelId && smm) {
+              const smImg = smm.imageUrl ? `<img src="${escapeHtml(smm.imageUrl)}" alt="">` : `<span class="img-plus">+</span>`;
+              const smDim = smm.dimensions||'', smDimU = smm.dimensionUnit||'IN', smW = smm.weight||'', smWU = smm.weightUnit||'LB';
+              smInfoHtml = `<div class="sub-model-info">
+                <div class="product-img-col"><div class="product-img-cell ${smm.imageUrl?'has-img':''}" data-mid="${sm.modelId}" title="点击上传产品图片">${smImg}</div></div>
+                <div class="product-names">
+                  <div class="product-name en ${smm.enName?'':'empty'}" data-field="enName" data-mid="${sm.modelId}">${smm.enName?escapeHtml(smm.enName):'English Name (点击输入)'}</div>
+                  <div class="product-name cn ${smm.cnName?'':'empty'}" data-field="cnName" data-mid="${sm.modelId}">${smm.cnName?escapeHtml(smm.cnName):'中文名称 (点击输入)'}</div>
+                </div>
+                <div class="product-dim-weight">
+                  <div class="dim-box" data-mid="${sm.modelId}" data-field="dimensions"><span class="dim-weight-label">尺寸</span><span class="dim-weight-value ${smDim?'':'empty'}">${smDim?escapeHtml(smDim):'—'}</span><button class="dim-weight-unit" data-mid="${sm.modelId}" data-field="dimensionUnit" data-units="IN,CM">${smDimU}</button></div>
+                  <div class="weight-box" data-mid="${sm.modelId}" data-field="weight"><span class="dim-weight-label">重量</span><span class="dim-weight-value ${smW?'':'empty'}">${smW?escapeHtml(smW):'—'}</span><button class="dim-weight-unit" data-mid="${sm.modelId}" data-field="weightUnit" data-units="LB,KG,G">${smWU}</button></div>
+                </div>
+              </div>`;
+            }
+            subModelsHtml += `<div class="sub-model-block" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">
+              <div class="sub-model-sep">▸ 附加型号 ${smi+1}</div>
+              <div class="sub-slot-row${isShelf?'':' pallet-row'}">
+                <div class="sub-slot-num">${slot.modelId?serial:'—'}${smAbc}</div>
+                ${smModelHtml}${smColorHtml}${smQtyHtml}${smUnitHtml}${smRestockHtml}${smDelHtml}
+              </div>${smInfoHtml}</div>`;
+          });
+        }
+        cell.innerHTML = `<div class="slot-num">${slot.modelId ? serial : '—'}</div>${modelHtml}${colorHtml}${qtyHtml}${unitHtml}${restockHtml}${delSlotHtml}${infoRowHtml}${subModelsHtml}`;
         cblock.appendChild(cell);
       });
       // Add-slot row — boss/manager can add a new empty slot at the bottom of this container
@@ -2284,7 +2348,7 @@ function attachListHandlers(root) {
     addTouchDrag(el);
     attachModelDoubleTap(el);
   });
-  root.querySelectorAll('.model-cell.empty-clickable').forEach(el => {
+  root.querySelectorAll('.model-cell.empty-clickable:not(.sub-model-cell)').forEach(el => {
     el.addEventListener('click', () => { openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true); });
   });
   root.querySelectorAll('.slot').forEach(el => {
@@ -2292,8 +2356,8 @@ function attachListHandlers(root) {
     el.addEventListener('dragleave', () => el.classList.remove('dragover'));
     el.addEventListener('drop', onDropSlot);
   });
-  root.querySelectorAll('.color-cell[data-ai]').forEach(el => attachColorCellHandlers(el));
-  root.querySelectorAll('.unit-cell[data-ai]').forEach(el => attachUnitCellHandlers(el));
+  root.querySelectorAll('.color-cell[data-ai]:not(.sub-color-cell)').forEach(el => attachColorCellHandlers(el));
+  root.querySelectorAll('.unit-cell[data-ai]:not(.sub-unit-cell)').forEach(el => attachUnitCellHandlers(el));
   // NEW: product image cells — click opens upload dialog
   root.querySelectorAll('.product-img-cell[data-mid]').forEach(el => attachProductImageHandler(el));
   // NEW: product name cells (EN/CN) — click to edit, with autocomplete
@@ -2303,7 +2367,7 @@ function attachListHandlers(root) {
   root.querySelectorAll('.loc-code[data-loc]').forEach(el => attachLocCodeHandler(el));
   root.querySelectorAll('.dim-weight-unit[data-mid]').forEach(el => attachDimWeightUnitHandler(el));
   // NEW: qty-cell — double-tap opens 4-method input picker for the quantity
-  root.querySelectorAll('.qty-cell[data-ai]').forEach(el => attachQtyCellHandlers(el));
+  root.querySelectorAll('.qty-cell[data-ai]:not(.sub-qty-cell)').forEach(el => attachQtyCellHandlers(el));
   // NEW: restock-cell (pallets only) — double-tap opens restock input + flow
   root.querySelectorAll('.restock-cell[data-ai]').forEach(el => attachRestockCellHandlers(el));
   root.querySelectorAll('.editable').forEach(el => makeEditable(el));
@@ -2329,6 +2393,82 @@ function attachListHandlers(root) {
       requestDeleteSlot(+el.dataset.ai, +el.dataset.ci, +el.dataset.si);
     });
   });
+  // ── Sub-model handlers ──────────────────────────────────────
+  // Add sub-model button (+ on loc-code row)
+  root.querySelectorAll('.add-sub-model-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si;
+      const t = getActiveTable();
+      const ck = getContainerKey(), sk = getSlotsKey();
+      const slot = t.aisles[ai][ck][ci][sk][si];
+      if (!slot.subModels) slot.subModels = [];
+      if (slot.subModels.length >= 3) { toast('⚠️ 每个库位最多3个附加型号'); return; }
+      slot.subModels.push({ modelId: null, color: null, qty: 0, unit: null, restock: 0 });
+      saveState(); render(); toast('已添加附加型号');
+    });
+  });
+  // Sub-model empty cell — click opens model picker
+  root.querySelectorAll('.sub-model-cell.empty-clickable').forEach(el => {
+    el.addEventListener('click', () => {
+      const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si, smi = +el.dataset.smi;
+      openModelPicker(null, null, null, false, (model) => {
+        const t = getActiveTable();
+        const ck = getContainerKey(), sk = getSlotsKey();
+        const slot = t.aisles[ai][ck][ci][sk][si];
+        if (!slot.subModels || !slot.subModels[smi]) return;
+        Object.assign(slot.subModels[smi], { modelId: model.id, color: null, qty: 0, unit: null });
+        saveState(); render();
+      });
+    });
+  });
+  // Sub-model has-model cell — double-tap to change model
+  root.querySelectorAll('.sub-model-cell.has-model').forEach(el => {
+    let lastTap = 0;
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const now = Date.now();
+      if (now - lastTap < 400) {
+        const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si, smi = +el.dataset.smi;
+        openModelPicker(null, null, null, false, (model) => {
+          const t = getActiveTable();
+          const ck = getContainerKey(), sk = getSlotsKey();
+          const slot = t.aisles[ai][ck][ci][sk][si];
+          if (!slot.subModels || !slot.subModels[smi]) return;
+          slot.subModels[smi].modelId = model.id;
+          saveState(); render();
+        });
+      }
+      lastTap = now;
+    });
+  });
+  // Sub-model color cell
+  root.querySelectorAll('.sub-color-cell').forEach(el => {
+    const h = () => openColorPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, +el.dataset.smi);
+    el.addEventListener('click', e => { e.stopPropagation(); h(); });
+    el.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); h(); }, { passive: false });
+  });
+  // Sub-model qty cell
+  root.querySelectorAll('.sub-qty-cell').forEach(el => {
+    const h = () => openQtyMultiInput(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, 'qty', +el.dataset.smi);
+    el.addEventListener('click', e => { e.stopPropagation(); h(); });
+    el.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); h(); }, { passive: false });
+  });
+  // Sub-model unit cell
+  root.querySelectorAll('.sub-unit-cell').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      openUnitEditor(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, +el.dataset.smi);
+    });
+  });
+  // Del sub-model button (boss only)
+  root.querySelectorAll('.del-sub-model-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      requestDeleteSubModel(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, +el.dataset.smi);
+    });
+  });
+  // ────────────────────────────────────────────────────────────
   // Add slot (boss/manager) — pushes new empty slot to container
   root.querySelectorAll('.add-slot-btn').forEach(el => {
     el.addEventListener('click', e => {
@@ -2407,6 +2547,23 @@ function attachListHandlers(root) {
 // Bilingual delete confirmation flow
 let pendingDelete = null;
 
+function requestDeleteSubModel(ai, ci, si, smi) {
+  const t = getActiveTable();
+  const ck = getContainerKey(), sk = getSlotsKey();
+  const slot = t.aisles[ai][ck][ci]?.[sk]?.[si];
+  const sm = slot?.subModels?.[smi];
+  if (!sm) return;
+  const m = sm.modelId ? getModel(sm.modelId) : null;
+  const label = m ? escapeHtml(m.name) : '空附加型号';
+  const targetEl = document.getElementById('confirm-delete-target');
+  if (targetEl) {
+    targetEl.innerHTML = `即将删除附加型号 / Delete sub-model:<br>
+      <span style="color:var(--red); font-size:17px;">${label}</span>`;
+  }
+  pendingDelete = { type: 'sub-model', ai, ci, si, smi };
+  showSheet('confirm-delete-sheet');
+}
+
 function requestDeleteSlot(ai, ci, si) {
   const t = getActiveTable();
   const ck = getContainerKey(), sk = getSlotsKey();
@@ -2445,9 +2602,16 @@ function requestDeleteContainer(ai, ci) {
 
 function _execConfirmDelete() {
   if (!pendingDelete) { hideSheets(); return; }
-  const { type, ai, ci, si } = pendingDelete;
+  const { type, ai, ci, si, smi } = pendingDelete;
   const t = getActiveTable();
-  if (type === 'slot') {
+  if (type === 'sub-model') {
+    const ck = getContainerKey(), sk = getSlotsKey();
+    t.aisles[ai][ck][ci][sk][si].subModels.splice(smi, 1);
+    pendingDelete = null;
+    hideSheets();
+    toast('🗑️ 已删除附加型号');
+    render();
+  } else if (type === 'slot') {
     const ck = getContainerKey(), sk = getSlotsKey();
     t.aisles[ai][ck][ci][sk].splice(si, 1);
     pendingDelete = null;
@@ -3154,11 +3318,10 @@ function addTouchDrag(el) {
 }
 
 let pendingSlot = null;
-function openColorPicker(ai, ci, si) {
-  // Capture target in closure — completely independent of pendingSlot global
-  const targetAi = ai, targetCi = ci, targetSi = si;
-  const targetTable = currentTable;  // Lock the table reference too
-  pendingSlot = { ai, ci, si };
+function openColorPicker(ai, ci, si, smi) {
+  const targetAi = ai, targetCi = ci, targetSi = si, targetSmi = (smi !== undefined && smi !== null && smi >= 0) ? smi : null;
+  const targetTable = currentTable;
+  pendingSlot = { ai, ci, si, smi: targetSmi };
   // Re-bind handlers each time, with the closure-captured target
   document.querySelectorAll('#color-sheet .color-opt').forEach(el => {
     // Clone node to remove all old listeners
@@ -3186,30 +3349,18 @@ function openColorPicker(ai, ci, si) {
 
       let s = null;
       try {
-        s = tableData.aisles[targetAi][containerKey][targetCi][slotsKey][targetSi];
+        const slot = tableData.aisles[targetAi][containerKey][targetCi][slotsKey][targetSi];
+        s = (targetSmi !== null) ? slot?.subModels?.[targetSmi] : slot;
       } catch(err) {
         toast('⚠️ 数据查找失败: ' + err.message);
-        pendingSlot = null;
-        hideSheets();
-        return;
+        pendingSlot = null; hideSheets(); return;
       }
-
       if (!s) {
-        toast('⚠️ 找不到目标位置 [' + targetAi + ',' + targetCi + ',' + targetSi + ']');
-        pendingSlot = null;
-        hideSheets();
-        return;
+        toast('⚠️ 找不到目标位置');
+        pendingSlot = null; hideSheets(); return;
       }
-
-      const oldColor = s.color;
       s.color = (c === 'none' ? null : c);
-      // Verify write succeeded by reading back
-      const verify = tableData.aisles[targetAi][containerKey][targetCi][slotsKey][targetSi];
-      if (verify.color !== s.color) {
-        toast('⚠️ 写入失败 (' + oldColor + '→' + c + ')');
-      } else {
-        toast(c === 'none' ? '已清除颜色' : `✅ 已设为${c==='red'?'🔴 无货':c==='yellow'?'🟡 少量':'🟢 充足'}`);
-      }
+      toast(c === 'none' ? '已清除颜色' : `✅ 已设为${c==='red'?'🔴 无货':c==='yellow'?'🟡 少量':'🟢 充足'}`);
 
       pendingSlot = null;
       hideSheets();
@@ -3236,10 +3387,11 @@ function openQtyEditor(ai, ci, si) {
 
 // NEW: Universal multi-input number editor — handles both 'qty' and 'restock' fields
 let pendingQtyField = 'qty'; // 'qty' or 'restock'
-function openQtyMultiInput(ai, ci, si, field) {
-  pendingSlot = { ai, ci, si };
+function openQtyMultiInput(ai, ci, si, field, smi) {
+  const _smi = (smi !== undefined && smi !== null && smi >= 0) ? smi : null;
+  pendingSlot = { ai, ci, si, smi: _smi };
   pendingQtyField = field || 'qty';
-  const s = getSlot(ai, ci, si);
+  const s = getSlot(ai, ci, si, _smi);
   const m = s.modelId ? getModel(s.modelId) : null;
   const titleEl = document.getElementById('qty-title');
   if (field === 'restock') {
@@ -3263,7 +3415,11 @@ document.getElementById('qty-plus').addEventListener('click', () => { const inp 
 function commitQtyValue() {
   const v = Math.max(0, parseInt(document.getElementById('qty-input').value) || 0);
   if (!pendingSlot) { hideSheets(); return; }
-  const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si);
+  const { ai, ci, si, smi } = pendingSlot;
+  const s = getSlot(ai, ci, si, smi);
+  if (!s) { hideSheets(); return; }
+  // Sub-models don't have restock flow — just set qty
+  if (smi !== null && smi !== undefined && pendingQtyField === 'restock') { s.qty = v; hideSheets(); render(); return; }
   if (pendingQtyField === 'restock') {
     // Restock flow: applies the restock amount, deducts from pallet, adds to scattered shelves (with conversion)
     if (v <= 0) { s.restock = 0; hideSheets(); render(); return; }
@@ -3510,9 +3666,10 @@ function confirmRestock(zoneId) {
   render();
 }
 
-function openUnitEditor(ai, ci, si) {
-  pendingSlot = { ai, ci, si };
-  const s = getSlot(ai, ci, si);
+function openUnitEditor(ai, ci, si, smi) {
+  const _smi = (smi !== undefined && smi !== null && smi >= 0) ? smi : null;
+  pendingSlot = { ai, ci, si, smi: _smi };
+  const s = getSlot(ai, ci, si, _smi);
   const m = s.modelId ? getModel(s.modelId) : null;
   document.getElementById('unit-title').textContent = m ? `${m.name} · 单位` : '单位';
   document.getElementById('unit-input').value = s.unit || '';
@@ -3521,15 +3678,17 @@ function openUnitEditor(ai, ci, si) {
 document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
   btn.addEventListener('click', () => {
     const u = btn.dataset.unit;
-    const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si);
-    s.unit = u || null;
+    if (!pendingSlot) return;
+    const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
+    if (s) { s.unit = u || null; }
     hideSheets(); render();
   });
 });
 document.getElementById('unit-confirm').addEventListener('click', () => {
   const u = document.getElementById('unit-input').value.trim();
-  const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si);
-  s.unit = u || null;
+  if (!pendingSlot) return;
+  const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
+  if (s) { s.unit = u || null; }
   hideSheets(); render();
 });
 
@@ -6364,7 +6523,7 @@ _initAuth(); // All vars declared above — safe entry point
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
   const tgt = e.target;
-  if (tgt && tgt.closest('button, a, input, textarea, .color-cell, .gcolor, .unit-cell, .qty-cell, .restock-cell, .model-cell, .gmodel, .editable, [contenteditable], .suggestion, .color-opt, .action-row, .tool, .table-tab, .unit-quick, .input-method-btn, .voice-mic-btn, canvas, .meta-save-btn, .add-divider, .add-divider-btn, .add-slot-row, .add-slot-btn, .del-slot-btn, .search-bar, .search-input, .search-icon-btn, .search-clear')) return;
+  if (tgt && tgt.closest('button, a, input, textarea, .color-cell, .gcolor, .unit-cell, .qty-cell, .restock-cell, .model-cell, .gmodel, .editable, [contenteditable], .suggestion, .color-opt, .action-row, .tool, .table-tab, .unit-quick, .input-method-btn, .voice-mic-btn, canvas, .meta-save-btn, .add-divider, .add-divider-btn, .add-slot-row, .add-slot-btn, .del-slot-btn, .add-sub-model-btn, .del-sub-model-btn, .sub-model-cell, .sub-color-cell, .sub-qty-cell, .sub-unit-cell, .search-bar, .search-input, .search-icon-btn, .search-clear')) return;
   const now = Date.now();
   if (now - lastTouchEnd < 300) e.preventDefault();
   lastTouchEnd = now;
