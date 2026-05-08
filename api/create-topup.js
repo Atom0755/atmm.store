@@ -40,6 +40,10 @@ module.exports = async function handler(req, res) {
     .select('stripe_customer_id').eq('warehouse_id', warehouseId).single();
 
   let customerId = sub?.stripe_customer_id;
+  if (customerId) {
+    try { await stripe.customers.retrieve(customerId); }
+    catch { customerId = null; }
+  }
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: user.email,
