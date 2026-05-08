@@ -2,12 +2,12 @@ const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
 const PLANS = {
-  basic_monthly:    { amount:  1000, interval: 'month', members: 1, label: 'Basic Monthly'    },
-  basic_annual:     { amount:  9900, interval: 'year',  members: 1, label: 'Basic Annual'     },
-  standard_monthly: { amount:  1300, interval: 'month', members: 2, label: 'Standard Monthly' },
-  standard_annual:  { amount: 12900, interval: 'year',  members: 2, label: 'Standard Annual'  },
-  premium_monthly:  { amount:  1800, interval: 'month', members: 3, label: 'Premium Monthly'  },
-  premium_annual:   { amount: 16800, interval: 'year',  members: 3, label: 'Premium Annual'   },
+  basic_monthly:    { amount:   1000, interval: 'month', members: 1, label: 'Basic Monthly'    },
+  basic_annual:     { amount:  36500, interval: 'year',  members: 1, label: 'Basic Annual'     },
+  standard_monthly: { amount:   6000, interval: 'month', members: 2, label: 'Standard Monthly' },
+  standard_annual:  { amount:  50000, interval: 'year',  members: 2, label: 'Standard Annual'  },
+  premium_monthly:  { amount:  16800, interval: 'month', members: 3, label: 'Premium Monthly'  },
+  premium_annual:   { amount: 126800, interval: 'year',  members: 3, label: 'Premium Annual'   },
 };
 
 module.exports = async function handler(req, res) {
@@ -54,7 +54,7 @@ module.exports = async function handler(req, res) {
 
     // Find or create a Stripe price for this plan
     const plan = PLANS[planKey];
-    const existing = await stripe.prices.list({ lookup_keys: [`atmm_${planKey}`], limit: 1 });
+    const existing = await stripe.prices.list({ lookup_keys: [`atmm2_${planKey}`], limit: 1 });
     let priceId;
     if (existing.data.length) {
       priceId = existing.data[0].id;
@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
         unit_amount: plan.amount,
         currency: 'usd',
         recurring: { interval: plan.interval },
-        lookup_key: `atmm_${planKey}`,
+        lookup_key: `atmm2_${planKey}`,
       });
       priceId = price.id;
     }
