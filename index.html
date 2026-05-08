@@ -1037,7 +1037,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em;">v1.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1422,7 +1422,11 @@
             <div class="help-a">设置 → 订阅状态 → 点击"管理订阅"，进入 Stripe 账户门户，可以查看账单历史、更改方案或取消订阅。</div>
           </div>
         </div>
-        <div class="help-contact">📧 客服邮箱：<a href="mailto:support@zehem.com" style="color:var(--ink);">support@zehem.com</a></div>
+        <div class="help-contact">
+          📧 <a href="mailto:atom22628@gmail.com" style="color:var(--red); font-weight:700;">atom22628@gmail.com</a><br>
+          📱 <a href="tel:+16266360369" style="color:var(--ink);">+1 (626) 636-0369</a>
+          <span style="color:var(--muted);"> · SMS only · WhatsApp</span>
+        </div>
       </div>
 
       <!-- Admin backend link (visible to platform admin only) -->
@@ -1437,6 +1441,53 @@
     </div>
     <div class="sheet-footer">
       <button class="sheet-cancel" data-close>关闭 / Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Changelog Sheet -->
+<div class="sheet-backdrop modal-style" id="changelog-sheet">
+  <div class="sheet" style="max-height:82vh; border-radius:16px; border-bottom:1px solid var(--line);">
+    <div class="sheet-body">
+      <h3>📋 更新日志 / Changelog</h3>
+
+      <div style="display:flex; flex-direction:column; gap:14px; font-size:13px;">
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.1</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-08</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>注册弹窗：邮箱改为用户名+域名下拉选择，密码升级为8位强密码要求</li>
+            <li>设置按钮：未登录时自动跳转登录弹窗</li>
+            <li>帮助中心：增加FAQ折叠区块和客服联系方式</li>
+            <li>管理后台：新增 /admin.html 数据看板（注册/付费/成员统计）</li>
+            <li>价格更新：Standard $60/$500，Premium $168/$1268，Basic年付$365</li>
+            <li>版本日志：点击版本号可查看本日志</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v1.0</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-05</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>正式发布：ZEHEM哲亨智能仓管表 v1.0</li>
+            <li>库位编号：格式统一为 1-A-1-01（区域-通道-列-格位）</li>
+            <li>库位二维码 + 条形码生成与下载标签</li>
+            <li>QR/条码 CDN 多线路自动回退（unpkg → jsDelivr）</li>
+            <li>三级权限：老板 / 经理 / 操作员</li>
+            <li>团队邀请码、多仓库切换（老板专属）</li>
+            <li>设置面板：改名、订阅状态、团队管理</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
 </div>
@@ -2612,6 +2663,8 @@ async function openLocCodeSheet(code) {
     console.error('loccode gen error:', err);
   }
 }
+
+function _openChangelog() { showSheet('changelog-sheet'); }
 
 function _copyLocCode() {
   copyToClipboard(_currentLocCode);

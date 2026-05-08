@@ -37,6 +37,9 @@
   .stat-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
   .stat-card .label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
   .stat-card .value { font-size: 28px; font-weight: 800; }
+  .stat-card.clickable { cursor: pointer; transition: box-shadow .15s, transform .15s; }
+  .stat-card.clickable:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-2px); }
+  .stat-card.clickable:active { transform: scale(.97); }
 
   /* chart */
   .section { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
@@ -91,10 +94,10 @@
   <div id="dash-content" style="display:none">
     <!-- Stat cards -->
     <div class="stat-row">
-      <div class="stat-card"><div class="label">注册用户</div><div class="value" id="s-users">—</div></div>
-      <div class="stat-card"><div class="label">仓库数</div><div class="value" id="s-wh">—</div></div>
-      <div class="stat-card"><div class="label">付费仓库</div><div class="value" id="s-paid">—</div></div>
-      <div class="stat-card"><div class="label">今日新增</div><div class="value" id="s-today">—</div></div>
+      <div class="stat-card clickable" onclick="quickFilter('all')"     title="点击查看全部仓库"><div class="label">注册用户</div><div class="value" id="s-users">—</div></div>
+      <div class="stat-card clickable" onclick="quickFilter('all')"     title="点击查看全部仓库"><div class="label">仓库数</div><div class="value" id="s-wh">—</div></div>
+      <div class="stat-card clickable" onclick="quickFilter('active')"  title="点击查看付费仓库"><div class="label">付费仓库</div><div class="value" id="s-paid">—</div></div>
+      <div class="stat-card clickable" onclick="quickFilter('today')"   title="点击查看今日新增"><div class="label">今日新增</div><div class="value" id="s-today">—</div></div>
     </div>
 
     <!-- Daily chart -->
@@ -105,10 +108,14 @@
 
     <!-- Table -->
     <div class="section">
-      <h2>仓库明细</h2>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <h2 style="margin-bottom:0;">仓库明细</h2>
+        <span id="active-filter-tag" style="display:none; font-size:11px; background:#e0e7ff; color:#3730a3; padding:2px 10px; border-radius:20px; font-weight:700;"></span>
+        <button id="clear-filter-btn" onclick="quickFilter('all')" style="display:none; font-size:11px; background:none; border:1px solid var(--line); border-radius:8px; padding:2px 8px; cursor:pointer; color:var(--muted);">清除筛选 ✕</button>
+      </div>
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-        <input id="tbl-search" oninput="filterTable()" placeholder="搜索邮箱/仓库名…" style="padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; width:220px; font-family:inherit; outline:none;">
-        <select id="tbl-status" onchange="filterTable()" style="padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff;">
+        <input id="tbl-search" oninput="_quickMode='all'; filterTable()" placeholder="搜索邮箱/仓库名…" style="padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; width:220px; font-family:inherit; outline:none;">
+        <select id="tbl-status" onchange="_quickMode='all'; filterTable()" style="padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff;">
           <option value="">全部状态</option>
           <option value="active">已付费</option>
           <option value="trial">试用中</option>
@@ -236,20 +243,43 @@ function renderChart(daily) {
 }
 
 // ── Table ─────────────────────────────────────────────────
-let _lastSort = '';
+let _lastSort = '', _quickMode = '';
 function sortTable(key) {
   if (_sortKey === key) _sortAsc = !_sortAsc;
   else { _sortKey = key; _sortAsc = true; }
   filterTable();
 }
 
+function quickFilter(mode) {
+  _quickMode = mode;
+  const today = new Date().toISOString().slice(0, 10);
+  const LABELS = { all:'全部', active:'已付费', today:'今日新增' };
+  const tag   = document.getElementById('active-filter-tag');
+  const clrBtn= document.getElementById('clear-filter-btn');
+  if (mode === 'all') {
+    if (tag)    { tag.style.display = 'none'; tag.textContent = ''; }
+    if (clrBtn) clrBtn.style.display = 'none';
+    document.getElementById('tbl-status').value = '';
+    document.getElementById('tbl-search').value = '';
+  } else {
+    if (tag)    { tag.style.display = ''; tag.textContent = LABELS[mode] || mode; }
+    if (clrBtn) clrBtn.style.display = '';
+  }
+  document.getElementById('main-table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  filterTable();
+}
+
 function filterTable() {
-  const q   = document.getElementById('tbl-search').value.toLowerCase();
-  const st  = document.getElementById('tbl-status').value;
-  let rows = _allRows.filter(r =>
-    (!q  || r.owner_email?.toLowerCase().includes(q) || r.warehouse_name?.toLowerCase().includes(q)) &&
-    (!st || r.sub_status === st)
-  );
+  const q     = document.getElementById('tbl-search').value.toLowerCase();
+  const st    = document.getElementById('tbl-status').value;
+  const today = new Date().toISOString().slice(0, 10);
+  let rows = _allRows.filter(r => {
+    if (_quickMode === 'active') return r.sub_status === 'active';
+    if (_quickMode === 'today')  return (r.registered_at || '').slice(0, 10) === today;
+    // default: apply manual search / status filter
+    return (!q  || r.owner_email?.toLowerCase().includes(q) || r.warehouse_name?.toLowerCase().includes(q)) &&
+           (!st || r.sub_status === st);
+  });
   rows.sort((a, b) => {
     const av = a[_sortKey] ?? '', bv = b[_sortKey] ?? '';
     return _sortAsc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
