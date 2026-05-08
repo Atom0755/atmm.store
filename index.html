@@ -1377,11 +1377,8 @@
         <div id="pay-panel-card" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
           <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全保存银行卡，可用于订阅及所有收费项目，无需每次重新输入卡号。</div>
           <div id="card-panel-content">
-            <button class="action-row" onclick="_addCard()" style="margin-bottom:8px; background:#f0fdf4; border-color:#16a34a;">
-              <span class="ico">➕</span><div style="flex:1; font-weight:700; color:#16a34a;">添加银行卡 Add Card</div>
-            </button>
-            <button class="action-row" id="manage-card-btn" style="display:none; margin-bottom:0;">
-              <span class="ico">🔗</span><div style="flex:1; font-weight:700;">管理银行卡 / Manage Card</div>
+            <button class="action-row" id="add-card-btn" onclick="_addCard()" style="margin-bottom:0; background:#f0fdf4; border-color:#16a34a;">
+              <span class="ico" id="add-card-ico">➕</span><div style="flex:1; font-weight:700; color:#16a34a;" id="add-card-lbl">添加银行卡 Add Card</div>
             </button>
           </div>
         </div>
@@ -5636,12 +5633,17 @@ async function _openSettings() {
         if (d.card) {
           const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
           pmEl.textContent = `${brand} •••• ${d.card.last4}`;
-          const addBtn = document.getElementById('pay-panel-card')?.querySelector('button[onclick="_addCard()"]');
-          const manageBtn = document.getElementById('manage-card-btn');
-          if (addBtn) addBtn.style.display = 'none';
-          if (manageBtn) { manageBtn.style.display = 'flex'; manageBtn.onclick = _openPortal; }
+          // Change Add Card button to Replace Card
+          const icoEl = document.getElementById('add-card-ico');
+          const lblEl = document.getElementById('add-card-lbl');
+          if (icoEl) icoEl.textContent = '🔄';
+          if (lblEl) lblEl.textContent = '更换银行卡 Replace Card';
         } else {
           pmEl.textContent = '未绑定支付方式';
+          const icoEl = document.getElementById('add-card-ico');
+          const lblEl = document.getElementById('add-card-lbl');
+          if (icoEl) icoEl.textContent = '➕';
+          if (lblEl) lblEl.textContent = '添加银行卡 Add Card';
         }
       }).catch(() => { pmEl.textContent = '—'; });
     });
@@ -5719,8 +5721,9 @@ async function _startTopup(amountUsd) {
     const text = await r.text();
     let d;
     try { d = JSON.parse(text); } catch { toast('服务器错误，请稍后再试'); return; }
-    if (d.url) window.location.href = d.url;
-    else toast('充值失败: ' + (d.error || '未知错误'));
+    if (d.success) { toast('✅ ' + (d.message || '充值成功！')); _loadWalletCredits(); return; }
+    if (d.url) { window.location.href = d.url; return; }
+    toast('充值失败: ' + (d.error || '未知错误'));
   } catch (e) {
     toast('充值请求失败: ' + e.message);
   }

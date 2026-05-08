@@ -8,6 +8,28 @@ const TOPUP_OPTIONS = {
   200: 20000,
 };
 
+async function creditWallet(sb, warehouseId, topupCents, amountUsd, paymentIntentId) {
+  const { data: existing } = await sb.from('wallet_transactions')
+    .select('id').eq('stripe_payment_intent_id', paymentIntentId).maybeSingle();
+  if (existing) return; // already credited (idempotency)
+
+  const { data: wallet } = await sb.from('wallets')
+    .select('balance_cents').eq('warehouse_id', warehouseId).single();
+  const current = wallet?.balance_cents ?? 0;
+  await sb.from('wallets').upsert({
+    warehouse_id: warehouseId,
+    balance_cents: current + topupCents,
+    updated_at: new Date().toISOString(),
+  });
+  await sb.from('wallet_transactions').insert({
+    warehouse_id: warehouseId,
+    type: 'topup',
+    amount_cents: topupCents,
+    description: `钱包充值 $${amountUsd}`,
+    stripe_payment_intent_id: paymentIntentId,
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -53,7 +75,58 @@ module.exports = async function handler(req, res) {
     await sb.from('subscriptions').update({ stripe_customer_id: customerId }).eq('warehouse_id', warehouseId);
   }
 
+  // Try direct charge with saved card (bypasses Stripe Link / Checkout)
+  let defaultPmId = null;
+  try {
+    const customer = await stripe.customers.retrieve(customerId, {
+      expand: ['invoice_settings.default_payment_method'],
+    });
+    const pm = customer.invoice_settings?.default_payment_method;
+    if (pm && typeof pm !== 'string') defaultPmId = pm.id;
+    else if (typeof pm === 'string' && pm) defaultPmId = pm;
+
+    if (!defaultPmId) {
+      const pmList = await stripe.paymentMethods.list({ customer: customerId, type: 'card', limit: 1 });
+      if (pmList.data.length > 0) defaultPmId = pmList.data[0].id;
+    }
+  } catch (e) {
+    console.error('error fetching default PM:', e);
+  }
+
   const origin = req.headers.origin || 'https://atmm.store';
+
+  if (defaultPmId) {
+    try {
+      const pi = await stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: 'usd',
+        customer: customerId,
+        payment_method: defaultPmId,
+        off_session: true,
+        confirm: true,
+        description: `ATMM 钱包充值 $${amountUsd}`,
+        metadata: { warehouse_id: warehouseId, topup_cents: amountCents.toString(), type: 'wallet_topup' },
+        return_url: `${origin}/?topup=success`,
+      });
+
+      if (pi.status === 'succeeded') {
+        await creditWallet(sb, warehouseId, amountCents, amountUsd, pi.id);
+        return res.json({ success: true, message: `充值成功！已增加 $${amountUsd}` });
+      }
+      if (pi.status === 'requires_action') {
+        const actionUrl = pi.next_action?.redirect_to_url?.url;
+        if (actionUrl) return res.json({ url: actionUrl, payment_intent_id: pi.id });
+      }
+    } catch (e) {
+      // Card declined or other charge error — fall through to Checkout
+      console.error('direct charge failed:', e.message);
+      if (e.type === 'StripeCardError') {
+        return res.status(400).json({ error: `卡片被拒绝: ${e.message}` });
+      }
+    }
+  }
+
+  // Fallback: Checkout session (no saved card, or 3DS not redirectable)
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: 'payment',
@@ -68,7 +141,7 @@ module.exports = async function handler(req, res) {
     }],
     success_url: `${origin}/?topup=success`,
     cancel_url:  `${origin}/?topup=canceled`,
-    metadata: { warehouse_id: warehouseId, topup_cents: amountCents, type: 'wallet_topup' },
+    metadata: { warehouse_id: warehouseId, topup_cents: amountCents.toString(), type: 'wallet_topup' },
   });
 
   res.json({ url: session.url });
