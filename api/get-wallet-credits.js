@@ -22,9 +22,9 @@ module.exports = async function handler(req, res) {
   const [walletRes, creditsRes, walletTxRes, creditTxRes] = await Promise.all([
     sb.from('wallets').select('balance_cents').eq('warehouse_id', warehouseId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     sb.from('credits').select('balance').eq('warehouse_id', warehouseId).maybeSingle(),
-    sb.from('wallet_transactions').select('type,amount_cents,description,created_at')
+    sb.from('warehouse_transactions').select('type,amount_cents,description,created_at')
       .eq('warehouse_id', warehouseId).order('created_at', { ascending: false }).limit(10),
-    sb.from('credit_transactions').select('type,amount,description,created_at')
+    sb.from('warehouse_credit_transactions').select('type,amount,description,created_at')
       .eq('warehouse_id', warehouseId).order('created_at', { ascending: false }).limit(10),
   ]);
 

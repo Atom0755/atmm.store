@@ -2,7 +2,7 @@ const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
 async function creditWallet(sb, warehouseId, topupCents, paymentIntentId) {
-  const { data: existing } = await sb.from('wallet_transactions')
+  const { data: existing } = await sb.from('warehouse_transactions')
     .select('id').eq('stripe_payment_intent_id', paymentIntentId).maybeSingle();
   if (existing) return; // idempotency — already credited
 
@@ -17,7 +17,7 @@ async function creditWallet(sb, warehouseId, topupCents, paymentIntentId) {
     await sb.from('wallets')
       .insert({ warehouse_id: warehouseId, balance_cents: current + topupCents, updated_at: new Date().toISOString() });
   }
-  await sb.from('wallet_transactions').insert({
+  await sb.from('warehouse_transactions').insert({
     warehouse_id: warehouseId,
     type: 'topup',
     amount_cents: topupCents,

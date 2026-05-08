@@ -36,18 +36,26 @@ module.exports = async function handler(req, res) {
   await sb.from('wallets')
     .update({ balance_cents: wallet.balance_cents - deductCents, updated_at: new Date().toISOString() })
     .eq('warehouse_id', warehouseId);
-  await sb.from('wallet_transactions').insert({
+  await sb.from('warehouse_transactions').insert({
     warehouse_id: warehouseId, type: 'convert_to_credits',
     amount_cents: -deductCents, description: `兑换 ${earnCredits} Credits`,
   });
 
   // Add to credits
   const { data: credits } = await sb.from('credits')
-    .select('balance').eq('warehouse_id', warehouseId).single();
+    .select('balance').eq('warehouse_id', warehouseId).maybeSingle();
   const currentCredits = credits?.balance ?? 0;
-  await sb.from('credits')
-    .upsert({ warehouse_id: warehouseId, balance: currentCredits + earnCredits, updated_at: new Date().toISOString() });
-  await sb.from('credit_transactions').insert({
+  const { data: credRow } = await sb.from('credits')
+    .select('id').eq('warehouse_id', warehouseId).maybeSingle();
+  if (credRow?.id) {
+    await sb.from('credits')
+      .update({ balance: currentCredits + earnCredits, updated_at: new Date().toISOString() })
+      .eq('id', credRow.id);
+  } else {
+    await sb.from('credits')
+      .insert({ warehouse_id: warehouseId, balance: currentCredits + earnCredits, updated_at: new Date().toISOString() });
+  }
+  await sb.from('warehouse_credit_transactions').insert({
     warehouse_id: warehouseId, type: 'convert_from_wallet',
     amount: earnCredits, description: `从钱包兑换 $${amountUsd}`,
   });
