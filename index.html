@@ -932,6 +932,19 @@
   /* close button inside glass card */
   .auth-close-btn { position:absolute; top:8px; right:10px; background:none; border:none; color:rgba(255,255,255,0.65); font-size:17px; cursor:pointer; line-height:1; padding:4px 6px; }
   .auth-close-btn:hover { color:#fff; }
+  /* Registration email row */
+  .reg-email-row { display:flex; gap:4px; }
+  .reg-email-row input { flex:1; min-width:0; }
+  .reg-domain-sel { padding:9px 5px; border:1.5px solid rgba(255,255,255,0.5); border-radius:8px; background:rgba(255,255,255,0.93); font-size:11px; color:#111; font-family:inherit; outline:none; cursor:pointer; flex-shrink:0; max-width:112px; }
+  /* Help FAQ accordion */
+  .help-faq { border-top:1px solid var(--line); }
+  .help-item { border-bottom:1px solid var(--line); cursor:pointer; }
+  .help-q { font-size:13px; font-weight:600; display:flex; justify-content:space-between; align-items:center; padding:10px 2px; gap:8px; }
+  .help-arr { font-size:10px; color:var(--muted); transition:transform .2s; flex-shrink:0; }
+  .help-item.open .help-arr { transform:rotate(90deg); }
+  .help-a { font-size:12px; color:var(--muted); line-height:1.65; padding:0 2px 10px; display:none; }
+  .help-item.open .help-a { display:block; }
+  .help-contact { font-size:12px; color:var(--muted); padding:10px 2px 4px; line-height:1.6; }
   #main-app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
   .team-section-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:8px; }
   .team-member-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:13px; }
@@ -980,10 +993,22 @@
     <button class="auth-close-btn" onclick="_closeAuthModal()">✕</button>
     <div class="auth-logo">🏪</div>
     <h2>创建账号</h2>
-    <p class="auth-sub">免费试用30天 · 无需绑卡</p>
+    <p class="auth-sub">免费试用30天</p>
     <div class="auth-err" id="err-register"></div>
-    <input type="email"    id="reg-email"    placeholder="邮箱 Email" autocomplete="email">
-    <input type="password" id="reg-password" placeholder="密码 (6位以上)" autocomplete="new-password">
+    <!-- Email address with domain dropdown -->
+    <div class="reg-email-row">
+      <input type="text" id="reg-username" placeholder="用户名" autocomplete="username">
+      <select id="reg-domain" class="reg-domain-sel" onchange="_onRegDomainChange()">
+        <option value="@gmail.com">@gmail.com</option>
+        <option value="@zehem.com">@zehem.com</option>
+        <option value="@qq.com">@qq.com</option>
+        <option value="@163.com">@163.com</option>
+        <option value="@icloud.com">@icloud.com</option>
+        <option value="other">Other Mailbox</option>
+      </select>
+    </div>
+    <input type="email" id="reg-email-full" placeholder="完整邮箱地址 Full Email" autocomplete="email" style="display:none">
+    <input type="password" id="reg-password" placeholder="密码（至少8位含大小写字母和数字）" autocomplete="new-password">
     <input type="text"     id="reg-wh-name"  placeholder="仓库名称 (如: 北仓A区)" autocomplete="off">
     <button class="auth-btn-primary" onclick="_doRegister()">注册并开始 →</button>
     <button class="auth-link" onclick="_showAuth('login')">已有账号? 登录</button>
@@ -1363,6 +1388,47 @@
           <button class="auth-btn-primary" onclick="_sendInvite()">发送邀请 Send Invite</button>
         </div>
       </div>
+
+      <!-- Help / FAQ -->
+      <div style="margin-bottom:18px;">
+        <div class="team-section-title">❓ 帮助 / Help</div>
+        <div class="help-faq">
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">如何添加货架和库位？<span class="help-arr">▶</span></div>
+            <div class="help-a">点击区域标签页 → 点击"+"按钮添加通道/货架，每个格位会自动生成库位编号（如 A-1-01）。点击库位编号可查看对应二维码和条形码。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">库位编号格式是什么？<span class="help-arr">▶</span></div>
+            <div class="help-a">格式：<b>区域-通道-列-格位</b><br>例：<b>1-A-2-03</b> = 第1货架区 · A通道 · 第2列 · 03格位。只有1个同类区域时省略区域前缀。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">如何邀请团队成员？<span class="help-arr">▶</span></div>
+            <div class="help-a">老板账号登录 → 设置 → 团队成员 → 填写邮箱并选择角色（经理/操作员）→ 发送邀请。或将仓库邀请码分享给对方，让其注册后填入加入。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">如何导出数据到Excel？<span class="help-arr">▶</span></div>
+            <div class="help-a">点击右上角"📋"图标 → 选择"导出 Excel"，即可下载当前区域的库存数据电子表格。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">数据安全吗？会丢失吗？<span class="help-arr">▶</span></div>
+            <div class="help-a">所有数据存储在云端（Supabase 数据库），每次保存都会实时同步，多设备可同时访问，不依赖本地存储，不会因为清缓存丢失。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">忘记密码怎么办？<span class="help-arr">▶</span></div>
+            <div class="help-a">点击登录弹窗中的"忘记密码"，输入注册邮箱，系统会发送重置链接到您的邮箱，点击链接后设置新密码即可。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">如何取消或管理订阅？<span class="help-arr">▶</span></div>
+            <div class="help-a">设置 → 订阅状态 → 点击"管理订阅"，进入 Stripe 账户门户，可以查看账单历史、更改方案或取消订阅。</div>
+          </div>
+        </div>
+        <div class="help-contact">📧 客服邮箱：<a href="mailto:support@zehem.com" style="color:var(--ink);">support@zehem.com</a></div>
+      </div>
+
+      <!-- Admin backend link (visible to platform admin only) -->
+      <a id="admin-backend-btn" href="/admin.html" target="_blank" class="action-row" style="display:none; text-decoration:none; background:#f0f4ff; border-color:#2563eb;">
+        <span class="ico">⚙️</span><div style="flex:1; font-weight:700; color:#2563eb;">平台管理后台</div><span style="font-size:10px; color:#2563eb;">→</span>
+      </a>
 
       <!-- Logout -->
       <button class="action-row" onclick="_doLogout()" style="background:#ffe5e5; border-color:var(--red);">
@@ -4998,14 +5064,34 @@ async function _doLogin() {
   if (error) _authErr('err-login', error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
 }
 
+// ── Register helpers ──
+function _onRegDomainChange() {
+  const domain = document.getElementById('reg-domain').value;
+  const fullEl = document.getElementById('reg-email-full');
+  const rowEl  = document.querySelector('.reg-email-row');
+  const isOther = domain === 'other';
+  if (fullEl) fullEl.style.display = isOther ? '' : 'none';
+  if (rowEl)  rowEl.style.display  = isOther ? 'none' : '';
+}
+function _getRegEmail() {
+  const domain = document.getElementById('reg-domain')?.value;
+  if (domain === 'other') return (document.getElementById('reg-email-full')?.value || '').trim();
+  const username = (document.getElementById('reg-username')?.value || '').trim();
+  return username + (domain || '@gmail.com');
+}
+function _isStrongPwd(p) {
+  return p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /\d/.test(p);
+}
+
 // ── Register ──
 async function _doRegister() {
-  const email  = document.getElementById('reg-email').value.trim();
+  const email  = _getRegEmail();
   const pwd    = document.getElementById('reg-password').value;
   const whName = document.getElementById('reg-wh-name').value.trim() || '我的仓库';
   _authErr('err-register', '');
   if (!email || !pwd) { _authErr('err-register', '请填写邮箱和密码'); return; }
-  if (pwd.length < 6) { _authErr('err-register', '密码至少6位'); return; }
+  if (!email.includes('@')) { _authErr('err-register', '请输入有效的邮箱地址'); return; }
+  if (!_isStrongPwd(pwd)) { _authErr('err-register', '密码至少8位，须含大小写字母和数字'); return; }
 
   const { data, error } = await sb.auth.signUp({ email, password: pwd });
   if (error) { _authErr('err-register', error.message); return; }
@@ -5309,6 +5395,13 @@ window._canManageAisle = window._canManage;
 
 // ── Settings sheet: populate and open ──
 async function _openSettings() {
+  // If not logged in, pulse login button and open auth modal instead
+  if (!_user) { _pulseLoginBtn(); _openAuthModal(); return; }
+
+  // Admin backend link (only for platform admin)
+  const adminBtn = document.getElementById('admin-backend-btn');
+  if (adminBtn) adminBtn.style.display = _user.email === 'atom22628@gmail.com' ? 'flex' : 'none';
+
   // User row (only visible when logged in)
   const userRow = document.getElementById('settings-user-row');
   const nameEl  = document.getElementById('settings-display-name');
