@@ -1376,7 +1376,14 @@
         </div>
         <div id="pay-panel-card" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
           <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全保存银行卡，可用于订阅及所有收费项目，无需每次重新输入卡号。</div>
-          <button class="action-row" onclick="_openPortal()" style="margin-bottom:0;"><span class="ico">🔗</span>管理银行卡 / Manage Card</button>
+          <div id="card-panel-content">
+            <button class="action-row" onclick="_addCard()" style="margin-bottom:8px; background:#f0fdf4; border-color:#16a34a;">
+              <span class="ico">➕</span><div style="flex:1; font-weight:700; color:#16a34a;">添加银行卡 Add Card</div>
+            </button>
+            <button class="action-row" id="manage-card-btn" style="display:none; margin-bottom:0;">
+              <span class="ico">🔗</span><div style="flex:1; font-weight:700;">管理银行卡 / Manage Card</div>
+            </button>
+          </div>
         </div>
         <!-- 2. Wallet 钱包 -->
         <div class="settings-nav-row" onclick="_togglePayPanel('wallet')">
@@ -5631,6 +5638,10 @@ async function _openSettings() {
           if (d.card) {
             const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
             pmEl.textContent = `${brand} •••• ${d.card.last4}`;
+            const addBtn = document.getElementById('pay-panel-card')?.querySelector('[onclick="_addCard()"]');
+            const manageBtn = document.getElementById('manage-card-btn');
+            if (addBtn) addBtn.style.display = 'none';
+            if (manageBtn) { manageBtn.style.display = 'flex'; manageBtn.onclick = _openPortal; }
           } else {
             pmEl.textContent = '未绑定支付方式';
           }
@@ -5684,16 +5695,38 @@ function _togglePayPanel(type) {
     }
   });
 }
+async function _addCard() {
+  try {
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    const r = await fetch('/api/create-card-setup', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ warehouseId: _warehouse?.id }),
+    });
+    const d = await r.json();
+    if (d.url) window.location.href = d.url;
+    else toast('添加银行卡失败: ' + (d.error || '未知错误'));
+  } catch (e) {
+    toast('请求失败: ' + e.message);
+  }
+}
 async function _startTopup(amountUsd) {
-  const token = (await sb.auth.getSession()).data.session?.access_token;
-  const r = await fetch('/api/create-topup', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-    body: JSON.stringify({ warehouseId: _warehouse.id, amountUsd }),
-  });
-  const d = await r.json();
-  if (d.url) window.location.href = d.url;
-  else toast('充值失败: ' + (d.error || ''));
+  if (!_warehouse?.id) { toast('请先选择仓库'); return; }
+  try {
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    const r = await fetch('/api/create-topup', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ warehouseId: _warehouse.id, amountUsd }),
+    });
+    const text = await r.text();
+    let d;
+    try { d = JSON.parse(text); } catch { toast('服务器错误，请稍后再试'); return; }
+    if (d.url) window.location.href = d.url;
+    else toast('充值失败: ' + (d.error || '未知错误'));
+  } catch (e) {
+    toast('充值请求失败: ' + e.message);
+  }
 }
 async function _convertToCredits() {
   const amt = parseFloat(document.getElementById('wallet-convert-amt')?.value);
