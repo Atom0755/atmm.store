@@ -19,19 +19,44 @@ module.exports = async function handler(req, res) {
     .select('role').eq('warehouse_id', warehouseId).eq('user_id', user.id).single();
   if (!member) return res.status(403).json({ error: 'Forbidden' });
 
-  const [walletRes, creditsRes, walletTxRes, creditTxRes] = await Promise.all([
-    sb.from('wallets').select('balance_cents').eq('warehouse_id', warehouseId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-    sb.from('credits').select('balance').eq('warehouse_id', warehouseId).maybeSingle(),
-    sb.from('warehouse_transactions').select('type,amount_cents,description,created_at')
-      .eq('warehouse_id', warehouseId).order('created_at', { ascending: false }).limit(10),
-    sb.from('warehouse_credit_transactions').select('type,amount,description,created_at')
-      .eq('warehouse_id', warehouseId).order('created_at', { ascending: false }).limit(10),
-  ]);
+  // Wallet balance
+  const { data: walletRow, error: walletErr } = await sb
+    .from('wallets')
+    .select('balance_cents')
+    .eq('warehouse_id', warehouseId)
+    .maybeSingle();
+
+  if (walletErr) console.error('[get-wallet-credits] wallets error:', JSON.stringify(walletErr));
+  console.log('[get-wallet-credits] warehouseId:', warehouseId, 'walletRow:', JSON.stringify(walletRow), 'SUPABASE_URL:', process.env.SUPABASE_URL?.slice(0, 40));
+
+  // Credits balance
+  const { data: creditsRow, error: creditsErr } = await sb
+    .from('credits')
+    .select('balance')
+    .eq('warehouse_id', warehouseId)
+    .maybeSingle();
+
+  if (creditsErr) console.error('[get-wallet-credits] credits error:', JSON.stringify(creditsErr));
+
+  // Transaction history
+  const { data: walletTxs } = await sb
+    .from('warehouse_transactions')
+    .select('type,amount_cents,description,created_at')
+    .eq('warehouse_id', warehouseId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  const { data: creditTxs } = await sb
+    .from('warehouse_credit_transactions')
+    .select('type,amount,description,created_at')
+    .eq('warehouse_id', warehouseId)
+    .order('created_at', { ascending: false })
+    .limit(10);
 
   res.json({
-    wallet_cents: walletRes.data?.balance_cents ?? 0,
-    credits: creditsRes.data?.balance ?? 0,
-    wallet_transactions: walletTxRes.data || [],
-    credit_transactions: creditTxRes.data || [],
+    wallet_cents: walletRow?.balance_cents ?? 0,
+    credits: creditsRow?.balance ?? 0,
+    wallet_transactions: walletTxs || [],
+    credit_transactions: creditTxs || [],
   });
 };
