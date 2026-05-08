@@ -279,8 +279,14 @@
   }
   .container-block.shelf-dragging { opacity: 0.4; }
   .container-block.shelf-drop-target { box-shadow: 0 -3px 0 var(--ink) inset, 0 3px 0 var(--ink) inset; }
-  .slot { display: grid; grid-template-columns: 32px 1fr 38px 48px 42px; gap: 4px; align-items: center; padding: 7px 6px; border-bottom: 1px dashed rgba(0,0,0,0.1); min-height: 50px; background: var(--paper); }
-  .slot.pallet-slot { grid-template-columns: 32px 1fr 36px 44px 38px 44px; }
+  .slot { display: grid; grid-template-columns: 32px 1fr 38px 48px 42px 26px; gap: 4px; align-items: center; padding: 7px 6px; border-bottom: 1px dashed rgba(0,0,0,0.1); min-height: 50px; background: var(--paper); }
+  .slot.pallet-slot { grid-template-columns: 32px 1fr 36px 44px 38px 44px 26px; }
+  .del-slot-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--red); background: transparent; color: var(--red); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .1s; }
+  .del-slot-btn:active { background: var(--red); color: #fff; }
+  .add-slot-row { display: flex; align-items: center; padding: 4px 8px; border-top: 1px dashed rgba(0,0,0,0.1); background: rgba(0,0,0,0.015); }
+  .add-slot-row .add-slot-btn { width: 24px; height: 24px; border-radius: 12px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform .12s; flex-shrink: 0; }
+  .add-slot-row .add-slot-btn:active { transform: scale(0.88); background: var(--ink); color: var(--paper); }
+  .add-slot-row .add-slot-hint { font-size: 10px; color: var(--muted); margin-left: 6px; font-weight: 600; }
   .slot.search-hit { animation: searchFlash 1.4s ease-in-out infinite; background: #fff8d6 !important; }
   .grid-slot.search-hit {
     animation: searchFlash 1.4s ease-in-out infinite;
@@ -2055,7 +2061,7 @@ function renderListView() {
       const deleteBtn = canMgr ? `<button class="mini-btn delete-btn" data-act="del-container" data-ai="${ai}" data-ci="${ci}" title="删除整层 / 整个托盘">✕ 删</button>` : '';
       // FIX (二): No "+" in the row header anymore — moved to the BOTTOM divider below
       cblock.innerHTML = `<div class="container-name">
-        <span class="shelf-drag-handle" data-ai="${ai}" data-ci="${ci}" data-table="${currentTable}" title="按住拖动整层">⠿</span>
+        <span class="shelf-drag-handle" data-ai="${ai}" data-ci="${ci}" data-table="${currentTable}" title="按住拖动整列">⠿</span>
         <span class="cont-name editable" data-ai="${ai}" data-ci="${ci}">${escapeHtml(container.name)}</span>
         <div class="container-tools">
           ${deleteBtn}
@@ -2126,9 +2132,19 @@ function renderListView() {
             </div>
           </div>`;
         }
-        cell.innerHTML = `<div class="slot-num">${slot.modelId ? serial : '—'}</div>${modelHtml}${colorHtml}${qtyHtml}${unitHtml}${restockHtml}${infoRowHtml}`;
+        const delSlotHtml = _role === 'boss'
+          ? `<button class="del-slot-btn" data-ai="${ai}" data-ci="${ci}" data-si="${si}" title="删除此格位 (老板专属)">✕</button>`
+          : `<span></span>`;
+        cell.innerHTML = `<div class="slot-num">${slot.modelId ? serial : '—'}</div>${modelHtml}${colorHtml}${qtyHtml}${unitHtml}${restockHtml}${delSlotHtml}${infoRowHtml}`;
         cblock.appendChild(cell);
       });
+      // Add-slot row — boss/manager can add a new empty slot at the bottom of this container
+      if (canMgr) {
+        const addSlotRow = document.createElement('div');
+        addSlotRow.className = 'add-slot-row';
+        addSlotRow.innerHTML = `<button class="add-slot-btn" data-ai="${ai}" data-ci="${ci}" title="添加格位">+</button><span class="add-slot-hint">添加格位</span>`;
+        cblock.appendChild(addSlotRow);
+      }
       // FIX (二): "+" divider at the BOTTOM of each container — clicks duplicate this entire layer (with all slot data) below
       const dividerLabel = isShelf ? '复制此层 / 在下方插入新层' : '复制此托盘 / 插入新托盘';
       const divider = document.createElement('div');
@@ -2301,6 +2317,26 @@ function attachListHandlers(root) {
       duplicateShelfBelow(+el.dataset.ai, +el.dataset.ci);
     }, { passive: false });
   });
+  // Del slot (boss only) — shows confirm sheet before deleting
+  root.querySelectorAll('.del-slot-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      requestDeleteSlot(+el.dataset.ai, +el.dataset.ci, +el.dataset.si);
+    });
+  });
+  // Add slot (boss/manager) — pushes new empty slot to container
+  root.querySelectorAll('.add-slot-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      const ai = +el.dataset.ai, ci = +el.dataset.ci;
+      const t = getActiveTable();
+      const ck = getContainerKey(), sk = getSlotsKey();
+      t.aisles[ai][ck][ci][sk].push(newSlot());
+      toast('已添加格位');
+      render();
+    });
+  });
   root.querySelectorAll('.shelf-drag-handle').forEach(el => addShelfDrag(el));
   root.querySelectorAll('.container-name').forEach(row => {
     const handle = row.querySelector('.shelf-drag-handle');
@@ -2365,6 +2401,25 @@ function attachListHandlers(root) {
 
 // Bilingual delete confirmation flow
 let pendingDelete = null;
+
+function requestDeleteSlot(ai, ci, si) {
+  const t = getActiveTable();
+  const ck = getContainerKey(), sk = getSlotsKey();
+  const slot = t.aisles[ai][ck][ci]?.[sk]?.[si];
+  if (!slot) return;
+  const m = slot.modelId ? getModel(slot.modelId) : null;
+  const label = m ? escapeHtml(m.name) : '空格位';
+  const locCode = makeLocationCode(currentTable, ai, ci, si);
+  const targetEl = document.getElementById('confirm-delete-target');
+  if (targetEl) {
+    targetEl.innerHTML = `即将删除格位 / About to delete slot:<br>
+      <span style="color:var(--red); font-size:17px;">${label}</span><br>
+      <span style="font-size:12px; color:var(--muted); font-weight:600;">库位: ${escapeHtml(locCode)}</span>`;
+  }
+  pendingDelete = { type: 'slot', ai, ci, si };
+  showSheet('confirm-delete-sheet');
+}
+
 function requestDeleteContainer(ai, ci) {
   const t = getActiveTable();
   const ck = getContainerKey(), sk = getSlotsKey();
@@ -2383,30 +2438,35 @@ function requestDeleteContainer(ai, ci) {
   showSheet('confirm-delete-sheet');
 }
 
+function _execConfirmDelete() {
+  if (!pendingDelete) { hideSheets(); return; }
+  const { type, ai, ci, si } = pendingDelete;
+  const t = getActiveTable();
+  if (type === 'slot') {
+    const ck = getContainerKey(), sk = getSlotsKey();
+    t.aisles[ai][ck][ci][sk].splice(si, 1);
+    pendingDelete = null;
+    hideSheets();
+    toast('🗑️ 已删除格位');
+    render();
+  } else {
+    const ck = getContainerKey();
+    const removed = t.aisles[ai][ck].splice(ci, 1)[0];
+    pendingDelete = null;
+    hideSheets();
+    toast(`🗑️ 已删除: ${removed?.name || ''}`);
+    render();
+  }
+}
+
 document.getElementById('confirm-delete-yes').addEventListener('click', (e) => {
   e.preventDefault(); e.stopPropagation();
-  if (!pendingDelete) { hideSheets(); return; }
-  const { ai, ci } = pendingDelete;
-  const t = getActiveTable();
-  const ck = getContainerKey();
-  const removed = t.aisles[ai][ck].splice(ci, 1)[0];
-  pendingDelete = null;
-  hideSheets();
-  toast(`🗑️ 已删除: ${removed?.name || ''}`);
-  render();
+  _execConfirmDelete();
 });
 
 document.getElementById('confirm-delete-yes').addEventListener('touchend', (e) => {
   e.preventDefault(); e.stopPropagation();
-  if (!pendingDelete) { hideSheets(); return; }
-  const { ai, ci } = pendingDelete;
-  const t = getActiveTable();
-  const ck = getContainerKey();
-  const removed = t.aisles[ai][ck].splice(ci, 1)[0];
-  pendingDelete = null;
-  hideSheets();
-  toast(`🗑️ 已删除: ${removed?.name || ''}`);
-  render();
+  _execConfirmDelete();
 }, { passive: false });
 
 function attachModelDoubleTap(el) {
@@ -3112,8 +3172,9 @@ function openColorPicker(ai, ci, si) {
       // Direct table access — don't go through getSlot which depends on currentTable
       const tableData = state.zones.find(z => z.id === targetTable);
 
-      const containerKey = (targetTable === 'pallet') ? 'pallets' : 'shelves';
-      const slotsKey = (targetTable === 'pallet') ? 'layers' : 'slots';
+      const zoneType = state.zones.find(z => z.id === targetTable)?.type;
+      const containerKey = zoneType === 'pallet' ? 'pallets' : 'shelves';
+      const slotsKey = zoneType === 'pallet' ? 'layers' : 'slots';
 
       let s = null;
       try {
@@ -4362,7 +4423,7 @@ function addShelfDrag(dragArea, handleEl) {
   let ghost = null, longPressTimer = null, dragging = false, startX = 0, startY = 0;
   dragArea.addEventListener('touchstart', (e) => {
     const tgt = e.target;
-    if (tgt.closest('.add-after-shelf, .add-divider, .add-divider-btn, .mini-btn') ||
+    if (tgt.closest('.add-after-shelf, .add-divider, .add-divider-btn, .add-slot-row, .add-slot-btn, .del-slot-btn, .mini-btn') ||
         tgt.contentEditable === 'true' ||
         (tgt.closest('.cont-name') && tgt.closest('.cont-name').contentEditable === 'true')) return;
     const t = e.touches[0];
@@ -5245,6 +5306,7 @@ function renderTabs() {
     return `<button class="table-tab ${z.id===currentTable?'active':''}" data-tab-zone="${z.id}">${escapeHtml(z.name)}<small>${z.type==='shelf'?'货架区':'托盘区'}</small>${delBtn}</button>`;
   }).join('') + (canZone ? `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>` : '');
 
+  let dragZoneId = null;
   bar.querySelectorAll('[data-tab-zone]').forEach(btn => {
     btn.addEventListener('click', e => {
       if (e.target.closest('[data-del-zone]')) return;
@@ -5263,6 +5325,27 @@ function renderTabs() {
         saveState();
       }
     });
+    if (canZone) {
+      btn.setAttribute('draggable', 'true');
+      btn.addEventListener('dragstart', e => {
+        dragZoneId = btn.dataset.tabZone;
+        e.dataTransfer.effectAllowed = 'move';
+        btn.style.opacity = '0.5';
+      });
+      btn.addEventListener('dragend', () => { btn.style.opacity = ''; dragZoneId = null; });
+      btn.addEventListener('dragover', e => { if (dragZoneId && dragZoneId !== btn.dataset.tabZone) { e.preventDefault(); btn.style.outline = '2px solid var(--ink)'; } });
+      btn.addEventListener('dragleave', () => btn.style.outline = '');
+      btn.addEventListener('drop', e => {
+        e.preventDefault(); btn.style.outline = '';
+        if (!dragZoneId || dragZoneId === btn.dataset.tabZone) return;
+        const srcIdx = state.zones.findIndex(z => z.id === dragZoneId);
+        const tgtIdx = state.zones.findIndex(z => z.id === btn.dataset.tabZone);
+        if (srcIdx < 0 || tgtIdx < 0) return;
+        const [item] = state.zones.splice(srcIdx, 1);
+        state.zones.splice(tgtIdx > srcIdx ? tgtIdx - 1 : tgtIdx + 1, 0, item);
+        saveState(); renderTabs();
+      });
+    }
   });
   bar.querySelectorAll('[data-del-zone]').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); _removeZone(btn.dataset.delZone); });
@@ -6181,7 +6264,7 @@ _initAuth(); // All vars declared above — safe entry point
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
   const tgt = e.target;
-  if (tgt && tgt.closest('button, a, input, textarea, .color-cell, .gcolor, .unit-cell, .qty-cell, .restock-cell, .model-cell, .gmodel, .editable, [contenteditable], .suggestion, .color-opt, .action-row, .tool, .table-tab, .unit-quick, .input-method-btn, .voice-mic-btn, canvas, .meta-save-btn, .add-divider, .add-divider-btn, .search-bar, .search-input, .search-icon-btn, .search-clear')) return;
+  if (tgt && tgt.closest('button, a, input, textarea, .color-cell, .gcolor, .unit-cell, .qty-cell, .restock-cell, .model-cell, .gmodel, .editable, [contenteditable], .suggestion, .color-opt, .action-row, .tool, .table-tab, .unit-quick, .input-method-btn, .voice-mic-btn, canvas, .meta-save-btn, .add-divider, .add-divider-btn, .add-slot-row, .add-slot-btn, .del-slot-btn, .search-bar, .search-input, .search-icon-btn, .search-clear')) return;
   const now = Date.now();
   if (now - lastTouchEnd < 300) e.preventDefault();
   lastTouchEnd = now;
