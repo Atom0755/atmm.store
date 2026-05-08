@@ -955,6 +955,16 @@
   .plan-desc { display:block; font-size:11px; font-weight:400; color:var(--muted); margin-top:4px; clear:both; line-height:1.4; }
   .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
+  .settings-nav-row { display:flex; align-items:center; gap:12px; padding:13px 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--bg); cursor:pointer; margin-bottom:8px; -webkit-tap-highlight-color:transparent; }
+  .settings-nav-row:active { background:var(--ink); color:var(--paper); }
+  .snr-ico { font-size:20px; flex-shrink:0; }
+  .snr-body { flex:1; min-width:0; }
+  .snr-title { font-weight:700; font-size:13px; }
+  .snr-sub { font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .snr-arr { font-size:18px; color:var(--muted); flex-shrink:0; }
+  .settings-sec-lbl { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; padding:14px 0 8px; border-top:1px solid var(--line); margin-top:4px; }
+  .ref-share-row { display:flex; gap:8px; margin-top:10px; }
+  .ref-share-btn { flex:1; padding:9px 6px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; text-align:center; }
   /* === Warehouse switcher === */
   #wh-switch-btn { display:none; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; gap:3px; }
   .wh-switch-row { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -1333,6 +1343,8 @@
     <div class="sheet-body">
       <h3>⚙️ 设置 / Settings</h3>
 
+      <!-- ACCOUNT section -->
+      <div class="settings-sec-lbl" style="border-top:none; padding-top:4px; margin-top:0;">ACCOUNT 账户</div>
       <!-- Current user row -->
       <div id="settings-user-row" style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:14px;">
         <div style="flex:1; min-width:0;">
@@ -1349,34 +1361,90 @@
         </div>
       </div>
 
-      <!-- Warehouse info (boss only: invite code) -->
-      <div id="wh-invite-section" style="margin-bottom:18px;">
-        <div class="team-section-title">🏪 仓库信息</div>
-        <div class="wh-code-box">
-          <span id="wh-code-display">—</span>
-          <button class="wh-code-copy" onclick="_copyCode()">复制</button>
+      <!-- PAYMENT section -->
+      <div style="margin-bottom:18px;">
+        <div class="settings-sec-lbl">PAYMENT 支付</div>
+        <!-- Payment method nav row -->
+        <div class="settings-nav-row" id="settings-pm-row" onclick="_openPortal()">
+          <span class="snr-ico">💳</span>
+          <div class="snr-body">
+            <div class="snr-title">支付方式 Payment Method</div>
+            <div class="snr-sub" id="settings-pm-display">—</div>
+          </div>
+          <span class="snr-arr">›</span>
         </div>
-        <div style="font-size:11px; color:var(--muted); margin-top:6px;">将此邀请码分享给团队成员，让他们注册后填写加入。</div>
+        <!-- Subscription nav row (expandable) -->
+        <div class="settings-nav-row" onclick="_toggleSubDetail()">
+          <span class="snr-ico">📋</span>
+          <div class="snr-body">
+            <div class="snr-title">订阅方案 Subscription</div>
+            <div class="snr-sub" id="settings-sub-summary">—</div>
+          </div>
+          <span class="snr-arr" id="settings-sub-arr">›</span>
+        </div>
+        <!-- Subscription detail panel -->
+        <div id="sub-detail-panel" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
+          <div id="sub-status-display" style="font-size:13px; margin-bottom:8px;"></div>
+          <div id="plan-upgrade-section">
+            <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
+            <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">   基础版 Basic      <span class="plan-price">$10/月</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
+            <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')">    基础版 年付       <span class="plan-price">$365/年</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
+            <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard   <span class="plan-price">$60/月</span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作</span></button>
+            <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付       <span class="plan-price">$500/年</span><span class="plan-desc">2账户（老板＋经理或操作员）· 省31% · 小团队协作</span></button>
+            <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')"> 高级版 Premium    <span class="plan-price">$168/月</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置</span></button>
+            <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')">  高级版 年付       <span class="plan-price">$1268/年</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省37% · 全团队配置</span></button>
+            <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅 / Manage Subscription</button>
+          </div>
+        </div>
       </div>
 
-      <!-- Subscription status -->
+      <!-- SOCIAL section -->
       <div style="margin-bottom:18px;">
-        <div class="team-section-title">💳 订阅状态</div>
-        <div id="sub-status-display" style="font-size:13px; padding:10px; background:var(--bg); border-radius:8px; margin-bottom:8px;"></div>
-        <div id="plan-upgrade-section">
-          <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
-          <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">   基础版 Basic      <span class="plan-price">$10/月</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
-          <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')">    基础版 年付       <span class="plan-price">$365/年</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
-          <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard   <span class="plan-price">$60/月</span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作</span></button>
-          <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付       <span class="plan-price">$500/年</span><span class="plan-desc">2账户（老板＋经理或操作员）· 省31% · 小团队协作</span></button>
-          <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')"> 高级版 Premium    <span class="plan-price">$168/月</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置</span></button>
-          <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')">  高级版 年付       <span class="plan-price">$1268/年</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省37% · 全团队配置</span></button>
-          <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅 / Manage Subscription</button>
+        <div class="settings-sec-lbl">SOCIAL 推荐</div>
+        <!-- Refer a friend (all users) -->
+        <div class="settings-nav-row" onclick="_toggleReferral()">
+          <span class="snr-ico">🎁</span>
+          <div class="snr-body">
+            <div class="snr-title">推荐朋友 Refer a Friend</div>
+            <div class="snr-sub">分享专属链接，好友注册即可免费体验</div>
+          </div>
+          <span class="snr-arr">›</span>
+        </div>
+        <div id="referral-detail" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
+          <div style="font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.6;">分享你的专属链接，好友注册即可立即开始免费体验 ATMM.store。</div>
+          <div class="wh-code-box" style="margin-bottom:10px; font-size:12px; letter-spacing:0;">
+            <span id="referral-code-display" style="flex:1; font-size:11px; word-break:break-all; letter-spacing:0; font-family:inherit;">—</span>
+            <button class="wh-code-copy" onclick="_copyReferralLink()">复制</button>
+          </div>
+          <div class="ref-share-row">
+            <button class="ref-share-btn" onclick="_shareReferral('sms')">💬 SMS</button>
+            <button class="ref-share-btn" onclick="_shareReferral('email')">📧 邮件</button>
+            <button class="ref-share-btn" onclick="_shareReferral('whatsapp')">📱 WhatsApp</button>
+          </div>
+        </div>
+        <!-- Invite colleague (boss only) -->
+        <div id="wh-invite-section">
+          <div class="settings-nav-row" onclick="_toggleInviteCode()">
+            <span class="snr-ico">🏪</span>
+            <div class="snr-body">
+              <div class="snr-title">邀请同事加入仓库</div>
+              <div class="snr-sub">分享仓库邀请码给团队成员</div>
+            </div>
+            <span class="snr-arr">›</span>
+          </div>
+          <div id="wh-invite-detail" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
+            <div class="wh-code-box" style="margin-bottom:6px;">
+              <span id="wh-code-display">—</span>
+              <button class="wh-code-copy" onclick="_copyCode()">复制</button>
+            </div>
+            <div style="font-size:11px; color:var(--muted);">将此邀请码分享给团队成员，让他们注册后填写加入。</div>
+          </div>
         </div>
       </div>
 
       <!-- Team management (boss only) -->
       <div id="team-mgmt-section" style="display:none; margin-bottom:18px;">
+        <div class="settings-sec-lbl">TEAM 团队</div>
         <div class="team-section-title">👥 团队成员</div>
         <div id="team-members-list"></div>
         <div id="invite-form">
@@ -5475,6 +5543,7 @@ async function _openSettings() {
 
   // Subscription status
   const subEl = document.getElementById('sub-status-display');
+  const subSumEl = document.getElementById('settings-sub-summary');
   if (_subscription) {
     const plan = _subscription.plan;
     const end  = _subscription.current_period_end
@@ -5484,10 +5553,42 @@ async function _openSettings() {
     const daysLeft = _subscription.current_period_end
       ? Math.ceil((new Date(_subscription.current_period_end) - Date.now()) / 86400000)
       : Math.ceil((new Date(_warehouse.trial_ends_at) - Date.now()) / 86400000);
-    subEl.innerHTML =
+    if (subEl) subEl.innerHTML =
       `<b>${planLabel}</b> · 到期: ${end}` +
       (daysLeft <= 7 ? ` <span style="color:var(--red);font-weight:700;">⚠️ 剩余${daysLeft}天</span>` : ` (剩余${daysLeft}天)`) +
       `<br><small style="color:var(--muted);">最多 ${_subscription.max_members} 个成员账户</small>`;
+    if (subSumEl) subSumEl.textContent = `${planLabel} · 剩余${daysLeft}天`;
+  }
+
+  // Payment method (fetch from Stripe via API)
+  const pmEl = document.getElementById('settings-pm-display');
+  if (pmEl) {
+    const isPaid = _subscription?.plan && _subscription.plan !== 'trial';
+    if (isPaid && _warehouse?.id) {
+      pmEl.textContent = '加载中…';
+      sb.auth.getSession().then(({ data }) => {
+        const token = data.session?.access_token;
+        fetch(`/api/get-payment-method?warehouse_id=${_warehouse.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json()).then(d => {
+          if (d.card) {
+            const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
+            pmEl.textContent = `${brand} •••• ${d.card.last4}`;
+          } else {
+            pmEl.textContent = '未绑定支付方式';
+          }
+        }).catch(() => { pmEl.textContent = '—'; });
+      });
+    } else {
+      pmEl.textContent = '未绑定支付方式';
+    }
+  }
+
+  // Referral code (based on user ID)
+  const refEl = document.getElementById('referral-code-display');
+  if (refEl && _user) {
+    const refCode = (_user.id || '').replace(/-/g, '').substring(0, 8).toUpperCase();
+    refEl.textContent = `https://atmm.store/?ref=${refCode}`;
   }
 
   // Team members (boss only)
@@ -5508,6 +5609,38 @@ async function _openSettings() {
 }
 function _copyCode() {
   navigator.clipboard.writeText(_warehouse?.code || '').then(() => toast('邀请码已复制'));
+}
+function _toggleSubDetail() {
+  const panel = document.getElementById('sub-detail-panel');
+  const arr = document.getElementById('settings-sub-arr');
+  if (!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : '';
+  if (arr) arr.textContent = open ? '›' : '˅';
+}
+function _toggleInviteCode() {
+  const panel = document.getElementById('wh-invite-detail');
+  if (!panel) return;
+  panel.style.display = panel.style.display !== 'none' ? 'none' : '';
+}
+function _toggleReferral() {
+  const panel = document.getElementById('referral-detail');
+  if (!panel) return;
+  panel.style.display = panel.style.display !== 'none' ? 'none' : '';
+}
+function _copyReferralLink() {
+  if (!_user) return;
+  const refCode = (_user.id || '').replace(/-/g, '').substring(0, 8).toUpperCase();
+  navigator.clipboard.writeText(`https://atmm.store/?ref=${refCode}`).then(() => toast('推荐链接已复制'));
+}
+function _shareReferral(type) {
+  if (!_user) return;
+  const refCode = (_user.id || '').replace(/-/g, '').substring(0, 8).toUpperCase();
+  const link = encodeURIComponent(`https://atmm.store/?ref=${refCode}`);
+  const text = encodeURIComponent('我在用 ATMM.store 管理仓库库存，简单高效！注册免费体验：');
+  if (type === 'sms') window.open(`sms:?body=${text}%20${link}`);
+  else if (type === 'email') window.open(`mailto:?subject=${encodeURIComponent('推荐使用 ATMM.store 仓库管理')}&body=${text}%0A${link}`);
+  else if (type === 'whatsapp') window.open(`https://wa.me/?text=${text}%20${link}`);
 }
 
 // ── Username / display name ──
