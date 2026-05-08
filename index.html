@@ -1780,6 +1780,18 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Topup confirmation modal -->
+<div id="topup-confirm-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:none; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:18px; padding:28px 24px; width:300px; max-width:90vw; box-shadow:0 8px 32px rgba(0,0,0,.18);">
+    <div style="font-size:17px; font-weight:700; margin-bottom:6px; text-align:center;">充值确认</div>
+    <div style="font-size:13px; color:#666; text-align:center; margin-bottom:20px;" id="topup-confirm-desc">—</div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="_cancelTopup()" style="flex:1; padding:12px; border-radius:10px; border:1.5px solid #ddd; background:#f5f5f5; font-size:15px; cursor:pointer; font-weight:600;">取消</button>
+      <button onclick="_confirmTopup()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#16a34a; color:#fff; font-size:15px; cursor:pointer; font-weight:700;">确认充值</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // === GLOBAL ERROR DISPLAY (debug mode) ===
 // Captures any uncaught error and shows the actual message + line on screen,
@@ -5223,6 +5235,7 @@ const sb = window.supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
 let _user = null, _warehouse = null, _role = null, _subscription = null, _memberships = [];
 let _displayName = '';
+let _savedCard = null; // cached card info for topup confirmation
 let _supabaseSaveTimer = null;
 let _inviteWarehouseId = null, _inviteRole = null;
 
@@ -5631,14 +5644,15 @@ async function _openSettings() {
         headers: { 'Authorization': `Bearer ${token}` }
       }).then(r => r.json()).then(d => {
         if (d.card) {
+          _savedCard = d.card;
           const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
           pmEl.textContent = `${brand} •••• ${d.card.last4}`;
-          // Change Add Card button to Replace Card
           const icoEl = document.getElementById('add-card-ico');
           const lblEl = document.getElementById('add-card-lbl');
           if (icoEl) icoEl.textContent = '🔄';
           if (lblEl) lblEl.textContent = '更换银行卡 Replace Card';
         } else {
+          _savedCard = null;
           pmEl.textContent = '未绑定支付方式';
           const icoEl = document.getElementById('add-card-ico');
           const lblEl = document.getElementById('add-card-lbl');
@@ -5709,8 +5723,30 @@ async function _addCard() {
     toast('请求失败: ' + e.message);
   }
 }
-async function _startTopup(amountUsd) {
+let _pendingTopupAmount = null;
+function _startTopup(amountUsd) {
   if (!_warehouse?.id) { toast('请先选择仓库'); return; }
+  _pendingTopupAmount = amountUsd;
+  const overlay = document.getElementById('topup-confirm-overlay');
+  const desc    = document.getElementById('topup-confirm-desc');
+  if (!overlay || !desc) { _doTopup(amountUsd); return; }
+  const cardLabel = _savedCard
+    ? `${_savedCard.brand.charAt(0).toUpperCase() + _savedCard.brand.slice(1)} •••• ${_savedCard.last4}`
+    : '已保存银行卡';
+  desc.textContent = `将使用 ${cardLabel} 充值 $${amountUsd}`;
+  overlay.style.display = 'flex';
+}
+function _cancelTopup() {
+  _pendingTopupAmount = null;
+  const overlay = document.getElementById('topup-confirm-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+function _confirmTopup() {
+  const amt = _pendingTopupAmount;
+  _cancelTopup();
+  if (amt) _doTopup(amt);
+}
+async function _doTopup(amountUsd) {
   try {
     const token = (await sb.auth.getSession()).data.session?.access_token;
     const r = await fetch('/api/create-topup', {
