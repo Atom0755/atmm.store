@@ -5365,8 +5365,8 @@ function _updateWarehouseSwitcherUI() {
   const label = document.getElementById('wh-name-label');
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (!_warehouse) return;
-  // Multi-warehouse switch: boss only, and only if they have >1 warehouse
-  const canSwitch = _role === 'boss' && _memberships.length > 1;
+  // Show warehouse button for any boss (allows creating new warehouses too)
+  const canSwitch = _role === 'boss';
   if (btn) btn.style.display = canSwitch ? 'block' : 'none';
   if (trigBtn) trigBtn.style.display = 'none';
   if (label) {
