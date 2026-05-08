@@ -14,13 +14,24 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ error: 'Forbidden' });
 
   try {
-    // List all users and find those without email
     const { data: { users: allUsers } } = await sb.auth.admin.listUsers({ perPage: 1000 });
     const anon = (allUsers || []).filter(u => !u.email);
 
     const results = [];
     for (const u of anon) {
       try {
+        // Clean up application data before deleting auth user
+        await sb.from('warehouse_members').delete().eq('user_id', u.id);
+
+        // Find warehouses owned by this user and clean them up
+        const { data: ownedWh } = await sb.from('warehouses').select('id').eq('owner_id', u.id);
+        if (ownedWh && ownedWh.length > 0) {
+          const whIds = ownedWh.map(w => w.id);
+          await sb.from('warehouse_members').delete().in('warehouse_id', whIds);
+          await sb.from('subscriptions').delete().in('warehouse_id', whIds);
+          await sb.from('warehouses').delete().in('id', whIds);
+        }
+
         const { error } = await sb.auth.admin.deleteUser(u.id, false);
         results.push({ id: u.id, phone: u.phone || '', ok: !error, err: error?.message || null });
       } catch (e) {
