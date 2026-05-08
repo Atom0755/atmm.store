@@ -658,6 +658,8 @@
   .sheet-footer { padding: 10px 18px calc(14px + var(--safe-bottom)); border-top: 1px solid rgba(0,0,0,0.08); background: var(--paper); position: sticky; bottom: 0; }
   .sheet-backdrop.modal-style { align-items: center; }
   .sheet-backdrop.modal-style .sheet { border-radius: 16px; max-height: 92vh; max-width: 460px; width: calc(100% - 24px); border-bottom: 1px solid var(--line); animation: fadeIn .2s ease; }
+  .sheet-backdrop.modal-top { align-items: flex-start; padding-top: 72px; }
+  .sheet-backdrop.modal-top .sheet { border-radius: 16px; max-height: 80vh; max-width: 460px; width: calc(100% - 24px); border-bottom: 1px solid var(--line); animation: fadeIn .2s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } }
   @keyframes slideUp { from { transform: translateY(100%); } }
   @keyframes logoutShake { 0%,100%{transform:translateX(0) scale(1)} 20%{transform:translateX(-5px) scale(1.02)} 40%{transform:translateX(5px) scale(1.02)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
@@ -1197,7 +1199,7 @@
 </div>
 
 <!-- Warehouse switcher sheet -->
-<div class="sheet-backdrop" id="wh-switch-sheet">
+<div class="sheet-backdrop modal-top" id="wh-switch-sheet">
   <div class="sheet">
     <div class="sheet-body">
       <h3 style="margin-bottom:16px;">🏭 切换仓库</h3>
