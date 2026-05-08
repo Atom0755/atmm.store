@@ -164,6 +164,9 @@
     <div class="um-header">
       <h2>👤 注册用户列表</h2>
       <input class="um-search" id="um-search" oninput="renderUserModal()" placeholder="搜索邮箱/用户名…">
+      <label style="font-size:12px; color:var(--muted); white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:4px;">
+        <input type="checkbox" id="um-hide-anon" onchange="renderUserModal()"> 隐藏匿名
+      </label>
       <button class="um-close" onclick="closeUserModal()">关闭</button>
     </div>
     <div class="um-count" id="um-count"></div>
@@ -363,17 +366,28 @@ function closeUserModal() {
   document.getElementById('user-modal-overlay').classList.remove('open');
 }
 function renderUserModal() {
-  const q = document.getElementById('um-search').value.toLowerCase();
-  const users = _allUsers.filter(u =>
-    !q || u.email.toLowerCase().includes(q) || u.display_name.toLowerCase().includes(q)
-  );
-  document.getElementById('um-count').textContent = `共 ${users.length} 位用户`;
-  const rows = users.map((u, i) => `<tr>
-    <td style="padding:9px 24px; font-size:13px;">${esc(u.email)}</td>
-    <td style="padding:9px 12px; font-size:13px; color:${u.display_name ? 'var(--ink)' : 'var(--muted)'};">${esc(u.display_name) || '—'}</td>
-    <td style="padding:9px 12px; font-size:12px; color:var(--muted);">${(u.registered_at||'').slice(0,10) || '—'}</td>
-    <td style="padding:9px 12px; text-align:center; font-size:13px;">${u.wh_count || 0}</td>
-  </tr>`).join('');
+  const q        = document.getElementById('um-search').value.toLowerCase();
+  const hideAnon = document.getElementById('um-hide-anon').checked;
+  const users = _allUsers.filter(u => {
+    if (hideAnon && !u.email) return false;
+    return !q || u.email.toLowerCase().includes(q) || u.display_name.toLowerCase().includes(q);
+  });
+  const anonCount = _allUsers.filter(u => !u.email).length;
+  document.getElementById('um-count').textContent =
+    `共 ${users.length} 位用户` + (anonCount ? `（其中 ${anonCount} 位匿名用户）` : '');
+  const rows = users.map(u => {
+    const isAnon = !u.email;
+    return `<tr style="${isAnon ? 'opacity:.55;' : ''}">
+      <td style="padding:9px 24px; font-size:13px;">
+        ${isAnon
+          ? '<span style="font-size:11px; background:#f3f4f6; color:#6b7280; padding:2px 8px; border-radius:12px; font-weight:600;">匿名用户</span>'
+          : esc(u.email)}
+      </td>
+      <td style="padding:9px 12px; font-size:13px; color:${u.display_name ? 'var(--ink)' : 'var(--muted)'};">${esc(u.display_name) || '—'}</td>
+      <td style="padding:9px 12px; font-size:12px; color:var(--muted);">${(u.registered_at||'').slice(0,10) || '—'}</td>
+      <td style="padding:9px 12px; text-align:center; font-size:13px;">${u.wh_count || 0}</td>
+    </tr>`;
+  }).join('');
   document.getElementById('um-body').innerHTML = rows || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:24px">暂无数据</td></tr>';
 }
 
