@@ -167,6 +167,7 @@
       <label style="font-size:12px; color:var(--muted); white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:4px;">
         <input type="checkbox" id="um-hide-anon" onchange="renderUserModal()"> 隐藏匿名
       </label>
+      <button id="del-anon-btn" onclick="deleteAnonUsers()" style="background:none; border:1.5px solid var(--red); color:var(--red); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; font-family:inherit; white-space:nowrap;">🗑 删除匿名用户</button>
       <button class="um-close" onclick="closeUserModal()">关闭</button>
     </div>
     <div class="um-count" id="um-count"></div>
@@ -364,6 +365,30 @@ function openUserModal() {
 }
 function closeUserModal() {
   document.getElementById('user-modal-overlay').classList.remove('open');
+}
+async function deleteAnonUsers() {
+  const anonCount = _allUsers.filter(u => !u.email).length;
+  if (!anonCount) { alert('没有匿名用户需要删除'); return; }
+  if (!confirm(`确认删除全部 ${anonCount} 位匿名用户？此操作不可撤销。`)) return;
+  const btn = document.getElementById('del-anon-btn');
+  btn.disabled = true; btn.textContent = '删除中…';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch('/api/admin-delete-anon', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || '请求失败');
+    alert(`✅ 已删除 ${result.deleted} 位匿名用户` + (result.failed ? `，${result.failed} 位失败` : ''));
+    // Reload stats to refresh user list
+    loadStats(session.access_token);
+    closeUserModal();
+  } catch (e) {
+    alert('删除失败：' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '🗑 删除匿名用户';
+  }
 }
 function renderUserModal() {
   const q        = document.getElementById('um-search').value.toLowerCase();
