@@ -63,6 +63,19 @@
   .sort-btn:hover { color: var(--ink); }
 
   #loading { text-align: center; padding: 60px; color: var(--muted); font-size: 13px; }
+
+  /* ── User list modal ── */
+  #user-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000; align-items:center; justify-content:center; padding:24px; }
+  #user-modal-overlay.open { display:flex; }
+  #user-modal { background:var(--paper); border-radius:16px; width:100%; max-width:700px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  .um-header { padding:20px 24px 12px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .um-header h2 { font-size:16px; font-weight:800; flex:1; }
+  .um-search { padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:200px; }
+  .um-search:focus { border-color:var(--ink); }
+  .um-close { background:none; border:1.5px solid var(--line); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; font-family:inherit; }
+  .um-close:hover { border-color:var(--red); color:var(--red); }
+  .um-body { overflow-y:auto; flex:1; }
+  .um-count { padding:8px 24px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -94,7 +107,7 @@
   <div id="dash-content" style="display:none">
     <!-- Stat cards -->
     <div class="stat-row">
-      <div class="stat-card clickable" onclick="quickFilter('all')"     title="点击查看全部仓库"><div class="label">注册用户</div><div class="value" id="s-users">—</div></div>
+      <div class="stat-card clickable" onclick="openUserModal()"        title="点击查看全部注册用户"><div class="label">注册用户</div><div class="value" id="s-users">—</div></div>
       <div class="stat-card clickable" onclick="quickFilter('all')"     title="点击查看全部仓库"><div class="label">仓库数</div><div class="value" id="s-wh">—</div></div>
       <div class="stat-card clickable" onclick="quickFilter('active')"  title="点击查看付费仓库"><div class="label">付费仓库</div><div class="value" id="s-paid">—</div></div>
       <div class="stat-card clickable" onclick="quickFilter('today')"   title="点击查看今日新增"><div class="label">今日新增</div><div class="value" id="s-today">—</div></div>
@@ -145,6 +158,31 @@
   </div>
 </div>
 
+<!-- User list modal -->
+<div id="user-modal-overlay" onclick="if(event.target===this)closeUserModal()">
+  <div id="user-modal">
+    <div class="um-header">
+      <h2>👤 注册用户列表</h2>
+      <input class="um-search" id="um-search" oninput="renderUserModal()" placeholder="搜索邮箱/用户名…">
+      <button class="um-close" onclick="closeUserModal()">关闭</button>
+    </div>
+    <div class="um-count" id="um-count"></div>
+    <div class="um-body">
+      <table style="width:100%">
+        <thead>
+          <tr>
+            <th style="padding:10px 24px">邮箱</th>
+            <th style="padding:10px 12px">用户名</th>
+            <th style="padding:10px 12px">注册时间</th>
+            <th style="padding:10px 12px; text-align:center">仓库数</th>
+          </tr>
+        </thead>
+        <tbody id="um-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const _SUPA_URL  = 'https://vkwndhdqbmuyogieccph.supabase.co';
@@ -152,7 +190,7 @@ const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const ADMIN_EMAIL = 'atom22628@gmail.com';
 const sb = supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
-let _allRows = [], _sortKey = 'registered_at', _sortAsc = false;
+let _allRows = [], _allUsers = [], _sortKey = 'registered_at', _sortAsc = false;
 
 // ── Auth ──────────────────────────────────────────────────
 async function doLogin() {
@@ -212,8 +250,9 @@ function renderStats(data) {
   // Chart
   renderChart(data.daily || []);
 
-  // Table
-  _allRows = data.rows || [];
+  // Users + table
+  _allUsers = data.users || [];
+  _allRows  = data.rows  || [];
   renderTable(_allRows);
 }
 
@@ -312,6 +351,30 @@ function renderTable(rows) {
 
 function esc(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── User modal ────────────────────────────────────────────
+function openUserModal() {
+  document.getElementById('um-search').value = '';
+  renderUserModal();
+  document.getElementById('user-modal-overlay').classList.add('open');
+}
+function closeUserModal() {
+  document.getElementById('user-modal-overlay').classList.remove('open');
+}
+function renderUserModal() {
+  const q = document.getElementById('um-search').value.toLowerCase();
+  const users = _allUsers.filter(u =>
+    !q || u.email.toLowerCase().includes(q) || u.display_name.toLowerCase().includes(q)
+  );
+  document.getElementById('um-count').textContent = `共 ${users.length} 位用户`;
+  const rows = users.map((u, i) => `<tr>
+    <td style="padding:9px 24px; font-size:13px;">${esc(u.email)}</td>
+    <td style="padding:9px 12px; font-size:13px; color:${u.display_name ? 'var(--ink)' : 'var(--muted)'};">${esc(u.display_name) || '—'}</td>
+    <td style="padding:9px 12px; font-size:12px; color:var(--muted);">${(u.registered_at||'').slice(0,10) || '—'}</td>
+    <td style="padding:9px 12px; text-align:center; font-size:13px;">${u.wh_count || 0}</td>
+  </tr>`).join('');
+  document.getElementById('um-body').innerHTML = rows || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:24px">暂无数据</td></tr>';
 }
 
 // ── Init ──────────────────────────────────────────────────

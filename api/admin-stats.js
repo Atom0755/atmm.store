@@ -28,9 +28,9 @@ module.exports = async function handler(req, res) {
     const { data: subscriptions } = await sb.from('subscriptions')
       .select('warehouse_id, plan, billing_cycle, status, max_members, current_period_end, updated_at');
 
-    // 4. Member counts per warehouse
+    // 4. All members (for counts + display_name lookup)
     const { data: memberRows } = await sb.from('warehouse_members')
-      .select('warehouse_id, user_id, role');
+      .select('warehouse_id, user_id, role, display_name');
 
     // Build lookup maps
     const userMap = {};
@@ -40,8 +40,14 @@ module.exports = async function handler(req, res) {
     (subscriptions || []).forEach(s => { subMap[s.warehouse_id] = s; });
 
     const memberCountMap = {};
+    const displayNameMap = {};   // user_id → display_name (from any warehouse)
+    const userWhCount = {};      // user_id → number of warehouses they own
     (memberRows || []).forEach(m => {
       memberCountMap[m.warehouse_id] = (memberCountMap[m.warehouse_id] || 0) + 1;
+      if (m.display_name && !displayNameMap[m.user_id]) displayNameMap[m.user_id] = m.display_name;
+    });
+    (warehouses || []).forEach(wh => {
+      userWhCount[wh.owner_id] = (userWhCount[wh.owner_id] || 0) + 1;
     });
 
     // Build per-warehouse rows
@@ -76,11 +82,21 @@ module.exports = async function handler(req, res) {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, count]) => ({ date, count }));
 
+    // Full user list for admin panel
+    const users = (authUsers || []).map(u => ({
+      id:           u.id,
+      email:        u.email || '',
+      display_name: displayNameMap[u.id] || '',
+      registered_at:u.created_at || null,
+      wh_count:     userWhCount[u.id] || 0,
+    })).sort((a, b) => (b.registered_at || '').localeCompare(a.registered_at || ''));
+
     res.json({
       total_users: (authUsers || []).length,
       total_warehouses: (warehouses || []).length,
       rows,
       daily,
+      users,
     });
   } catch (e) {
     console.error('admin-stats error:', e);
