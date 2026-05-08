@@ -20,8 +20,8 @@ module.exports = async function handler(req, res) {
   if (!member) return res.status(403).json({ error: 'Forbidden' });
 
   const [walletRes, creditsRes, walletTxRes, creditTxRes] = await Promise.all([
-    sb.from('wallets').select('balance_cents').eq('warehouse_id', warehouseId).single(),
-    sb.from('credits').select('balance').eq('warehouse_id', warehouseId).single(),
+    sb.from('wallets').select('balance_cents').eq('warehouse_id', warehouseId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('credits').select('balance').eq('warehouse_id', warehouseId).maybeSingle(),
     sb.from('wallet_transactions').select('type,amount_cents,description,created_at')
       .eq('warehouse_id', warehouseId).order('created_at', { ascending: false }).limit(10),
     sb.from('credit_transactions').select('type,amount,description,created_at')

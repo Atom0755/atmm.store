@@ -13,14 +13,17 @@ async function creditWallet(sb, warehouseId, topupCents, amountUsd, paymentInten
     .select('id').eq('stripe_payment_intent_id', paymentIntentId).maybeSingle();
   if (existing) return; // already credited (idempotency)
 
-  const { data: wallet } = await sb.from('wallets')
-    .select('balance_cents').eq('warehouse_id', warehouseId).single();
-  const current = wallet?.balance_cents ?? 0;
-  await sb.from('wallets').upsert({
-    warehouse_id: warehouseId,
-    balance_cents: current + topupCents,
-    updated_at: new Date().toISOString(),
-  });
+  const { data: walletRow } = await sb.from('wallets')
+    .select('id, balance_cents').eq('warehouse_id', warehouseId).maybeSingle();
+  const current = walletRow?.balance_cents ?? 0;
+  if (walletRow?.id) {
+    await sb.from('wallets')
+      .update({ balance_cents: current + topupCents, updated_at: new Date().toISOString() })
+      .eq('id', walletRow.id);
+  } else {
+    await sb.from('wallets')
+      .insert({ warehouse_id: warehouseId, balance_cents: current + topupCents, updated_at: new Date().toISOString() });
+  }
   await sb.from('wallet_transactions').insert({
     warehouse_id: warehouseId,
     type: 'topup',
