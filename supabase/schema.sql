@@ -158,3 +158,56 @@ $$;
 create trigger trg_warehouse_created
   after insert on warehouses
   for each row execute function on_warehouse_created();
+
+-- ============================================================
+-- Wallet & Credits tables (add-on — run separately if missing)
+-- ============================================================
+
+-- Wallet balance per warehouse (USD cents)
+create table if not exists wallets (
+  id            uuid primary key default gen_random_uuid(),
+  warehouse_id  uuid not null unique references warehouses(id) on delete cascade,
+  balance_cents bigint not null default 0,
+  updated_at    timestamptz default now()
+);
+
+-- Wallet transaction ledger (topup / deduction / refund)
+create table if not exists warehouse_transactions (
+  id                        uuid primary key default gen_random_uuid(),
+  warehouse_id              uuid not null references warehouses(id) on delete cascade,
+  type                      text not null check (type in ('topup','deduction','refund')),
+  amount_cents              bigint not null,
+  description               text,
+  stripe_payment_intent_id  text unique,
+  created_at                timestamptz default now()
+);
+
+-- Credits balance per warehouse (integer credits)
+create table if not exists credits (
+  id            uuid primary key default gen_random_uuid(),
+  warehouse_id  uuid not null unique references warehouses(id) on delete cascade,
+  balance       bigint not null default 0,
+  updated_at    timestamptz default now()
+);
+
+-- Credits transaction ledger
+create table if not exists warehouse_credit_transactions (
+  id            uuid primary key default gen_random_uuid(),
+  warehouse_id  uuid not null references warehouses(id) on delete cascade,
+  type          text not null check (type in ('purchase','usage','refund')),
+  amount        bigint not null,
+  description   text,
+  created_at    timestamptz default now()
+);
+
+-- RLS
+alter table wallets                      enable row level security;
+alter table warehouse_transactions       enable row level security;
+alter table credits                      enable row level security;
+alter table warehouse_credit_transactions enable row level security;
+
+-- Wallets: members can read; service role writes (bypass RLS in API)
+create policy "members view wallet"  on wallets                      for select using (is_member(auth.uid(), warehouse_id));
+create policy "members view txns"    on warehouse_transactions       for select using (is_member(auth.uid(), warehouse_id));
+create policy "members view credits" on credits                      for select using (is_member(auth.uid(), warehouse_id));
+create policy "members view cr_txns" on warehouse_credit_transactions for select using (is_member(auth.uid(), warehouse_id));
