@@ -664,9 +664,13 @@
   .grid-container-name:active { cursor: grabbing; }
   .grid-container.grid-cont-dragging { opacity: 0.35; }
   .grid-container.grid-cont-drop-target { outline: 2px solid var(--ink); border-radius: 5px; }
-  .grid-slot { padding: 3px 4px; border-bottom: 1px dashed rgba(0,0,0,0.1); background: var(--paper); min-height: 30px; display: flex; align-items: center; gap: 3px; font-size: 9px; line-height: 1.15; }
+  .grid-slot { padding: 3px 4px; border-bottom: 1px dashed rgba(0,0,0,0.1); background: var(--paper); min-height: 30px; display: flex; flex-direction: column; align-items: stretch; font-size: 9px; line-height: 1.15; }
   .grid-slot:last-child { border-bottom: 0; }
   .grid-slot.dragover { background: #fff8d6; }
+  .gslot-main { display: flex; align-items: center; gap: 3px; }
+  .gslot-sub { display: flex; align-items: center; gap: 3px; border-top: 1px dashed rgba(0,0,0,0.1); padding: 1px 0 0 0; margin-top: 1px; }
+  .gsub-plus { font-size: 6px; color: var(--muted); flex-shrink: 0; width: 10px; text-align: center; }
+  .gslot-sub .gmodel { color: var(--muted); font-weight: 400; }
   .grid-slot .gnum { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: var(--muted); flex-shrink: 0; width: 14px; text-align: right; }
   .grid-slot .gmodel { flex: 1; word-break: break-word; cursor: grab; font-weight: 500; min-width: 0; }
   .grid-slot .gcolor { width: 22px; height: 14px; border: 1.5px dashed rgba(0,0,0,0.4); border-radius: 3px; flex-shrink: 0; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--ink); }
@@ -2289,7 +2293,14 @@ function renderGridView() {
           const colorHtml = slot.modelId
             ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
             : `<div class="gcolor" style="visibility:hidden"></div>`;
-          gs.innerHTML = `<div class="gloc" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}`;
+          let subHtml = '';
+          if (slot.subModels && slot.subModels.length > 0) {
+            slot.subModels.forEach(sm => {
+              const smm = sm.modelId ? getModel(sm.modelId) : null;
+              subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}">${sm.qty>0?sm.qty:''}</div></div>`;
+            });
+          }
+          gs.innerHTML = `<div class="gslot-main"><div class="gloc" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}</div>${subHtml}`;
           cont.appendChild(gs);
         });
         flatRow.appendChild(cont);
@@ -2331,7 +2342,14 @@ function renderGridView() {
         const colorHtml = slot.modelId
           ? `<div class="gcolor" data-color="${slot.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}">${slot.qty>0 ? slot.qty : ''}</div>`
           : `<div class="gcolor" style="visibility:hidden"></div>`;
-        gs.innerHTML = `<div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}`;
+        let subHtml = '';
+        if (slot.subModels && slot.subModels.length > 0) {
+          slot.subModels.forEach(sm => {
+            const smm = sm.modelId ? getModel(sm.modelId) : null;
+            subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}">${sm.qty>0?sm.qty:''}</div></div>`;
+          });
+        }
+        gs.innerHTML = `<div class="gslot-main"><div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}</div>${subHtml}`;
         cont.appendChild(gs);
       });
       containers.appendChild(cont);
