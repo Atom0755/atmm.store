@@ -43,6 +43,9 @@
   #tts-btn { display:none; }
   #tts-btn.tts-visible { display:grid; }
   #tts-btn.tts-playing { border-color:var(--red); background:#fff0f0; color:var(--red); }
+  body.tts-hover-mode *:not(input):not(textarea):not(button):hover { outline:2px solid rgba(214,51,64,0.35) !important; cursor:crosshair !important; }
+  body.tts-hover-mode { cursor:crosshair; }
+  #avatar-wrap:hover { border-color:var(--red) !important; border-style:solid !important; }
   #tts-vol-panel { position:fixed; z-index:3100; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 10px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.18); display:flex; flex-direction:column; align-items:center; gap:8px; }
   .table-tabs { flex-shrink: 0; display: flex; background: var(--paper); border-bottom: 1px solid var(--line); }
   .table-tab {
@@ -1119,11 +1122,10 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
-    <button class="icon-btn" id="translate-btn" title="翻译整页 (临时翻译)" aria-label="翻译"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span></span></button>
-    <button class="icon-btn" id="tts-btn" title="语音朗读" aria-label="语音朗读">🔊</button>
+    <button class="icon-btn" id="tts-btn" title="语音朗读 (翻译后悬停朗读)" aria-label="语音朗读" style="display:none;">🔊</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
     <button class="icon-btn" id="addr-check-btn" title="📍 地址核查 — 从Amazon/eBay导入订单检查收件地址" aria-label="地址核查" onclick="window.open('shipping.html?tab=address','_blank')">📍</button>
     <button class="icon-btn" id="label-print-btn" title="📦 打单发货 — 选择UPS/FedEx/USPS/DHL打印快递单" aria-label="打单发货" onclick="window.open('shipping.html?tab=labels','_blank')">📦</button>
@@ -1139,7 +1141,7 @@
     <button class="tool" data-view="grid">总览</button>
     <button class="tool" id="legend-btn">图例</button>
     <button class="tool" id="reset-btn">重置</button>
-    <button id="wh-switch-btn" class="tool" onclick="_openWhSwitch()">🏭 <span id="wh-name-label">仓库</span> ▾</button>
+    <button id="wh-switch-btn" class="tool" onclick="_openWhSwitch()">换仓 🏭 <span id="wh-name-label"></span> ▾</button>
     <button id="auth-trigger-btn" class="tool auth-trigger-btn" onclick="_openAuthModal()">👤 登录 / 试用</button>
   </div>
 
@@ -1405,6 +1407,70 @@
   </div>
 </div>
 
+<!-- User Profile Sheet -->
+<div class="sheet-backdrop modal-style" id="profile-sheet" style="align-items:flex-start; padding-top:4vh;">
+  <div class="sheet" style="max-height:88vh; border-radius:16px;">
+    <div class="sheet-body">
+      <h3>👤 个人资料</h3>
+
+      <!-- Avatar + name row -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <div onclick="_pickAvatar()" title="更换头像" style="width:64px;height:64px;border-radius:50%;border:2px dashed var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+          <img id="profile-avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+          <span id="profile-avatar-ph" style="font-size:30px;">👤</span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div id="profile-display-nm" style="font-weight:700;font-size:15px;"></div>
+          <div id="profile-email-nm" style="font-size:11px;color:var(--muted);"></div>
+        </div>
+      </div>
+
+      <!-- Profile fields -->
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">手机 / Phone</div>
+          <input id="pf-phone" type="tel" placeholder="+1 ..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg);font-family:inherit;outline:none;color:var(--ink);">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">公司名称 / Company</div>
+          <input id="pf-company" type="text" placeholder="公司或商铺名称..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg);font-family:inherit;outline:none;color:var(--ink);">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">经营范围 / Business Scope</div>
+          <input id="pf-scope" type="text" placeholder="例如：电子产品批发、服装零售..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg);font-family:inherit;outline:none;color:var(--ink);">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">公司/商铺地址 / Company Address</div>
+          <input id="pf-addr" type="text" placeholder="公司地址..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg);font-family:inherit;outline:none;color:var(--ink);">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">仓库地址 / Warehouse Address</div>
+          <input id="pf-wh-addr" type="text" placeholder="仓库地址..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg);font-family:inherit;outline:none;color:var(--ink);">
+        </div>
+      </div>
+
+      <button onclick="_saveProfile()" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:14px;">💾 保存资料</button>
+
+      <!-- Activity feed section (coming soon) -->
+      <div style="border-top:1px solid var(--line);padding-top:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+          动态 · Moments
+          <span style="font-size:10px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:12px;font-weight:600;">即将上线</span>
+        </div>
+        <div id="pf-moments-feed" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="text-align:center;color:var(--muted);font-size:12px;padding:20px;background:var(--bg);border-radius:10px;border:1px dashed var(--line);">
+            📸 发文字、图片（最多9张）或短视频（3分钟内）<br>
+            <span style="font-size:10px;color:var(--muted);">社区功能开发中，敬请期待</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- Permanent Language Picker sheet -->
 <div class="sheet-backdrop" id="lang-sheet">
   <div class="sheet">
@@ -1505,13 +1571,22 @@
       <h3>⚙️ 设置</h3>
 
       <!-- ACCOUNT section -->
-      <div class="settings-sec-lbl" style="border-top:none; padding-top:4px; margin-top:0;">ACCOUNT 账户</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:none;padding-top:4px;margin-top:0;margin-bottom:0;">
+        <div class="settings-sec-lbl" style="border-top:none;padding-top:0;margin-top:0;margin-bottom:0;">ACCOUNT 账户</div>
+        <!-- Avatar upload circle -->
+        <div id="avatar-wrap" onclick="_pickAvatar()" title="点击上传头像" style="width:48px;height:48px;border-radius:50%;border:2px dashed var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+          <img id="avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+          <span id="avatar-placeholder" style="font-size:22px;">👤</span>
+        </div>
+        <input type="file" id="avatar-file-inp" accept="image/*" style="display:none;" onchange="_onAvatarFile(event)">
+      </div>
       <!-- Current user row -->
       <div id="settings-user-row" style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:14px;">
         <div style="flex:1; min-width:0;">
           <div id="settings-display-name" style="font-weight:700; font-size:14px; margin-bottom:2px;"></div>
           <div id="settings-user-email" style="font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
         </div>
+        <button onclick="_openProfileSheet()" style="font-size:12px; padding:5px 10px; border:1.5px solid #1a73e8; border-radius:8px; background:#e8f0fe; color:#1a73e8; cursor:pointer; white-space:nowrap; flex-shrink:0; font-family:inherit; font-weight:700;">详细</button>
         <button onclick="_toggleRenameForm()" style="font-size:12px; padding:5px 10px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); cursor:pointer; white-space:nowrap; flex-shrink:0;">改名</button>
       </div>
       <div id="settings-rename-form" style="display:none; margin-bottom:14px; background:var(--bg); border-radius:10px; padding:12px; border:1.5px solid var(--line);">
@@ -1536,9 +1611,9 @@
           <span class="snr-arr" id="pay-arr-card">›</span>
         </div>
         <div id="pay-panel-card" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
-          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全保存银行卡，可用于订阅及所有收费项目，无需每次重新输入卡号。</div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全管理银行卡：可添加多张卡并选定默认自动续费卡，也可随时更新或删除。</div>
           <div id="card-panel-content">
-            <button class="action-row" id="add-card-btn" onclick="_addCard()" style="margin-bottom:0; background:#f0fdf4; border-color:#16a34a;">
+            <button class="action-row" id="add-card-btn" onclick="_manageCards()" style="margin-bottom:0; background:#f0fdf4; border-color:#16a34a;">
               <span class="ico" id="add-card-ico">➕</span><div style="flex:1; font-weight:700; color:#16a34a;" id="add-card-lbl">添加银行卡 Add Card</div>
             </button>
           </div>
@@ -1713,8 +1788,10 @@
 
       <!-- Help / FAQ -->
       <div style="margin-bottom:18px;">
-        <div class="settings-sec-lbl">HELP 帮助</div>
-        <div class="help-faq">
+        <div class="settings-sec-lbl" id="help-sec-lbl" onclick="_toggleHelpSection()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+          HELP 帮助 <span id="help-sec-arr" style="font-size:13px;transition:transform .25s;display:inline-block;transform:rotate(0deg);">▶</span>
+        </div>
+        <div class="help-faq" id="help-faq-body" style="display:none;">
 
           <!-- 图例说明 -->
           <div class="help-item" onclick="this.classList.toggle('open')">
@@ -1840,15 +1917,30 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.0</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.1</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>移除临时翻译按钮，固定语言（📌 A文）已满足需求</li>
+            <li>语音朗读改为悬停模式：翻译激活后点🔊，光标悬停在文字上即时朗读</li>
+            <li>换仓按钮加"换仓"文字，且只在老板拥有多个仓库时才显示</li>
+            <li>HELP 帮助栏目折叠收起，点击标题展开</li>
+            <li>银行卡改为"更新银行卡 Update Card"，支持通过 Stripe 门户添加多张卡和设置默认卡</li>
+            <li>账户区新增头像上传（圆形），可上传照片/Logo</li>
+            <li>新增"详细"按钮打开个人资料页（手机/公司/地址/仓库地址/朋友圈占位）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
             <li>翻译图标改为 Google Translate 风格「A文」双字母设计</li>
             <li>新增 📌 固定语言按钮（28种语言），选后全站保持，刷新不重置</li>
-            <li>修复翻译切换区域 tab 后自动消失的问题，切换后增量补充翻译新内容</li>
-            <li>选中语言在清单里高亮显示，翻译图标在激活状态有红色边框提示</li>
-            <li>新增 🔊 语音朗读按钮（翻译激活时出现），含滑动音量控制</li>
+            <li>修复翻译切换区域 tab 后自动消失的问题</li>
+            <li>新增 🔊 语音朗读功能</li>
           </ul>
         </div>
 
@@ -5385,9 +5477,8 @@ let _ttsPlaying = false;
 
 function _updateXlatUI() {
   const active = !!_xlat_lang;
-  document.getElementById('translate-btn')?.classList.toggle('xlat-active', active);
   const ttsBtn = document.getElementById('tts-btn');
-  if (ttsBtn) { ttsBtn.style.display = active ? 'grid' : 'none'; if (!active) ttsBtn.classList.remove('tts-playing'); }
+  if (ttsBtn) { ttsBtn.style.display = active ? 'grid' : 'none'; if (!active) { ttsBtn.classList.remove('tts-playing'); _ttsHoverOff(); } }
   document.getElementById('lang-btn')?.classList.toggle('perm-active', !!_perm_lang);
   document.querySelectorAll('.translate-lang, .lang-sheet-lang').forEach(b => {
     b.classList.toggle('lang-selected', b.dataset.lang === _xlat_lang);
@@ -5491,59 +5582,72 @@ function clearPermanentLang() {
   toast('已恢复中文界面');
 }
 
-// TTS
+// TTS — hover-to-read mode
+let _ttsHoverActive = false;
+let _ttsHoverTimer = null;
+
 function _ttsStop() {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   _ttsPlaying = false;
   document.getElementById('tts-btn')?.classList.remove('tts-playing');
-  document.getElementById('tts-vol-panel')?.remove();
 }
 
-function _ttsStart() {
-  if (!_xlat_lang || !window.speechSynthesis) return;
+function _ttsHoverOff() {
+  if (!_ttsHoverActive) return;
+  _ttsHoverActive = false;
   _ttsStop();
-  const langCode = _TTS_LANG[_xlat_lang] || _xlat_lang;
-  const mainEl = document.querySelector('.main') || document.body;
-  const walker = document.createTreeWalker(mainEl, NodeFilter.SHOW_TEXT);
-  const parts = [];
-  let n;
-  while ((n = walker.nextNode())) { const t = n.textContent.trim(); if (t && t.length > 1) parts.push(t); }
-  const text = parts.join(' ').slice(0, 4000);
-  if (!text) { toast('没有可朗读的内容'); return; }
-  const utter = new SpeechSynthesisUtterance(text);
+  document.body.classList.remove('tts-hover-mode');
+  document.removeEventListener('mouseover', _onTtsHover);
+  document.removeEventListener('touchstart', _onTtsTouch, true);
+  document.getElementById('tts-bar')?.remove();
+  document.getElementById('tts-btn')?.classList.remove('tts-playing');
+}
+
+function _speakText(text) {
+  if (!text || !text.trim() || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const langCode = _TTS_LANG[_xlat_lang || _perm_lang || 'zh'] || (_xlat_lang || 'zh-CN');
+  const utter = new SpeechSynthesisUtterance(text.trim().slice(0, 300));
   utter.lang = langCode;
   utter.volume = _ttsVolume;
-  utter.rate = 0.9;
-  utter.onend = () => { _ttsPlaying = false; document.getElementById('tts-btn')?.classList.remove('tts-playing'); };
-  utter.onerror = () => { _ttsPlaying = false; document.getElementById('tts-btn')?.classList.remove('tts-playing'); };
+  utter.rate = 0.92;
   window.speechSynthesis.speak(utter);
-  _ttsPlaying = true;
-  document.getElementById('tts-btn')?.classList.add('tts-playing');
+}
+
+function _onTtsHover(e) {
+  clearTimeout(_ttsHoverTimer);
+  const el = e.target;
+  if (!el || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'BUTTON') return;
+  const text = (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3)
+    ? el.textContent.trim()
+    : el.getAttribute('title') || el.getAttribute('aria-label') || '';
+  if (!text || text.length < 2) return;
+  _ttsHoverTimer = setTimeout(() => _speakText(text), 180);
+}
+
+function _onTtsTouch(e) {
+  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+  if (!el) return;
+  const text = (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3)
+    ? el.textContent.trim()
+    : el.getAttribute('title') || '';
+  if (text && text.length >= 2) _speakText(text);
 }
 
 document.getElementById('tts-btn').addEventListener('click', function() {
-  if (_ttsPlaying) { _ttsStop(); return; }
-  const existing = document.getElementById('tts-vol-panel');
-  if (existing) { existing.remove(); return; }
-  const panel = document.createElement('div');
-  panel.id = 'tts-vol-panel';
-  const rect = this.getBoundingClientRect();
-  panel.style.cssText = `right:${window.innerWidth - rect.right}px; top:${rect.bottom + 8}px;`;
-  panel.innerHTML = `
-    <div style="font-size:11px;font-weight:700;color:var(--muted);">音量</div>
-    <input type="range" id="tts-vol-slider" min="0" max="100" value="${Math.round(_ttsVolume*100)}"
-      style="writing-mode:vertical-lr;direction:rtl;height:90px;width:28px;cursor:pointer;accent-color:var(--red);">
-    <div id="tts-vol-lbl" style="font-size:12px;font-weight:700;color:var(--ink);">${Math.round(_ttsVolume*100)}%</div>
-    <button onclick="_ttsStart();document.getElementById('tts-vol-panel')?.remove();"
-      style="font-size:11px;padding:6px 10px;border:1.5px solid var(--red);border-radius:8px;color:var(--red);background:none;cursor:pointer;font-family:inherit;">▶ 朗读</button>
-  `;
-  document.body.appendChild(panel);
-  panel.querySelector('#tts-vol-slider').addEventListener('input', e => {
-    _ttsVolume = e.target.value / 100;
-    panel.querySelector('#tts-vol-lbl').textContent = e.target.value + '%';
-  });
-  panel.querySelector('#tts-vol-slider').addEventListener('change', () => { _ttsStart(); panel.remove(); });
-  setTimeout(() => { document.addEventListener('click', function h(e){ if(!panel.contains(e.target)&&e.target!==document.getElementById('tts-btn')){panel.remove();document.removeEventListener('click',h);} }); }, 100);
+  if (_ttsHoverActive) { _ttsHoverOff(); return; }
+  _ttsHoverActive = true;
+  this.classList.add('tts-playing');
+  document.body.classList.add('tts-hover-mode');
+  document.addEventListener('mouseover', _onTtsHover);
+  document.addEventListener('touchstart', _onTtsTouch, true);
+  // Floating hint bar
+  const bar = document.createElement('div');
+  bar.id = 'tts-bar';
+  bar.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.78);color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;z-index:3200;pointer-events:none;white-space:nowrap;';
+  bar.textContent = '🔊 将光标悬停在文字上即可朗读';
+  document.body.appendChild(bar);
+  toast('🔊 语音模式已开启');
 });
 
 document.getElementById('lang-btn').addEventListener('click', () => {
@@ -5556,12 +5660,6 @@ document.querySelectorAll('.lang-sheet-lang').forEach(btn => {
   btn.addEventListener('click', () => { setPermanentLang(btn.dataset.lang, btn.dataset.label); });
 });
 
-document.getElementById('translate-btn').addEventListener('click', () => {
-  if (!_user) { _pulseLoginBtn(); return; }
-  _updateXlatUI();
-  showSheet('translate-sheet');
-});
-
 document.querySelectorAll('.translate-lang').forEach(btn => {
   btn.addEventListener('click', () => {
     const lang = btn.dataset.lang;
@@ -5571,7 +5669,7 @@ document.querySelectorAll('.translate-lang').forEach(btn => {
 });
 
 document.getElementById('translate-stop').addEventListener('click', () => {
-  stopTranslation();
+  clearPermanentLang();
   hideSheets();
 });
 
@@ -6488,9 +6586,9 @@ function _updateWarehouseSwitcherUI() {
   const label = document.getElementById('wh-name-label');
   const trigBtn = document.getElementById('auth-trigger-btn');
   if (!_warehouse) return;
-  // Show warehouse button for any boss (allows creating new warehouses too)
-  const canSwitch = _role === 'boss';
-  if (btn) btn.style.display = canSwitch ? 'block' : 'none';
+  // Show warehouse button only when boss has access to multiple warehouses
+  const canSwitch = _role === 'boss' && Array.isArray(_memberships) && _memberships.length > 1;
+  if (btn) btn.style.display = canSwitch ? 'inline-flex' : 'none';
   if (trigBtn) trigBtn.style.display = 'none';
   if (label) {
     const name = _warehouse.name || '仓库';
@@ -6638,6 +6736,10 @@ async function _onSignIn(user) {
   // Apply role-based UI restrictions
   _applyPermissions();
 
+  // Restore avatar
+  const _savedAvatar = localStorage.getItem('atmm_avatar');
+  if (_savedAvatar) _applyAvatar(_savedAvatar);
+
   // Close modal and hide login button (user is now logged in)
   _closeAuthModal();
   const trigBtn = document.getElementById('auth-trigger-btn');
@@ -6778,7 +6880,7 @@ async function _openSettings() {
           const icoEl = document.getElementById('add-card-ico');
           const lblEl = document.getElementById('add-card-lbl');
           if (icoEl) icoEl.textContent = '🔄';
-          if (lblEl) lblEl.textContent = '更换银行卡 Replace Card';
+          if (lblEl) lblEl.textContent = '更新银行卡 Update Card';
         } else {
           _savedCard = null;
           pmEl.textContent = '未绑定支付方式';
@@ -7170,6 +7272,80 @@ async function _openPortal() {
   const { url, error } = await res.json();
   if (error) { toast('❌ ' + error); return; }
   if (url) location.href = url;
+}
+
+// ── HELP section toggle ──
+function _toggleHelpSection() {
+  const body = document.getElementById('help-faq-body');
+  const arr  = document.getElementById('help-sec-arr');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arr) arr.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+// ── Card management (Stripe portal for add/update/delete/default) ──
+async function _manageCards() {
+  if (_savedCard) {
+    // Card exists → open portal for full management (add, remove, set default)
+    await _openPortal();
+  } else {
+    // No card → use setup intent flow to add first card
+    await _addCard();
+  }
+}
+
+// ── Avatar upload ──
+function _pickAvatar() {
+  document.getElementById('avatar-file-inp')?.click();
+}
+function _onAvatarFile(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result;
+    localStorage.setItem('atmm_avatar', b64);
+    _applyAvatar(b64);
+  };
+  reader.readAsDataURL(file);
+}
+function _applyAvatar(src) {
+  ['avatar-img', 'profile-avatar-img'].forEach(id => {
+    const img = document.getElementById(id);
+    if (img) { img.src = src; img.style.display = 'block'; }
+  });
+  ['avatar-placeholder', 'profile-avatar-ph'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+// ── User Profile sheet ──
+function _openProfileSheet() {
+  const nm = document.getElementById('profile-display-nm');
+  const em = document.getElementById('profile-email-nm');
+  if (nm) nm.textContent = _displayName || '';
+  if (em) em.textContent = _user?.email || '';
+  // Sync avatar
+  const saved = localStorage.getItem('atmm_avatar');
+  if (saved) _applyAvatar(saved);
+  // Load saved profile fields
+  const pf = JSON.parse(localStorage.getItem('atmm_profile') || '{}');
+  ['phone','company','scope','addr','wh-addr'].forEach(k => {
+    const el = document.getElementById('pf-' + k);
+    if (el) el.value = pf[k] || '';
+  });
+  showSheet('profile-sheet');
+}
+function _saveProfile() {
+  const pf = {};
+  ['phone','company','scope','addr','wh-addr'].forEach(k => {
+    const el = document.getElementById('pf-' + k);
+    if (el) pf[k] = el.value.trim();
+  });
+  localStorage.setItem('atmm_profile', JSON.stringify(pf));
+  toast('✅ 资料已保存');
 }
 
 // ── Auth init (entry point) ──
