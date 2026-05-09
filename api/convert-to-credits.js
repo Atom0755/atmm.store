@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
     .update({ balance_cents: wallet.balance_cents - deductCents, updated_at: new Date().toISOString() })
     .eq('warehouse_id', warehouseId);
   await sb.from('warehouse_transactions').insert({
-    warehouse_id: warehouseId, type: 'convert_to_credits',
+    warehouse_id: warehouseId, type: 'deduction',
     amount_cents: -deductCents, description: `兑换 ${earnCredits} Credits`,
   });
 
@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
       .insert({ warehouse_id: warehouseId, balance: currentCredits + earnCredits, updated_at: new Date().toISOString() });
   }
   await sb.from('warehouse_credit_transactions').insert({
-    warehouse_id: warehouseId, type: 'convert_from_wallet',
+    warehouse_id: warehouseId, type: 'purchase',
     amount: earnCredits, description: `从钱包兑换 $${amountUsd}`,
   });
 

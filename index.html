@@ -985,7 +985,8 @@
   .team-member-role { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--ink); color:var(--paper); }
   .plan-btn { display:block; width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; text-align:left; margin-bottom:8px; }
   .plan-btn.current-plan { border-color:var(--red); color:var(--red); }
-  .plan-price { float:right; font-size:11px; font-weight:500; color:var(--muted); }
+  .plan-price { float:right; font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; }
+  .plan-orig  { font-size:10px; font-weight:400; color:var(--muted); text-decoration:line-through; margin-right:4px; }
   .plan-desc { display:block; font-size:11px; font-weight:400; color:var(--muted); margin-top:4px; clear:both; line-height:1.4; }
   .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
@@ -1095,7 +1096,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1536,12 +1537,16 @@
           <div id="sub-status-display" style="font-size:13px; margin-bottom:8px;"></div>
           <div id="plan-upgrade-section">
             <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
-            <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">   基础版 Basic      <span class="plan-price">$10/月</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
-            <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')">    基础版 年付       <span class="plan-price">$365/年</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理</span></button>
-            <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard   <span class="plan-price">$60/月</span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作</span></button>
-            <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付       <span class="plan-price">$500/年</span><span class="plan-desc">2账户（老板＋经理或操作员）· 省31% · 小团队协作</span></button>
-            <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')"> 高级版 Premium    <span class="plan-price">$168/月</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置</span></button>
-            <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')">  高级版 年付       <span class="plan-price">$1268/年</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省37% · 全团队配置</span></button>
+            <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">基础版 Basic<span class="plan-price"><span class="plan-orig">$31/月</span>$19/月</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</span></button>
+            <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')"> 基础版 年付<span class="plan-price"><span class="plan-orig">$372/年</span>$365/年</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</span></button>
+            <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard<span class="plan-price"><span class="plan-orig">$88/月</span>$68/月</span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</span></button>
+            <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付<span class="plan-price"><span class="plan-orig">$1,056/年</span>$888/年</span><span class="plan-desc">2账户（老板＋经理或操作员）· 省16% · 小团队协作 · 订阅即送1个月免费期</span></button>
+            <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')">高级版 Premium<span class="plan-price"><span class="plan-orig">$228/月</span>$188/月</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</span></button>
+            <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')"> 高级版 年付<span class="plan-price"><span class="plan-orig">$2,736/年</span>$1,888/年</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省31% · 全团队配置 · 订阅即送1个月免费期</span></button>
+            <div style="margin:4px 0 8px; padding:10px 12px; background:#fff8e6; border:1.5px solid #f5c542; border-radius:10px; font-size:12px; color:#7a5c00; line-height:1.6;">
+              🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$188/月</b>，年付另加 <b>$1,888/年</b>。<br>
+              如两个仓库高级版：月付 $188＋$188＝$376/月，年付 $1,888＋$1,888＝$3,776/年。
+            </div>
             <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅 / Manage Subscription</button>
           </div>
         </div>
@@ -1674,7 +1679,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>订阅方案改为先订阅后享免费期：月付送1周，年付送1个月</li>
+            <li>价格显示优化：划线原价 + 优惠实价，对比更直观</li>
+            <li>新增多仓库加购说明，每仓月付/年付单独计费</li>
+            <li>修复积分兑换红色报错（类型值不匹配）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v1.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">

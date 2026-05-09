@@ -2,12 +2,12 @@ const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
 const PLANS = {
-  basic_monthly:    { amount:   1000, interval: 'month', members: 1, label: 'Basic Monthly'    },
-  basic_annual:     { amount:  36500, interval: 'year',  members: 1, label: 'Basic Annual'     },
-  standard_monthly: { amount:   6000, interval: 'month', members: 2, label: 'Standard Monthly' },
-  standard_annual:  { amount:  50000, interval: 'year',  members: 2, label: 'Standard Annual'  },
-  premium_monthly:  { amount:  16800, interval: 'month', members: 3, label: 'Premium Monthly'  },
-  premium_annual:   { amount: 126800, interval: 'year',  members: 3, label: 'Premium Annual'   },
+  basic_monthly:    { amount:   1900, interval: 'month', trialDays:  7, members: 1, label: 'Basic Monthly'    },
+  basic_annual:     { amount:  36500, interval: 'year',  trialDays: 30, members: 1, label: 'Basic Annual'     },
+  standard_monthly: { amount:   6800, interval: 'month', trialDays:  7, members: 2, label: 'Standard Monthly' },
+  standard_annual:  { amount:  88800, interval: 'year',  trialDays: 30, members: 2, label: 'Standard Annual'  },
+  premium_monthly:  { amount:  18800, interval: 'month', trialDays:  7, members: 3, label: 'Premium Monthly'  },
+  premium_annual:   { amount: 188800, interval: 'year',  trialDays: 30, members: 3, label: 'Premium Annual'   },
 };
 
 module.exports = async function handler(req, res) {
@@ -80,6 +80,7 @@ module.exports = async function handler(req, res) {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: { trial_period_days: plan.trialDays },
       success_url: `${origin}/?checkout=success`,
       cancel_url:  `${origin}/?checkout=canceled`,
       metadata: { warehouse_id: warehouseId, plan_key: planKey },
