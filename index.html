@@ -1407,6 +1407,44 @@
   </div>
 </div>
 
+<!-- Add New Card Sheet (Stripe Elements — bypasses Stripe Link) -->
+<div class="sheet-backdrop modal-style" id="new-card-sheet" style="align-items:flex-start; padding-top:8vh;">
+  <div class="sheet" style="max-height:80vh; border-radius:16px;">
+    <div class="sheet-body">
+      <h3>💳 添加新银行卡</h3>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:16px; background:var(--bg); border-radius:8px; padding:10px; line-height:1.6;">
+        直接输入新卡信息，或在手机上使用<b>相机扫卡</b>自动填写（iOS 支持）
+      </div>
+
+      <!-- Card holder name -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px;">持卡人姓名 / Cardholder Name</label>
+        <input id="card-name-inp" type="text" placeholder="Name on card" autocomplete="cc-name"
+          style="width:100%;box-sizing:border-box;padding:11px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;background:var(--paper);font-family:inherit;outline:none;color:var(--ink);">
+      </div>
+
+      <!-- Stripe Elements mount point -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px;">卡号 / 到期日 / 安全码</label>
+        <div id="stripe-card-element" style="padding:12px; border:1.5px solid var(--line); border-radius:8px; background:var(--paper); min-height:44px;"></div>
+        <div id="stripe-card-errors" style="color:var(--red); font-size:12px; margin-top:6px; display:none;"></div>
+      </div>
+
+      <!-- iOS camera scan hint -->
+      <div style="font-size:11px; color:var(--muted); margin-bottom:16px; text-align:center;">
+        📱 iPhone 用户：点击卡号输入框后可用相机扫描银行卡自动填写
+      </div>
+
+      <button id="card-submit-btn" onclick="_submitNewCard()" style="width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+        ➕ 添加此卡
+      </button>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- User Profile Sheet -->
 <div class="sheet-backdrop modal-style" id="profile-sheet" style="align-items:flex-start; padding-top:4vh;">
   <div class="sheet" style="max-height:88vh; border-radius:16px;">
@@ -1611,10 +1649,13 @@
           <span class="snr-arr" id="pay-arr-card">›</span>
         </div>
         <div id="pay-panel-card" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
-          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过 Stripe 安全管理银行卡：可添加多张卡并选定默认自动续费卡，也可随时更新或删除。</div>
-          <div id="card-panel-content">
-            <button class="action-row" id="add-card-btn" onclick="_manageCards()" style="margin-bottom:0; background:#f0fdf4; border-color:#16a34a;">
+          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">通过内置表单直接输入新卡信息（支持 iPhone 相机扫卡自动填写），或进入 Stripe 门户管理多张卡。</div>
+          <div id="card-panel-content" style="display:flex;flex-direction:column;gap:8px;">
+            <button class="action-row" id="add-card-btn" onclick="_manageCards()" style="background:#f0fdf4; border-color:#16a34a;">
               <span class="ico" id="add-card-ico">➕</span><div style="flex:1; font-weight:700; color:#16a34a;" id="add-card-lbl">添加银行卡 Add Card</div>
+            </button>
+            <button class="action-row" id="add-new-card-btn" onclick="_addCard()" style="display:none; background:#e8f0fe; border-color:#1a73e8;">
+              <span class="ico">💳</span><div style="flex:1; font-weight:700; color:#1a73e8;">添加新银行卡（手填/扫卡）</div>
             </button>
           </div>
         </div>
@@ -6819,6 +6860,36 @@ window._canDelete      = window._canManage;
 window._canManageAisle = window._canManage;
 
 // ── Settings sheet: populate and open ──
+function _loadPaymentInfo() {
+  const pmEl = document.getElementById('settings-pm-display');
+  if (!pmEl || !_warehouse?.id) { if (pmEl) pmEl.textContent = '未绑定支付方式'; return; }
+  pmEl.textContent = '加载中…';
+  sb.auth.getSession().then(({ data }) => {
+    const token = data.session?.access_token;
+    fetch(`/api/get-payment-method?warehouse_id=${_warehouse.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(r => r.json()).then(d => {
+      const icoEl = document.getElementById('add-card-ico');
+      const lblEl = document.getElementById('add-card-lbl');
+      const newCardBtn = document.getElementById('add-new-card-btn');
+      if (d.card) {
+        _savedCard = d.card;
+        const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
+        pmEl.textContent = `${brand} •••• ${d.card.last4}`;
+        if (icoEl) icoEl.textContent = '🔄';
+        if (lblEl) lblEl.textContent = '管理银行卡 Manage Cards';
+        if (newCardBtn) newCardBtn.style.display = 'flex'; // Show "add new card" when one exists
+      } else {
+        _savedCard = null;
+        pmEl.textContent = '未绑定支付方式';
+        if (icoEl) icoEl.textContent = '➕';
+        if (lblEl) lblEl.textContent = '添加银行卡 Add Card';
+        if (newCardBtn) newCardBtn.style.display = 'none';
+      }
+    }).catch(() => { pmEl.textContent = '—'; });
+  });
+}
+
 async function _openSettings() {
   // If not logged in, pulse login button and open auth modal instead
   if (!_user) { _pulseLoginBtn(); _openAuthModal(); return; }
@@ -6864,36 +6935,8 @@ async function _openSettings() {
     if (subSumEl) subSumEl.textContent = `${planLabel} · 剩余${daysLeft}天`;
   }
 
-  // Payment method (fetch from Stripe via API — always fetch for boss, not just paid plans)
-  const pmEl = document.getElementById('settings-pm-display');
-  if (pmEl && _warehouse?.id) {
-    pmEl.textContent = '加载中…';
-    sb.auth.getSession().then(({ data }) => {
-      const token = data.session?.access_token;
-      fetch(`/api/get-payment-method?warehouse_id=${_warehouse.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      }).then(r => r.json()).then(d => {
-        if (d.card) {
-          _savedCard = d.card;
-          const brand = d.card.brand.charAt(0).toUpperCase() + d.card.brand.slice(1);
-          pmEl.textContent = `${brand} •••• ${d.card.last4}`;
-          const icoEl = document.getElementById('add-card-ico');
-          const lblEl = document.getElementById('add-card-lbl');
-          if (icoEl) icoEl.textContent = '🔄';
-          if (lblEl) lblEl.textContent = '更新银行卡 Update Card';
-        } else {
-          _savedCard = null;
-          pmEl.textContent = '未绑定支付方式';
-          const icoEl = document.getElementById('add-card-ico');
-          const lblEl = document.getElementById('add-card-lbl');
-          if (icoEl) icoEl.textContent = '➕';
-          if (lblEl) lblEl.textContent = '添加银行卡 Add Card';
-        }
-      }).catch(() => { pmEl.textContent = '—'; });
-    });
-  } else if (pmEl) {
-    pmEl.textContent = '未绑定支付方式';
-  }
+  // Payment method
+  _loadPaymentInfo();
 
   // Referral code (based on user ID)
   const refEl = document.getElementById('referral-code-display');
@@ -6938,7 +6981,95 @@ function _togglePayPanel(type) {
     }
   });
 }
+// ── Stripe Elements inline card form (bypasses Stripe Link) ──
+let _stripeInstance = null;
+let _stripeCardElement = null;
+
+async function _loadStripeJs() {
+  if (window.Stripe) return;
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://js.stripe.com/v3/';
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('无法加载 Stripe.js'));
+    document.head.appendChild(s);
+  });
+}
+
 async function _addCard() {
+  try {
+    toast('⏳ 加载支付模块...');
+    await _loadStripeJs();
+    _stripeInstance = Stripe(_STRIPE_PK);
+
+    // Mount card element
+    const elements = _stripeInstance.elements();
+    const style = {
+      base: { fontSize: '15px', color: '#1a1a1a', fontFamily: 'system-ui, sans-serif',
+        '::placeholder': { color: '#aaa' } },
+      invalid: { color: '#d63340' },
+    };
+    _stripeCardElement = elements.create('card', { style, hidePostalCode: true });
+    document.getElementById('stripe-card-element').innerHTML = '';
+    _stripeCardElement.mount('#stripe-card-element');
+    _stripeCardElement.on('change', e => {
+      const errEl = document.getElementById('stripe-card-errors');
+      if (e.error) { errEl.textContent = e.error.message; errEl.style.display = 'block'; }
+      else { errEl.style.display = 'none'; }
+    });
+
+    // Pre-fill name
+    const nameInp = document.getElementById('card-name-inp');
+    if (nameInp) nameInp.value = _displayName || '';
+    document.getElementById('card-submit-btn').textContent = '➕ 添加此卡';
+    document.getElementById('card-submit-btn').disabled = false;
+    showSheet('new-card-sheet');
+  } catch (e) {
+    toast('❌ ' + e.message);
+  }
+}
+
+async function _submitNewCard() {
+  if (!_stripeInstance || !_stripeCardElement) return;
+  const submitBtn = document.getElementById('card-submit-btn');
+  submitBtn.textContent = '⏳ 正在处理...';
+  submitBtn.disabled = true;
+
+  try {
+    // Get SetupIntent client secret from server
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    const r = await fetch('/api/create-setup-intent', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ warehouseId: _warehouse?.id }),
+    });
+    const d = await r.json();
+    if (!d.clientSecret) { toast('❌ ' + (d.error || '服务器错误')); submitBtn.textContent = '➕ 添加此卡'; submitBtn.disabled = false; return; }
+
+    const name = document.getElementById('card-name-inp')?.value.trim() || '';
+    const { error, setupIntent } = await _stripeInstance.confirmCardSetup(d.clientSecret, {
+      payment_method: {
+        card: _stripeCardElement,
+        billing_details: { name: name || undefined },
+      },
+    });
+
+    if (error) {
+      document.getElementById('stripe-card-errors').textContent = error.message;
+      document.getElementById('stripe-card-errors').style.display = 'block';
+      submitBtn.textContent = '➕ 添加此卡'; submitBtn.disabled = false;
+    } else {
+      hideSheets();
+      toast('✅ 银行卡已添加成功！');
+      setTimeout(() => _loadPaymentInfo(), 1000);
+    }
+  } catch (e) {
+    toast('❌ ' + e.message);
+    submitBtn.textContent = '➕ 添加此卡'; submitBtn.disabled = false;
+  }
+}
+
+async function _addCard_legacy() {
   try {
     const token = (await sb.auth.getSession()).data.session?.access_token;
     const r = await fetch('/api/create-card-setup', {
