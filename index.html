@@ -1905,8 +1905,8 @@
 const INITIAL_MODELS = [
   "A123color"
 ];
-const SHELF_NAMES = ["顶","上","中","下"];
-const SHELF_AISLE_NAMES = ["左","中","右"];
+const SHELF_NAMES = ["列.1","列.2","列.3","列.4"];
+const SHELF_AISLE_NAMES = ["A","B","C"];
 const PALLET_AISLE_NAMES = ["A","B"];
 const SLOTS_PER_SHELF = 5;
 const PALLETS_PER_AISLE = 15;
@@ -1921,7 +1921,7 @@ function buildEmptyShelfTable() {
   return { aisles: SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) })) };
 }
 function buildEmptyPalletTable() {
-  return { aisles: PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) })) };
+  return { aisles: PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: '列.'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) })) };
 }
 
 function migrateV1toV2(old) {
@@ -1932,7 +1932,7 @@ function migrateV1toV2(old) {
     zones: [
       { id:'shelfBlack', name:meta.shelfBlack?.title||'零散货架一区', type:'shelf',  aisles:(old.shelfBlackTable||buildEmptyShelfTable()).aisles, filler:meta.shelfBlack?.filler||'', date:meta.shelfBlack?.date||today },
       { id:'shelfWhite', name:meta.shelfWhite?.title||'零散货架二区', type:'shelf',  aisles:(old.shelfWhiteTable||buildEmptyShelfTable()).aisles, filler:meta.shelfWhite?.filler||'', date:meta.shelfWhite?.date||today },
-      { id:'pallet',     name:meta.pallet?.title||'整箱堆货区',       type:'pallet', aisles:(old.palletTable||buildEmptyPalletTable()).aisles,   filler:meta.pallet?.filler||'',      date:meta.pallet?.date||today },
+      { id:'pallet',     name:meta.pallet?.title||'整箱堆货一区',     type:'pallet', aisles:(old.palletTable||buildEmptyPalletTable()).aisles,   filler:meta.pallet?.filler||'',      date:meta.pallet?.date||today },
     ],
   };
 }
@@ -1989,7 +1989,7 @@ function buildInitial() {
       const idx = la.shelves.length;
       const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
       for (let i=0; i<SLOTS_PER_SHELF && mi < models.length; i++) { slots[i].modelId = models[mi].id; mi++; }
-      la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+      la.shelves.push({ name: SHELF_NAMES[idx] || ('列.'+(idx+1)), slots });
     }
   }
   const shelfWhiteAisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
@@ -2003,12 +2003,12 @@ function buildInitial() {
       const idx = la.shelves.length;
       const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
       for (let i=0; i<SLOTS_PER_SHELF && mi < models.length; i++) { slots[i].modelId = models[mi].id; mi++; }
-      la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+      la.shelves.push({ name: SHELF_NAMES[idx] || ('列.'+(idx+1)), slots });
     }
   }
   const palletAisles = PALLET_AISLE_NAMES.map(n => ({
     name: n,
-    pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) }))
+    pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: '列.'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) }))
   }));
   if (palletAisles[0]) {
     for (let p = 0; p < 3 && p < palletAisles[0].pallets.length; p++) {
@@ -2024,7 +2024,7 @@ function buildInitial() {
     zones: [
       { id:'shelfBlack', name:'零散货架一区', type:'shelf',  aisles:shelfBlackAisles, filler:'', date:today },
       { id:'shelfWhite', name:'零散货架二区', type:'shelf',  aisles:shelfWhiteAisles, filler:'', date:today },
-      { id:'pallet',     name:'整箱堆货区',   type:'pallet', aisles:palletAisles,     filler:'', date:today },
+      { id:'pallet',     name:'整箱堆货一区', type:'pallet', aisles:palletAisles,     filler:'', date:today },
     ],
   };
 }
@@ -5214,7 +5214,7 @@ function applyImportMode(mode) {
           const idx = la.shelves.length;
           const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
           for (let i=0;i<SLOTS_PER_SHELF && mi < newModels.length; i++) { slots[i].modelId = newModels[mi].id; mi++; }
-          la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+          la.shelves.push({ name: SHELF_NAMES[idx] || ('列.'+(idx+1)), slots });
         }
       }
     }
@@ -5234,12 +5234,12 @@ function applyImportMode(mode) {
           const idx = la.shelves.length;
           const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
           for (let i=0;i<SLOTS_PER_SHELF && mi < state.models.length; i++) { slots[i].modelId = state.models[mi].id; mi++; }
-          la.shelves.push({ name: SHELF_NAMES[idx] || ('第'+(idx+1)+'层'), slots });
+          la.shelves.push({ name: SHELF_NAMES[idx] || ('列.'+(idx+1)), slots });
         }
       }
     }
     const palletZone = state.zones.find(z => z.type === 'pallet');
-    if (palletZone) palletZone.aisles = PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: 'P'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) }));
+    if (palletZone) palletZone.aisles = PALLET_AISLE_NAMES.map(n => ({ name: n, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: '列.'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) }));
     toast(`✅ 已用 ${lines.length} 个型号重建`);
   }
   pendingImportLines = null;
@@ -5780,8 +5780,15 @@ function _showAddZoneSheet() {
   showSheet('add-zone-sheet');
 }
 
+const _CN_NUMS = ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五'];
+function _autoZoneName(type) {
+  const count = state.zones.filter(z => z.type === type).length;
+  const num = _CN_NUMS[count] || String(count + 1);
+  return type === 'shelf' ? `零散货架${num}区` : `整箱堆货${num}区`;
+}
 function _addZone(type) {
-  const name = (document.getElementById('new-zone-name')?.value.trim()) || (type === 'shelf' ? '新货架区' : '新托盘区');
+  const inputName = document.getElementById('new-zone-name')?.value.trim();
+  const name = inputName || _autoZoneName(type);
   const id = 'zone_' + Date.now();
   const aisles = type === 'shelf' ? buildEmptyShelfTable().aisles : buildEmptyPalletTable().aisles;
   state.zones.push({ id, name, type, aisles, filler: '', date: new Date().toISOString().slice(0,10) });
@@ -6052,7 +6059,7 @@ async function switchWarehouse(warehouseId) {
     state = { models: [], zones: [
       { id:'shelfBlack', name:'零散货架一区', type:'shelf',  aisles: buildEmptyShelfTable().aisles,  filler:'', date: today },
       { id:'shelfWhite', name:'零散货架二区', type:'shelf',  aisles: buildEmptyShelfTable().aisles,  filler:'', date: today },
-      { id:'pallet',     name:'整箱堆货区',   type:'pallet', aisles: buildEmptyPalletTable().aisles, filler:'', date: today },
+      { id:'pallet',     name:'整箱堆货一区', type:'pallet', aisles: buildEmptyPalletTable().aisles, filler:'', date: today },
     ]};
   }
   _applyPermissions();
