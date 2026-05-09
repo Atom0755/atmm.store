@@ -29,6 +29,21 @@
   header h1 { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; }
   .icon-btn { width: 36px; height: 36px; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; display: grid; place-items: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
   .icon-btn:active { transform: scale(0.94); background: var(--ink); color: var(--paper); }
+  /* Google Translate style "A文" icon */
+  .gt-icon { position:relative; display:inline-block; width:24px; height:20px; vertical-align:middle; }
+  .gt-icon .gt-a { position:absolute; left:0; top:0; font-size:14px; font-weight:900; color:var(--ink); font-family:Arial,'Helvetica Neue',sans-serif; line-height:1; }
+  .gt-icon .gt-zh { position:absolute; right:0; bottom:0; font-size:11px; font-weight:700; color:var(--red); line-height:1; }
+  .gt-icon .gt-pin { position:absolute; right:-3px; top:-4px; font-size:7px; line-height:1; }
+  #translate-btn.xlat-active { border-color:var(--red); background:#fff0f0; }
+  #translate-btn.xlat-active .gt-a { color:var(--red); }
+  #lang-btn.perm-active { border-color:#1a73e8; background:#e8f0fe; }
+  #lang-btn.perm-active .gt-a, #lang-btn.perm-active .gt-zh { color:#1a73e8; }
+  .translate-lang.lang-selected, .lang-sheet-lang.lang-selected { background:#e8f0fe; border-color:#1a73e8; }
+  .translate-lang.lang-selected > div, .lang-sheet-lang.lang-selected > div { color:#1a73e8; font-weight:800; }
+  #tts-btn { display:none; }
+  #tts-btn.tts-visible { display:grid; }
+  #tts-btn.tts-playing { border-color:var(--red); background:#fff0f0; color:var(--red); }
+  #tts-vol-panel { position:fixed; z-index:3100; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 10px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.18); display:flex; flex-direction:column; align-items:center; gap:8px; }
   .table-tabs { flex-shrink: 0; display: flex; background: var(--paper); border-bottom: 1px solid var(--line); }
   .table-tab {
     flex: 1; padding: 10px 6px; font-size: 12px; font-weight: 500;
@@ -1104,9 +1119,11 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
-    <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
+    <button class="icon-btn" id="translate-btn" title="翻译整页 (临时翻译)" aria-label="翻译"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span></span></button>
+    <button class="icon-btn" id="tts-btn" title="语音朗读" aria-label="语音朗读">🔊</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
     <button class="icon-btn" id="addr-check-btn" title="📍 地址核查 — 从Amazon/eBay导入订单检查收件地址" aria-label="地址核查" onclick="window.open('shipping.html?tab=address','_blank')">📍</button>
     <button class="icon-btn" id="label-print-btn" title="📦 打单发货 — 选择UPS/FedEx/USPS/DHL打印快递单" aria-label="打单发货" onclick="window.open('shipping.html?tab=labels','_blank')">📦</button>
@@ -1380,6 +1397,55 @@
         <button class="action-row" id="img-from-album"><span class="ico">🖼️</span><div style="flex:1;"><div style="font-weight:700;">从相册选</div><div style="font-size:11px; color:var(--muted);">从手机相册选一张</div></div></button>
         <button class="action-row" id="img-from-url"><span class="ico">🔗</span><div style="flex:1;"><div style="font-weight:700;">输入图片网址</div><div style="font-size:11px; color:var(--muted);">如已有 https://... 链接</div></div></button>
         <button class="action-row" id="img-remove" style="background: #ffe5e5; border-color: var(--red);"><span class="ico">🗑️</span><div style="flex:1;"><div style="font-weight:700; color: var(--red);">移除图片</div></div></button>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Permanent Language Picker sheet -->
+<div class="sheet-backdrop" id="lang-sheet">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3 style="display:flex;align-items:center;gap:10px;"><span class="gt-icon" style="display:inline-block;width:28px;height:22px;position:relative;flex-shrink:0;"><span class="gt-a" style="position:absolute;left:0;top:0;font-size:16px;font-weight:900;color:var(--ink);font-family:Arial,sans-serif;line-height:1;">A</span><span class="gt-zh" style="position:absolute;right:0;bottom:0;font-size:12px;font-weight:700;color:var(--red);line-height:1;">文</span><span style="position:absolute;right:-3px;top:-4px;font-size:8px;">📌</span></span> 界面语言（固定）</h3>
+      <div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px;margin-bottom:12px;line-height:1.6;">
+        选择后全站固定该语言，区域切换、刷新页面均自动保持，下次选择才切换
+      </div>
+      <button class="action-row" id="lang-clear-btn" style="background:#ffe5e5;border-color:var(--red);margin-bottom:12px;">
+        <span class="ico">🇨🇳</span><div style="flex:1;font-weight:700;color:var(--red);">恢复中文（默认）</div>
+      </button>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:.05em;">选择界面语言</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="action-row lang-sheet-lang" data-lang="en" data-label="English"><span class="ico">🇺🇸</span><div style="flex:1;font-weight:700;">English</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="es" data-label="Español"><span class="ico">🇪🇸</span><div style="flex:1;font-weight:700;">Español</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="ja" data-label="日本語"><span class="ico">🇯🇵</span><div style="flex:1;font-weight:700;">日本語</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="ko" data-label="한국어"><span class="ico">🇰🇷</span><div style="flex:1;font-weight:700;">한국어</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="fr" data-label="Français"><span class="ico">🇫🇷</span><div style="flex:1;font-weight:700;">Français</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="de" data-label="Deutsch"><span class="ico">🇩🇪</span><div style="flex:1;font-weight:700;">Deutsch</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="pt" data-label="Português"><span class="ico">🇵🇹</span><div style="flex:1;font-weight:700;">Português</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="it" data-label="Italiano"><span class="ico">🇮🇹</span><div style="flex:1;font-weight:700;">Italiano</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="vi" data-label="Tiếng Việt"><span class="ico">🇻🇳</span><div style="flex:1;font-weight:700;">Tiếng Việt</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="th" data-label="ไทย"><span class="ico">🇹🇭</span><div style="flex:1;font-weight:700;">ไทย</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="id" data-label="Bahasa Indonesia"><span class="ico">🇮🇩</span><div style="flex:1;font-weight:700;">Indonesia</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="ms" data-label="Bahasa Melayu"><span class="ico">🇲🇾</span><div style="flex:1;font-weight:700;">Melayu</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="ru" data-label="Русский"><span class="ico">🇷🇺</span><div style="flex:1;font-weight:700;">Русский</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="uk" data-label="Українська"><span class="ico">🇺🇦</span><div style="flex:1;font-weight:700;">Українська</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="pl" data-label="Polski"><span class="ico">🇵🇱</span><div style="flex:1;font-weight:700;">Polski</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="nl" data-label="Nederlands"><span class="ico">🇳🇱</span><div style="flex:1;font-weight:700;">Nederlands</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="ar" data-label="العربية"><span class="ico">🇸🇦</span><div style="flex:1;font-weight:700;">العربية</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="hi" data-label="हिन्दी"><span class="ico">🇮🇳</span><div style="flex:1;font-weight:700;">हिन्दी</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="tr" data-label="Türkçe"><span class="ico">🇹🇷</span><div style="flex:1;font-weight:700;">Türkçe</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="sv" data-label="Svenska"><span class="ico">🇸🇪</span><div style="flex:1;font-weight:700;">Svenska</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="da" data-label="Dansk"><span class="ico">🇩🇰</span><div style="flex:1;font-weight:700;">Dansk</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="fi" data-label="Suomi"><span class="ico">🇫🇮</span><div style="flex:1;font-weight:700;">Suomi</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="no" data-label="Norsk"><span class="ico">🇳🇴</span><div style="flex:1;font-weight:700;">Norsk</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="el" data-label="Ελληνικά"><span class="ico">🇬🇷</span><div style="flex:1;font-weight:700;">Ελληνικά</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="he" data-label="עברית"><span class="ico">🇮🇱</span><div style="flex:1;font-weight:700;">עברית</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="bn" data-label="বাংলা"><span class="ico">🇧🇩</span><div style="flex:1;font-weight:700;">বাংলা</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="tl" data-label="Filipino"><span class="ico">🇵🇭</span><div style="flex:1;font-weight:700;">Filipino</div></button>
+        <button class="action-row lang-sheet-lang" data-lang="sw" data-label="Kiswahili"><span class="ico">🇰🇪</span><div style="flex:1;font-weight:700;">Kiswahili</div></button>
       </div>
     </div>
     <div class="sheet-footer">
@@ -1774,7 +1840,21 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.0</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>翻译图标改为 Google Translate 风格「A文」双字母设计</li>
+            <li>新增 📌 固定语言按钮（28种语言），选后全站保持，刷新不重置</li>
+            <li>修复翻译切换区域 tab 后自动消失的问题，切换后增量补充翻译新内容</li>
+            <li>选中语言在清单里高亮显示，翻译图标在激活状态有红色边框提示</li>
+            <li>新增 🔊 语音朗读按钮（翻译激活时出现），含滑动音量控制</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v1.9</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2298,7 +2378,7 @@ function getSlot(ai, ci, si, smi) {
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function render() { renderTabs(); renderPanes(); renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); }
+function render() { renderTabs(); renderPanes(); renderMetaBars(); renderListView(); renderGridView(); applySearchHighlight(); saveState(); _reapplyTranslation(); }
 
 function renderMetaBars() {
   (state.zones||[]).forEach(z => {
@@ -5294,9 +5374,25 @@ document.getElementById('upload-btn').addEventListener('click', () => {
   if (searchEl) searchEl.value = '';
 });
 
-// === TRANSLATE (direct API — same approach as ZEHEM.AI GlobalLangPicker) ===
+// === TRANSLATE & LANGUAGE PICKER ===
 let _xlat_lang = null;
+let _perm_lang = localStorage.getItem('atmm_ui_lang') || null;
 const _xlat_orig = new Map(); // TextNode → original text
+
+const _TTS_LANG = { en:'en-US', es:'es-ES', ja:'ja-JP', ko:'ko-KR', fr:'fr-FR', de:'de-DE', vi:'vi-VN', ru:'ru-RU', ar:'ar-SA', hi:'hi-IN', th:'th-TH', pt:'pt-PT', it:'it-IT', id:'id-ID', ms:'ms-MY', tr:'tr-TR', uk:'uk-UA', pl:'pl-PL', nl:'nl-NL', sv:'sv-SE', da:'da-DK', fi:'fi-FI', no:'nb-NO', el:'el-GR', he:'he-IL', bn:'bn-BD', tl:'fil-PH', sw:'sw' };
+let _ttsVolume = 0.85;
+let _ttsPlaying = false;
+
+function _updateXlatUI() {
+  const active = !!_xlat_lang;
+  document.getElementById('translate-btn')?.classList.toggle('xlat-active', active);
+  const ttsBtn = document.getElementById('tts-btn');
+  if (ttsBtn) { ttsBtn.style.display = active ? 'grid' : 'none'; if (!active) ttsBtn.classList.remove('tts-playing'); }
+  document.getElementById('lang-btn')?.classList.toggle('perm-active', !!_perm_lang);
+  document.querySelectorAll('.translate-lang, .lang-sheet-lang').forEach(b => {
+    b.classList.toggle('lang-selected', b.dataset.lang === _xlat_lang);
+  });
+}
 
 async function _xlat_fetchBatch(texts, lang) {
   const SEP = ' ◈ ';
@@ -5310,12 +5406,10 @@ async function _xlat_fetchBatch(texts, lang) {
 }
 
 async function applyTranslation(lang) {
-  if (_xlat_lang === lang) return;
-  _xlat_lang = lang;
-
-  // Restore any previous translation before applying a new one
   _xlat_orig.forEach((orig, node) => { if (node.parentElement) node.textContent = orig; });
   _xlat_orig.clear();
+  _xlat_lang = lang;
+  _updateXlatUI();
 
   const SKIP = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA']);
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -5346,15 +5440,125 @@ async function applyTranslation(lang) {
   toast('✅ 翻译完成');
 }
 
+// Re-translate only NEW nodes created since last full translate (called after render())
+async function _reapplyTranslation() {
+  const lang = _xlat_lang;
+  if (!lang) return;
+  const SKIP = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA']);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const newNodes = [];
+  let n;
+  while ((n = walker.nextNode())) {
+    if (!n.textContent.trim()) continue;
+    if (n.parentElement && SKIP.has(n.parentElement.tagName)) continue;
+    if (!_xlat_orig.has(n)) newNodes.push(n);
+  }
+  if (!newNodes.length) return;
+  newNodes.forEach(node => _xlat_orig.set(node, node.textContent));
+  const BATCH = 25;
+  for (let i = 0; i < newNodes.length; i += BATCH) {
+    const batch = newNodes.slice(i, i + BATCH);
+    const texts = batch.map(nd => _xlat_orig.get(nd));
+    try {
+      const translated = await _xlat_fetchBatch(texts, lang);
+      batch.forEach((node, idx) => { const t = translated[idx]; if (t !== undefined && t.trim()) node.textContent = t.trim(); });
+    } catch (e) {}
+  }
+}
+
 function stopTranslation() {
   _xlat_lang = null;
   _xlat_orig.forEach((orig, node) => { if (node.parentElement) node.textContent = orig; });
   _xlat_orig.clear();
+  _ttsStop();
+  _updateXlatUI();
   toast('已恢复原文');
 }
 
+function setPermanentLang(lang, label) {
+  _perm_lang = lang;
+  localStorage.setItem('atmm_ui_lang', lang);
+  hideSheets();
+  applyTranslation(lang);
+  _updateXlatUI();
+  toast('📌 界面已固定: ' + label);
+}
+
+function clearPermanentLang() {
+  _perm_lang = null;
+  localStorage.removeItem('atmm_ui_lang');
+  stopTranslation();
+  toast('已恢复中文界面');
+}
+
+// TTS
+function _ttsStop() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  _ttsPlaying = false;
+  document.getElementById('tts-btn')?.classList.remove('tts-playing');
+  document.getElementById('tts-vol-panel')?.remove();
+}
+
+function _ttsStart() {
+  if (!_xlat_lang || !window.speechSynthesis) return;
+  _ttsStop();
+  const langCode = _TTS_LANG[_xlat_lang] || _xlat_lang;
+  const mainEl = document.querySelector('.main') || document.body;
+  const walker = document.createTreeWalker(mainEl, NodeFilter.SHOW_TEXT);
+  const parts = [];
+  let n;
+  while ((n = walker.nextNode())) { const t = n.textContent.trim(); if (t && t.length > 1) parts.push(t); }
+  const text = parts.join(' ').slice(0, 4000);
+  if (!text) { toast('没有可朗读的内容'); return; }
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = langCode;
+  utter.volume = _ttsVolume;
+  utter.rate = 0.9;
+  utter.onend = () => { _ttsPlaying = false; document.getElementById('tts-btn')?.classList.remove('tts-playing'); };
+  utter.onerror = () => { _ttsPlaying = false; document.getElementById('tts-btn')?.classList.remove('tts-playing'); };
+  window.speechSynthesis.speak(utter);
+  _ttsPlaying = true;
+  document.getElementById('tts-btn')?.classList.add('tts-playing');
+}
+
+document.getElementById('tts-btn').addEventListener('click', function() {
+  if (_ttsPlaying) { _ttsStop(); return; }
+  const existing = document.getElementById('tts-vol-panel');
+  if (existing) { existing.remove(); return; }
+  const panel = document.createElement('div');
+  panel.id = 'tts-vol-panel';
+  const rect = this.getBoundingClientRect();
+  panel.style.cssText = `right:${window.innerWidth - rect.right}px; top:${rect.bottom + 8}px;`;
+  panel.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--muted);">音量</div>
+    <input type="range" id="tts-vol-slider" min="0" max="100" value="${Math.round(_ttsVolume*100)}"
+      style="writing-mode:vertical-lr;direction:rtl;height:90px;width:28px;cursor:pointer;accent-color:var(--red);">
+    <div id="tts-vol-lbl" style="font-size:12px;font-weight:700;color:var(--ink);">${Math.round(_ttsVolume*100)}%</div>
+    <button onclick="_ttsStart();document.getElementById('tts-vol-panel')?.remove();"
+      style="font-size:11px;padding:6px 10px;border:1.5px solid var(--red);border-radius:8px;color:var(--red);background:none;cursor:pointer;font-family:inherit;">▶ 朗读</button>
+  `;
+  document.body.appendChild(panel);
+  panel.querySelector('#tts-vol-slider').addEventListener('input', e => {
+    _ttsVolume = e.target.value / 100;
+    panel.querySelector('#tts-vol-lbl').textContent = e.target.value + '%';
+  });
+  panel.querySelector('#tts-vol-slider').addEventListener('change', () => { _ttsStart(); panel.remove(); });
+  setTimeout(() => { document.addEventListener('click', function h(e){ if(!panel.contains(e.target)&&e.target!==document.getElementById('tts-btn')){panel.remove();document.removeEventListener('click',h);} }); }, 100);
+});
+
+document.getElementById('lang-btn').addEventListener('click', () => {
+  if (!_user) { _pulseLoginBtn(); return; }
+  _updateXlatUI();
+  showSheet('lang-sheet');
+});
+document.getElementById('lang-clear-btn').addEventListener('click', () => { clearPermanentLang(); hideSheets(); });
+document.querySelectorAll('.lang-sheet-lang').forEach(btn => {
+  btn.addEventListener('click', () => { setPermanentLang(btn.dataset.lang, btn.dataset.label); });
+});
+
 document.getElementById('translate-btn').addEventListener('click', () => {
   if (!_user) { _pulseLoginBtn(); return; }
+  _updateXlatUI();
   showSheet('translate-sheet');
 });
 
@@ -6441,6 +6645,7 @@ async function _onSignIn(user) {
 
   _updateWarehouseSwitcherUI();
   render();
+  if (_perm_lang) setTimeout(() => applyTranslation(_perm_lang), 600);
   _autoFillFiller();
   toast('👋 ' + (_role === 'boss' ? '👑 老板' : _role === 'manager' ? '🔑 经理' : '👷 操作员') + ' — ' + (_displayName || user.email || ''));
 }
