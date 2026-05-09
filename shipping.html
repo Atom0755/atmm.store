@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>ATMM 发货管理 — 地址核查 &amp; 打单</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/barcodes/JsBarcode.code128.min.js"></script>
 <style>
   :root {
     --ink: #1a1a1a; --paper: #fffef8; --muted: #6b6b6b; --line: rgba(0,0,0,0.12);
@@ -89,12 +90,20 @@
   .rate-placeholder { background: #f5f5f5; border: 1.5px dashed var(--line); border-radius: 8px; padding: 16px; text-align: center; color: var(--muted); font-size: 12px; }
 
   /* ── LABEL PREVIEW ── */
-  .label-preview { background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; margin-bottom: 12px; min-height: 200px; }
-  .label-preview .lp-from { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
-  .label-preview .lp-to { font-size: 14px; font-weight: 700; line-height: 1.6; margin-bottom: 12px; }
-  .label-preview .lp-bar { text-align: center; letter-spacing: 4px; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-  .label-preview .lp-tracking { font-size: 10px; text-align: center; color: var(--muted); }
-  .label-preview .lp-service { display: inline-block; background: var(--ink); color: var(--paper); padding: 2px 8px; font-size: 10px; font-weight: 700; border-radius: 3px; margin-bottom: 8px; }
+  .label-preview { background: #fff; border: 2.5px solid #000; border-radius: 4px; padding: 14px 16px; font-family: Arial, sans-serif; font-size: 12px; margin-bottom: 12px; max-width: 480px; }
+  .lp-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
+  .lp-from-block { font-size: 10px; line-height: 1.5; color: #333; }
+  .lp-from-block b { font-size: 11px; color: #000; }
+  .lp-service-tag { background: #000; color: #fff; font-size: 13px; font-weight: 900; padding: 4px 10px; border-radius: 3px; letter-spacing: 0.05em; }
+  .lp-to-block { font-size: 15px; font-weight: 700; line-height: 1.7; border: 2px solid #000; padding: 8px 12px; border-radius: 4px; margin-bottom: 10px; }
+  .lp-to-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: #555; margin-bottom: 4px; }
+  .lp-barcode-wrap { text-align: center; margin: 8px 0 4px; }
+  .lp-barcode-wrap svg { max-width: 100%; height: 60px; }
+  .lp-tracking-num { text-align: center; font-size: 12px; font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.1em; margin-top: 2px; }
+  .lp-ref { font-size: 9px; color: #777; text-align: right; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 4px; }
+  @media print {
+    .label-preview { border: 2px solid #000; break-inside: avoid; max-width: none; }
+  }
 
   /* ── API KEY NOTICE ── */
   .api-notice { background: #e3f2fd; border: 1.5px solid #1565c0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
@@ -767,19 +776,35 @@ function generateLabel(carrier, service, price) {
     state: document.getElementById('from-state').value || settings.from_state || '',
   };
   const trackingNum = carrier.slice(0,2).toUpperCase() + Date.now().toString().slice(-12);
-  const barCode = '|'.repeat(Math.floor(Math.random()*8+6)) + ' ' + '||'.repeat(Math.floor(Math.random()*5+4));
+  const ref = document.getElementById('pkg-ref').value || '';
 
-  document.getElementById('label-preview-content').innerHTML = `
-    <div class="lp-from">FROM: ${escHtml(from.name)} · ${escHtml(from.addr1)}, ${escHtml(from.city)}, ${escHtml(from.state)}</div>
-    <div class="lp-service">${carrier} ${service} · $${price}</div>
-    <div class="lp-to">
+  const labelEl = document.getElementById('label-preview-content');
+  labelEl.innerHTML = `
+    <div class="lp-header">
+      <div class="lp-from-block">
+        <b>FROM:</b><br>
+        ${escHtml(from.name)}<br>
+        ${escHtml(from.addr1)}<br>
+        ${escHtml(from.city)}${from.city&&from.state?', ':''}${escHtml(from.state)}
+      </div>
+      <div class="lp-service-tag">${carrier}<br>${escHtml(service)}</div>
+    </div>
+    <div class="lp-to-label">SHIP TO:</div>
+    <div class="lp-to-block">
       ${escHtml(to.name)}<br>
       ${escHtml(to.addr1)}${to.addr2 ? '<br>' + escHtml(to.addr2) : ''}<br>
       ${escHtml(to.city)}, ${escHtml(to.state)} ${escHtml(to.zip)}
     </div>
-    <div class="lp-bar">${barCode}</div>
-    <div class="lp-tracking">${trackingNum}</div>`;
+    <div class="lp-barcode-wrap"><svg id="lp-barcode-svg"></svg></div>
+    <div class="lp-tracking-num">${trackingNum}</div>
+    ${ref ? `<div class="lp-ref">REF: ${escHtml(ref)} · 预估运费 $${price}</div>` : `<div class="lp-ref">预估运费 $${price}（需 API Key 获取真实单号）</div>`}`;
+
   document.getElementById('label-preview-section').style.display = '';
+  try {
+    if (typeof JsBarcode !== 'undefined') {
+      JsBarcode('#lp-barcode-svg', trackingNum, { format: 'CODE128', width: 2, height: 55, displayValue: false, margin: 4 });
+    }
+  } catch(e) { /* barcode lib not loaded, skip */ }
 }
 
 function printLabel() { window.print(); }
