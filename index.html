@@ -5506,7 +5506,15 @@ function dateStamp() {
 
 document.getElementById('legend-btn').addEventListener('click', () => showSheet('legend-sheet'));
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('确定要重置为初始数据吗?当前所有改动会丢失。')) { state = buildInitial(); render(); toast('已重置'); }
+  if (!confirm('确定要重置仓库布局？\n货架 / 托盘结构将恢复为初始示范状态，此操作不可撤销。')) return;
+  const keepModels = !confirm('型号库是否也一起重置？\n\n【确定】→ 型号库也清空（完全恢复出厂）\n【取消】→ 保留现有型号库，仅重置货架布局');
+  const fresh = buildInitial();
+  if (keepModels) { fresh.models = state.models; }
+  state = fresh;
+  currentTable = state.zones[0]?.id || 'shelfBlack';
+  document.querySelectorAll('[data-table-pane]').forEach(el => el.remove());
+  render();
+  toast(keepModels ? '✅ 布局已重置（型号库已保留）' : '✅ 已完全重置');
 });
 
 let toastTimer = null;
