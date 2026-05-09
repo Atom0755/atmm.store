@@ -964,10 +964,12 @@
   /* close button inside glass card */
   .auth-close-btn { position:absolute; top:8px; right:10px; background:none; border:none; color:rgba(255,255,255,0.65); font-size:17px; cursor:pointer; line-height:1; padding:4px 6px; }
   .auth-close-btn:hover { color:#fff; }
-  /* Registration email row */
+  /* Registration / Login email row */
   .reg-email-row { display:flex; gap:4px; }
   .reg-email-row input { flex:1; min-width:0; }
   .reg-domain-sel { padding:9px 5px; border:1.5px solid rgba(255,255,255,0.5); border-radius:8px; background:rgba(255,255,255,0.93); font-size:11px; color:#111; font-family:inherit; outline:none; cursor:pointer; flex-shrink:0; max-width:112px; }
+  .auth-remember-row { display:flex; align-items:center; gap:7px; font-size:12px; color:rgba(255,255,255,0.85); cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .auth-remember-row input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:#6c47ff; }
   /* Help FAQ accordion */
   .help-faq { border-top:1px solid var(--line); }
   .help-item { border-bottom:1px solid var(--line); cursor:pointer; }
@@ -1024,8 +1026,22 @@
     <h2>ATMM.AI&amp;ZEHEM.AI Store</h2>
     <p class="auth-sub">快速盘库补货进销存系统</p>
     <div class="auth-err" id="err-login"></div>
-    <input type="email"    id="auth-email"    placeholder="邮箱 Email" autocomplete="email">
+    <div class="reg-email-row" id="login-email-row">
+      <input type="text" id="login-username" placeholder="用户名" autocomplete="username">
+      <select id="login-domain" class="reg-domain-sel" onchange="_onLoginDomainChange()">
+        <option value="@gmail.com">@gmail.com</option>
+        <option value="@zehem.com">@zehem.com</option>
+        <option value="@qq.com">@qq.com</option>
+        <option value="@163.com">@163.com</option>
+        <option value="@icloud.com">@icloud.com</option>
+        <option value="other">Other Mailbox</option>
+      </select>
+    </div>
+    <input type="email" id="login-email-full" placeholder="完整邮箱地址 Full Email" autocomplete="email" style="display:none">
     <input type="password" id="auth-password" placeholder="密码 Password" autocomplete="current-password">
+    <label class="auth-remember-row">
+      <input type="checkbox" id="auth-remember" checked> 记住账号密码
+    </label>
     <button class="auth-btn-primary" onclick="_doLogin()">登录 Sign In</button>
     <div class="auth-divider">— 或 or —</div>
     <button class="auth-btn-secondary" onclick="_showAuth('register')">注册 · 免费试用30天</button>
@@ -5797,17 +5813,73 @@ function _showAuth(screen) {
   document.querySelectorAll('.auth-card').forEach(c => { c.style.left=''; c.style.top=''; c.style.transform=''; c.style.display='none'; });
   const el = document.getElementById('auth-' + screen) || document.getElementById('auth-login');
   el.style.display = 'flex';
+  if (screen === 'login' || !screen) _loadSavedCredentials();
 }
 function _authErr(id, msg) {
   const el = document.getElementById(id);
   if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
 }
 
+// ── Login email helpers ──
+function _getLoginEmail() {
+  const domain = document.getElementById('login-domain')?.value;
+  if (!domain || domain === 'other') return (document.getElementById('login-email-full')?.value || '').trim();
+  const username = (document.getElementById('login-username')?.value || '').trim();
+  return username + (domain || '@gmail.com');
+}
+function _onLoginDomainChange() {
+  const domain = document.getElementById('login-domain')?.value;
+  const fullEl = document.getElementById('login-email-full');
+  const rowEl  = document.getElementById('login-email-row');
+  const isOther = domain === 'other';
+  if (fullEl) fullEl.style.display = isOther ? '' : 'none';
+  if (rowEl)  rowEl.style.display  = isOther ? 'none' : '';
+}
+function _saveLoginCredentials(username, domain, emailFull, pwd) {
+  localStorage.setItem('atmm_rem_user',   username);
+  localStorage.setItem('atmm_rem_domain', domain);
+  localStorage.setItem('atmm_rem_full',   emailFull);
+  localStorage.setItem('atmm_rem_pwd',    pwd);
+  localStorage.setItem('atmm_remember',   '1');
+}
+function _clearLoginCredentials() {
+  ['atmm_rem_user','atmm_rem_domain','atmm_rem_full','atmm_rem_pwd','atmm_remember'].forEach(k => localStorage.removeItem(k));
+}
+function _loadSavedCredentials() {
+  if (localStorage.getItem('atmm_remember') !== '1') return;
+  const user   = localStorage.getItem('atmm_rem_user')   || '';
+  const domain = localStorage.getItem('atmm_rem_domain') || '@gmail.com';
+  const full   = localStorage.getItem('atmm_rem_full')   || '';
+  const pwd    = localStorage.getItem('atmm_rem_pwd')    || '';
+  const uEl = document.getElementById('login-username');
+  const dEl = document.getElementById('login-domain');
+  const fEl = document.getElementById('login-email-full');
+  const pEl = document.getElementById('auth-password');
+  const rEl = document.getElementById('auth-remember');
+  if (uEl) uEl.value = user;
+  if (dEl) { dEl.value = domain; _onLoginDomainChange(); }
+  if (fEl) fEl.value = full;
+  if (pEl) pEl.value = pwd;
+  if (rEl) rEl.checked = true;
+}
+
 // ── Login ──
 async function _doLogin() {
-  const email = document.getElementById('auth-email').value.trim();
+  const email = _getLoginEmail();
   const pwd   = document.getElementById('auth-password').value;
   _authErr('err-login', '');
+  if (!email || !email.includes('@')) { _authErr('err-login', '请填写正确的邮箱地址'); return; }
+  const remember = document.getElementById('auth-remember')?.checked;
+  if (remember) {
+    _saveLoginCredentials(
+      document.getElementById('login-username')?.value.trim() || '',
+      document.getElementById('login-domain')?.value || '@gmail.com',
+      document.getElementById('login-email-full')?.value.trim() || '',
+      pwd
+    );
+  } else {
+    _clearLoginCredentials();
+  }
   const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
   if (error) _authErr('err-login', error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
 }
@@ -5875,8 +5947,8 @@ async function _doCreateWarehouse() {
 
 // ── Forgot password ──
 async function _doForgot() {
-  const email = document.getElementById('auth-email').value.trim();
-  if (!email) { _authErr('err-login', '请先输入邮箱'); return; }
+  const email = _getLoginEmail();
+  if (!email || !email.includes('@')) { _authErr('err-login', '请先输入邮箱'); return; }
   await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/' });
   _authErr('err-login', '');
   toast('📧 密码重置邮件已发送');
