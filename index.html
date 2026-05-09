@@ -1079,7 +1079,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1622,15 +1622,31 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.1</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.2</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>发货管理新页面：📍 地址核查（CSV批量验证美国/加拿大收件地址）</li>
+            <li>发货管理新页面：📦 打单发货（选择USPS/UPS/FedEx/DHL，预览并打印快递单）</li>
+            <li>打单标签含真实Code128条形码 + 专业排版，地址核查一键跳转打单</li>
+            <li>总览视图：格位内附加型号以＋行紧凑展示，可点击色块修改颜色</li>
+            <li>区域标签新增⠿拖拽手柄（移动端长按拖排，不与横向滚动冲突）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v1.1</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-08</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>注册弹窗：邮箱改为用户名+域名下拉选择，密码升级为8位强密码要求</li>
-            <li>设置按钮：未登录时自动跳转登录弹窗</li>
-            <li>帮助中心：增加FAQ折叠区块和客服联系方式</li>
-            <li>管理后台：新增 /admin.html 数据看板（注册/付费/成员统计）</li>
-            <li>价格更新：Standard $60/$500，Premium $168/$1268，Basic年付$365</li>
+            <li>格位边框改为实线，视觉更清晰</li>
+            <li>每个格位最多可添加3个附加型号（独立顺序号/颜色/数量/单位/图片）</li>
+            <li>总览视图支持列拖拽排序（长按列名灰色区域拖动）</li>
+            <li>格位X删除按钮（老板专属）+ 底部＋新增格位按钮</li>
+            <li>菜单文字"层"统一改为"列"</li>
+            <li>注册弹窗：邮箱改为用户名+域名下拉选择，密码要求升级</li>
+            <li>管理后台：新增 /admin.html 数据看板（注册/成员统计）</li>
             <li>版本日志：点击版本号可查看本日志</li>
           </ul>
         </div>
@@ -1642,7 +1658,7 @@
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
             <li>正式发布：ZEHEM哲亨智能仓管表 v1.0</li>
-            <li>库位编号：格式统一为 1-A-1-01（区域-通道-列-格位）</li>
+            <li>库位编号：格式统一为 J-1-A-2-03（类型-区域-货架-列-格位）</li>
             <li>库位二维码 + 条形码生成与下载标签</li>
             <li>QR/条码 CDN 多线路自动回退（unpkg → jsDelivr）</li>
             <li>三级权限：老板 / 经理 / 操作员</li>
