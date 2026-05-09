@@ -2297,9 +2297,9 @@ function renderGridView() {
             : `<div class="gcolor" style="visibility:hidden"></div>`;
           let subHtml = '';
           if (slot.subModels && slot.subModels.length > 0) {
-            slot.subModels.forEach(sm => {
+            slot.subModels.forEach((sm, smi) => {
               const smm = sm.modelId ? getModel(sm.modelId) : null;
-              subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}">${sm.qty>0?sm.qty:''}</div></div>`;
+              subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:''}</div></div>`;
             });
           }
           gs.innerHTML = `<div class="gslot-main"><div class="gloc" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}</div>${subHtml}`;
@@ -2346,9 +2346,9 @@ function renderGridView() {
           : `<div class="gcolor" style="visibility:hidden"></div>`;
         let subHtml = '';
         if (slot.subModels && slot.subModels.length > 0) {
-          slot.subModels.forEach(sm => {
+          slot.subModels.forEach((sm, smi) => {
             const smm = sm.modelId ? getModel(sm.modelId) : null;
-            subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}">${sm.qty>0?sm.qty:''}</div></div>`;
+            subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:''}</div></div>`;
           });
         }
         gs.innerHTML = `<div class="gslot-main"><div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}</div>${subHtml}`;
@@ -3202,7 +3202,8 @@ function attachRestockCellHandlers(el) {
 // Quantity is now in a separate qty-cell, so this only handles color.
 function attachColorCellHandlers(el) {
   const ai = () => +el.dataset.ai, ci = () => +el.dataset.ci, si = () => +el.dataset.si;
-  const onTap = () => openColorPicker(ai(), ci(), si());
+  const smi = () => (el.dataset.smi !== undefined && el.dataset.smi !== '') ? +el.dataset.smi : undefined;
+  const onTap = () => openColorPicker(ai(), ci(), si(), smi());
   let touchHandled = false;
   el.addEventListener('touchend', (e) => {
     e.stopPropagation(); e.preventDefault();
