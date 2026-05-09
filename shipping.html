@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>ATMM 发货管理</title>
+<style>
+  :root {
+    --ink: #1a1a1a; --paper: #fffef8; --muted: #6b6b6b; --line: rgba(0,0,0,0.12);
+    --red: #d32f2f; --green: #2e7d32; --yellow: #f57c00; --blue: #1565c0;
+    --shelf-bg: #f5f0e8; --btn: #1a1a1a; --btn-text: #fffef8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: var(--shelf-bg); color: var(--ink); font-size: 14px; min-height: 100vh; }
+
+  /* ── NAV ── */
+  .nav { background: var(--ink); color: var(--paper); display: flex; align-items: center; padding: 0 16px; height: 52px; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .nav-back { background: none; border: none; color: var(--paper); font-size: 22px; cursor: pointer; padding: 4px 8px 4px 0; }
+  .nav-title { font-size: 17px; font-weight: 800; letter-spacing: 0.02em; flex: 1; }
+  .nav-badge { background: var(--red); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+
+  /* ── TABS ── */
+  .tab-bar { display: flex; background: var(--paper); border-bottom: 2px solid var(--ink); overflow-x: auto; }
+  .tab { padding: 12px 20px; font-size: 13px; font-weight: 700; border: none; background: none; cursor: pointer; white-space: nowrap; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+  /* ── PANELS ── */
+  .panel { display: none; padding: 16px; }
+  .panel.active { display: block; }
+
+  /* ── IMPORT ZONE ── */
+  .import-zone { border: 2px dashed var(--line); border-radius: 12px; padding: 24px; text-align: center; background: var(--paper); cursor: pointer; transition: border-color .2s; margin-bottom: 16px; }
+  .import-zone:hover, .import-zone.drag-over { border-color: var(--ink); }
+  .import-zone h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .import-zone p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .import-btns { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .btn { padding: 8px 18px; border-radius: 20px; border: 2px solid var(--ink); font-size: 13px; font-weight: 700; cursor: pointer; background: var(--paper); color: var(--ink); transition: background .12s; }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .btn:active { opacity: 0.75; }
+  .btn-red { border-color: var(--red); color: var(--red); }
+  .btn-red:active { background: var(--red); color: #fff; }
+  .btn-green { border-color: var(--green); color: var(--green); }
+  .btn-green.active, .btn-green:active { background: var(--green); color: #fff; }
+
+  /* ── FORMAT HINT ── */
+  .format-hint { background: #fff8d6; border: 1.5px solid #e6c800; border-radius: 8px; padding: 10px 14px; font-size: 11px; line-height: 1.7; margin-bottom: 16px; }
+  .format-hint b { color: var(--ink); }
+  .format-hint code { background: rgba(0,0,0,0.07); padding: 1px 4px; border-radius: 3px; font-family: monospace; }
+
+  /* ── ORDER TABLE ── */
+  .order-table-wrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--ink); color: var(--paper); padding: 8px 10px; font-weight: 700; text-align: left; white-space: nowrap; }
+  td { padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,0,0,0.025); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .badge-ok { background: #e8f5e9; color: var(--green); }
+  .badge-warn { background: #fff3e0; color: var(--yellow); }
+  .badge-err { background: #ffebee; color: var(--red); }
+  .addr-issues { font-size: 11px; color: var(--red); margin-top: 3px; line-height: 1.5; }
+
+  /* ── SUMMARY CARDS ── */
+  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .summary-card { background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; }
+  .summary-num { font-size: 26px; font-weight: 800; }
+  .summary-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .summary-num.ok { color: var(--green); }
+  .summary-num.warn { color: var(--yellow); }
+  .summary-num.err { color: var(--red); }
+
+  /* ── LABEL BUILDER ── */
+  .label-form { background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .label-form h3 { font-size: 14px; font-weight: 800; margin-bottom: 14px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field-row.full { grid-template-columns: 1fr; }
+  .field-group label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .field-group input, .field-group select, .field-group textarea {
+    width: 100%; padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 7px;
+    font-size: 13px; font-family: inherit; background: #fff; color: var(--ink);
+  }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+    outline: none; border-color: var(--ink);
+  }
+  .carrier-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .carrier-btn { border: 2px solid var(--line); border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; font-size: 11px; font-weight: 700; background: var(--paper); transition: border-color .15s; }
+  .carrier-btn.selected { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .carrier-btn span { display: block; font-size: 18px; margin-bottom: 4px; }
+  .rate-placeholder { background: #f5f5f5; border: 1.5px dashed var(--line); border-radius: 8px; padding: 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+  /* ── LABEL PREVIEW ── */
+  .label-preview { background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; margin-bottom: 12px; min-height: 200px; }
+  .label-preview .lp-from { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
+  .label-preview .lp-to { font-size: 14px; font-weight: 700; line-height: 1.6; margin-bottom: 12px; }
+  .label-preview .lp-bar { text-align: center; letter-spacing: 4px; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .label-preview .lp-tracking { font-size: 10px; text-align: center; color: var(--muted); }
+  .label-preview .lp-service { display: inline-block; background: var(--ink); color: var(--paper); padding: 2px 8px; font-size: 10px; font-weight: 700; border-radius: 3px; margin-bottom: 8px; }
+
+  /* ── API KEY NOTICE ── */
+  .api-notice { background: #e3f2fd; border: 1.5px solid #1565c0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .api-notice h4 { color: var(--blue); font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+  .api-notice ul { padding-left: 18px; font-size: 12px; line-height: 2; color: var(--ink); }
+  .api-notice li { margin-bottom: 2px; }
+  .api-notice code { background: rgba(21,101,192,0.1); padding: 1px 5px; border-radius: 3px; font-family: monospace; }
+
+  /* ── TEXTAREA ── */
+  #csv-paste { width: 100%; height: 160px; border: 1.5px solid var(--line); border-radius: 8px; padding: 10px; font-size: 12px; font-family: monospace; resize: vertical; }
+  #csv-paste:focus { outline: none; border-color: var(--ink); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  .empty-state p { font-size: 13px; line-height: 1.7; }
+
+  /* ── PRINT ── */
+  @media print {
+    body > *:not(.print-area) { display: none !important; }
+    .print-area { display: block !important; }
+    .label-preview { border: 2px solid #000; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="nav-back" onclick="location.href='/'">←</button>
+  <span class="nav-title">ATMM 发货管理</span>
+  <span class="nav-badge" id="order-count-badge" style="display:none">0 单</span>
+</div>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="switchTab('address')">📍 地址核查</button>
+  <button class="tab" onclick="switchTab('labels')">📦 打单发货</button>
+  <button class="tab" onclick="switchTab('setup')">⚙️ API 设置</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB 1: 地址核查                                     -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-address">
+
+  <div class="format-hint">
+    <b>导入方式：</b>从 Amazon / eBay / Shopify 后台下载订单 CSV，粘贴到下方框中（或直接拖拽 .csv 文件）。<br>
+    <b>必要列：</b><code>Order ID</code> · <code>Recipient Name</code> · <code>Address Line 1</code> · <code>City</code> · <code>State</code> · <code>Zip</code> · <code>Country</code><br>
+    <b>可选列：</b><code>Address Line 2</code> · <code>Phone</code> · <code>SKU</code> · <code>Quantity</code>
+  </div>
+
+  <div class="import-zone" id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <h3>拖拽 CSV 文件到这里，或粘贴内容</h3>
+    <p>支持 Amazon 卖家后台 / eBay 订单导出 / Shopify 订单 CSV</p>
+    <div class="import-btns">
+      <button class="btn primary" onclick="document.getElementById('file-input').click()">📂 选择文件</button>
+      <button class="btn" onclick="showPasteArea()">📋 粘贴 CSV</button>
+      <button class="btn" onclick="loadDemo()">🧪 加载示例数据</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept=".csv,.txt" style="display:none" onchange="onFileSelect(event)">
+
+  <div id="paste-area" style="display:none; margin-bottom:16px;">
+    <textarea id="csv-paste" placeholder="将 CSV 内容粘贴到这里...&#10;格式: Order ID,Recipient Name,Address Line 1,City,State,Zip,Country,..."></textarea>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="btn primary" onclick="parsePastedCsv()">解析 →</button>
+      <button class="btn" onclick="document.getElementById('paste-area').style.display='none'">取消</button>
+    </div>
+  </div>
+
+  <div id="address-results" style="display:none;">
+    <div class="summary-row" id="summary-row"></div>
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="filterOrders('all')" id="filter-all">全部</button>
+      <button class="btn" onclick="filterOrders('ok')" id="filter-ok">✅ 正常</button>
+      <button class="btn" onclick="filterOrders('warn')" id="filter-warn">⚠️ 警告</button>
+      <button class="btn btn-red" onclick="filterOrders('err')" id="filter-err">❌ 错误</button>
+      <button class="btn" onclick="exportValidated()" style="margin-left:auto;">📥 导出核查报告</button>
+    </div>
+    <div class="order-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>订单号</th>
+            <th>收件人</th>
+            <th>地址</th>
+            <th>城市/州/邮编</th>
+            <th>地址检查</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty-state" id="empty-state-addr">
+    <h3>暂无订单数据</h3>
+    <p>从 Amazon 卖家后台 → 订单 → 下载报告<br>或从 eBay 卖家中心 → 订单 → 导出 CSV<br>然后将文件导入此处进行地址验证</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB 2: 打单发货                                     -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="panel" id="panel-labels">
+
+  <div class="api-notice">
+    <h4>⚠️ 真实打单需要快递公司 API 账号</h4>
+    <ul>
+      <li>UPS: 需要 UPS 开发者账号 + <code>Client ID</code> / <code>Client Secret</code></li>
+      <li>FedEx: 需要 FedEx 开发者账号 + <code>API Key</code> / <code>Secret Key</code></li>
+      <li>USPS: 需要 USPS Business API 账号 + <code>Consumer Key</code></li>
+      <li>DHL: 需要 DHL Express API 账号 + <code>API Key</code></li>
+      <li>聚合平台（推荐）: <b>ShipEngine</b> 或 <b>EasyPost</b> — 一个 key 接入所有快递，有免费档</li>
+    </ul>
+    前往 <b>⚙️ API 设置</b> 页面填入凭证后即可获取真实运费报价并生成电子运单。
+  </div>
+
+  <div class="label-form">
+    <h3>发件人信息</h3>
+    <div class="field-row">
+      <div class="field-group">
+        <label>公司/姓名</label>
+        <input type="text" id="from-name" placeholder="Your Company Name" value="">
+      </div>
+      <div class="field-group">
+        <label>电话</label>
+        <input type="tel" id="from-phone" placeholder="(555) 000-0000">
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field-group">
+        <label>地址</label>
+        <input type="text" id="from-addr1" placeholder="123 Warehouse St">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>城市</label>
+        <input type="text" id="from-city" placeholder="City">
+      </div>
+      <div class="field-group">
+        <label>州 / 邮编</label>
+        <input type="text" id="from-state" placeholder="CA  90210" style="font-family:monospace;">
+      </div>
+    </div>
+    <button class="btn primary" onclick="saveFromAddress()" style="margin-top:6px;">💾 保存发件人</button>
+  </div>
+
+  <div class="label-form">
+    <h3>收件信息 <span style="font-size:11px; font-weight:400; color:var(--muted);">— 从左侧订单列表选择，或手动填写</span></h3>
+    <div class="field-row">
+      <div class="field-group">
+        <label>收件人姓名</label>
+        <input type="text" id="to-name" placeholder="Recipient Name">
+      </div>
+      <div class="field-group">
+        <label>电话（可选）</label>
+        <input type="tel" id="to-phone" placeholder="">
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field-group">
+        <label>地址行 1</label>
+        <input type="text" id="to-addr1" placeholder="123 Main St">
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field-group">
+        <label>地址行 2（可选）</label>
+        <input type="text" id="to-addr2" placeholder="Apt / Suite">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>城市</label>
+        <input type="text" id="to-city" placeholder="City">
+      </div>
+      <div class="field-group">
+        <label>州</label>
+        <input type="text" id="to-state" placeholder="CA" maxlength="2" style="font-family:monospace; text-transform:uppercase;">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>邮编</label>
+        <input type="text" id="to-zip" placeholder="90210" maxlength="10" style="font-family:monospace;">
+      </div>
+      <div class="field-group">
+        <label>国家</label>
+        <input type="text" id="to-country" value="US" maxlength="2" style="font-family:monospace; text-transform:uppercase;">
+      </div>
+    </div>
+  </div>
+
+  <div class="label-form">
+    <h3>包裹信息</h3>
+    <div class="field-row">
+      <div class="field-group">
+        <label>重量 (lbs)</label>
+        <input type="number" id="pkg-weight" placeholder="2.5" step="0.1" min="0.1">
+      </div>
+      <div class="field-group">
+        <label>订单参考号</label>
+        <input type="text" id="pkg-ref" placeholder="AMZ-123456">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>长 (in)</label>
+        <input type="number" id="pkg-l" placeholder="12" step="0.5">
+      </div>
+      <div class="field-group">
+        <label>宽 (in)</label>
+        <input type="number" id="pkg-w" placeholder="8" step="0.5">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>高 (in)</label>
+        <input type="number" id="pkg-h" placeholder="4" step="0.5">
+      </div>
+      <div class="field-group">
+        <label>申报价值 (USD)</label>
+        <input type="number" id="pkg-value" placeholder="50" step="1">
+      </div>
+    </div>
+  </div>
+
+  <div class="label-form">
+    <h3>选择快递公司</h3>
+    <div class="carrier-grid">
+      <div class="carrier-btn" onclick="selectCarrier('USPS')" id="c-USPS"><span>🇺🇸</span>USPS</div>
+      <div class="carrier-btn" onclick="selectCarrier('UPS')" id="c-UPS"><span>🟫</span>UPS</div>
+      <div class="carrier-btn" onclick="selectCarrier('FedEx')" id="c-FedEx"><span>🟣</span>FedEx</div>
+      <div class="carrier-btn" onclick="selectCarrier('DHL')" id="c-DHL"><span>🟡</span>DHL</div>
+    </div>
+    <div class="rate-placeholder" id="rate-display">
+      填写包裹信息 → 选择快递公司 → 点击「查询运费」获取实时报价
+      <br><br>
+      <button class="btn primary" onclick="getRates()">🔍 查询运费</button>
+    </div>
+  </div>
+
+  <div class="label-form" id="label-preview-section" style="display:none;">
+    <h3>运单预览</h3>
+    <div class="label-preview" id="label-preview-content"></div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn primary" onclick="printLabel()">🖨️ 打印运单</button>
+      <button class="btn" onclick="downloadLabelPdf()">📄 下载 PDF</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB 3: API 设置                                     -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="panel" id="panel-setup">
+
+  <div class="api-notice">
+    <h4>📋 获取 API 凭证步骤</h4>
+    <ul>
+      <li><b>ShipEngine（推荐聚合）:</b> 注册 <code>shipengine.com</code> → Dashboard → API Keys → 免费500单/月</li>
+      <li><b>EasyPost（另一选择）:</b> 注册 <code>easypost.com</code> → API Keys → 免费档可用</li>
+      <li><b>Amazon SP-API:</b> sellercentral.amazon.com → Apps → Developer Profile → 申请（需数天审批）</li>
+      <li><b>eBay API:</b> developer.ebay.com → Get an App ID → OAuth 应用（当天批准）</li>
+      <li><b>USPS 地址验证:</b> registration.shippingapis.com → 申请免费 API key</li>
+    </ul>
+  </div>
+
+  <div class="label-form">
+    <h3>🚢 运费聚合（二选一即可）</h3>
+    <div class="field-row full">
+      <div class="field-group">
+        <label>ShipEngine API Key</label>
+        <input type="password" id="key-shipengine" placeholder="se-xxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveSetting('shipengine', this.value)">
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field-group">
+        <label>EasyPost API Key</label>
+        <input type="password" id="key-easypost" placeholder="EZAKxxxxxxxxxxxxxxxx..." oninput="saveSetting('easypost', this.value)">
+      </div>
+    </div>
+  </div>
+
+  <div class="label-form">
+    <h3>📦 直连快递（可选，ShipEngine/EasyPost 已含这些）</h3>
+    <div class="field-row">
+      <div class="field-group"><label>UPS Client ID</label><input type="password" id="key-ups-id" placeholder="" oninput="saveSetting('ups_id', this.value)"></div>
+      <div class="field-group"><label>UPS Client Secret</label><input type="password" id="key-ups-secret" placeholder="" oninput="saveSetting('ups_secret', this.value)"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>FedEx API Key</label><input type="password" id="key-fedex-key" placeholder="" oninput="saveSetting('fedex_key', this.value)"></div>
+      <div class="field-group"><label>FedEx Secret Key</label><input type="password" id="key-fedex-secret" placeholder="" oninput="saveSetting('fedex_secret', this.value)"></div>
+    </div>
+    <div class="field-row full">
+      <div class="field-group"><label>USPS Web Tools API Key</label><input type="password" id="key-usps" placeholder="" oninput="saveSetting('usps', this.value)"></div>
+    </div>
+  </div>
+
+  <div class="label-form">
+    <h3>🛒 订单平台（可选 — 无此项时用 CSV 导入）</h3>
+    <div class="field-row full">
+      <div class="field-group"><label>Amazon SP-API Refresh Token</label><input type="password" id="key-amazon" placeholder="" oninput="saveSetting('amazon_token', this.value)"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>eBay App ID</label><input type="password" id="key-ebay-id" placeholder="" oninput="saveSetting('ebay_id', this.value)"></div>
+      <div class="field-group"><label>eBay Auth Token</label><input type="password" id="key-ebay-token" placeholder="" oninput="saveSetting('ebay_token', this.value)"></div>
+    </div>
+  </div>
+
+  <div class="label-form">
+    <h3>🖨️ 打印机设置</h3>
+    <div class="field-row">
+      <div class="field-group">
+        <label>标签尺寸</label>
+        <select id="label-size" onchange="saveSetting('label_size', this.value)">
+          <option value="4x6">4" × 6" (标准热敏标签)</option>
+          <option value="4x4">4" × 4"</option>
+          <option value="letter">Letter (8.5" × 11")</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>标签格式</label>
+        <select id="label-format" onchange="saveSetting('label_format', this.value)">
+          <option value="pdf">PDF (推荐)</option>
+          <option value="png">PNG 图片</option>
+          <option value="zpl">ZPL (Zebra 打印机)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn primary" onclick="saveAllSettings()">💾 保存所有设置</button>
+    <span id="settings-saved" style="display:none; margin-left:10px; color:var(--green); font-weight:700; font-size:12px;">✅ 已保存</span>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let orders = [];
+let currentFilter = 'all';
+let selectedCarrier = null;
+let settings = {};
+
+function loadSettings() {
+  try { settings = JSON.parse(localStorage.getItem('atmm_shipping_settings') || '{}'); } catch(e) { settings = {}; }
+  const fields = ['shipengine','easypost','ups_id','ups_secret','fedex_key','fedex_secret','usps','amazon_token','ebay_id','ebay_token','label_size','label_format'];
+  const ids = { shipengine:'key-shipengine', easypost:'key-easypost', ups_id:'key-ups-id', ups_secret:'key-ups-secret', fedex_key:'key-fedex-key', fedex_secret:'key-fedex-secret', usps:'key-usps', amazon_token:'key-amazon', ebay_id:'key-ebay-id', ebay_token:'key-ebay-token', label_size:'label-size', label_format:'label-format' };
+  fields.forEach(k => { const el = document.getElementById(ids[k]); if (el && settings[k]) el.value = settings[k]; });
+  const fromKeys = ['from_name','from_phone','from_addr1','from_city','from_state'];
+  const fromIds = { from_name:'from-name', from_phone:'from-phone', from_addr1:'from-addr1', from_city:'from-city', from_state:'from-state' };
+  fromKeys.forEach(k => { const el = document.getElementById(fromIds[k]); if (el && settings[k]) el.value = settings[k]; });
+}
+function saveSetting(key, val) {
+  settings[key] = val;
+  localStorage.setItem('atmm_shipping_settings', JSON.stringify(settings));
+}
+function saveFromAddress() {
+  ['from_name','from_phone','from_addr1','from_city','from_state'].forEach(k => {
+    const id = k.replace('from_', 'from-');
+    const el = document.getElementById(id);
+    if (el) { settings[k] = el.value; }
+  });
+  localStorage.setItem('atmm_shipping_settings', JSON.stringify(settings));
+  alert('✅ 发件人信息已保存');
+}
+function saveAllSettings() {
+  localStorage.setItem('atmm_shipping_settings', JSON.stringify(settings));
+  const msg = document.getElementById('settings-saved');
+  msg.style.display = 'inline';
+  setTimeout(() => { msg.style.display = 'none'; }, 2000);
+}
+
+// ═══════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['address','labels','setup'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+// CSV IMPORT
+// ═══════════════════════════════════════════════════
+function showPasteArea() {
+  document.getElementById('paste-area').style.display = '';
+  document.getElementById('csv-paste').focus();
+}
+function parsePastedCsv() {
+  const csv = document.getElementById('csv-paste').value.trim();
+  if (!csv) { alert('请先粘贴 CSV 内容'); return; }
+  processCsv(csv);
+  document.getElementById('paste-area').style.display = 'none';
+}
+function onFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => processCsv(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => processCsv(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCsvLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else { inQ = !inQ; } }
+    else if (line[i] === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else { cur += line[i]; }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function processCsv(csv) {
+  const lines = csv.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) { alert('CSV 格式错误或无数据行'); return; }
+  const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, '_'));
+
+  const colMap = {
+    orderId: findCol(headers, ['order_id','order_number','orderid','order','transaction_id']),
+    name: findCol(headers, ['recipient_name','buyer_name','ship_name','name','customer_name','ship_to_name']),
+    addr1: findCol(headers, ['address_line_1','address_1','ship_address_1','street_address','address','shipping_address_1']),
+    addr2: findCol(headers, ['address_line_2','address_2','ship_address_2','shipping_address_2']),
+    city: findCol(headers, ['city','ship_city','shipping_city']),
+    state: findCol(headers, ['state','province','ship_state','shipping_state','state_province']),
+    zip: findCol(headers, ['zip','postal_code','zip_code','ship_zip','shipping_zip','postcode']),
+    country: findCol(headers, ['country','country_code','ship_country','shipping_country']),
+    phone: findCol(headers, ['phone','telephone','buyer_phone']),
+    sku: findCol(headers, ['sku','asin','item_sku']),
+    qty: findCol(headers, ['quantity','qty','quantity_purchased']),
+  };
+
+  orders = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cols = parseCsvLine(lines[i]);
+    const get = (key) => colMap[key] >= 0 ? (cols[colMap[key]] || '') : '';
+    const order = {
+      id: get('orderId') || `ROW-${i}`,
+      name: get('name'),
+      addr1: get('addr1'),
+      addr2: get('addr2'),
+      city: get('city'),
+      state: get('state').toUpperCase(),
+      zip: get('zip').replace(/\s/g,''),
+      country: (get('country') || 'US').toUpperCase(),
+      phone: get('phone'),
+      sku: get('sku'),
+      qty: get('qty'),
+    };
+    order.issues = validateAddress(order);
+    order.status = order.issues.length === 0 ? 'ok' : (order.issues.some(i => i.level === 'err') ? 'err' : 'warn');
+    orders.push(order);
+  }
+  renderOrders();
+}
+
+function findCol(headers, candidates) {
+  for (const c of candidates) {
+    const idx = headers.indexOf(c);
+    if (idx >= 0) return idx;
+  }
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h.includes(c.replace('_','')));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+// ═══════════════════════════════════════════════════
+// ADDRESS VALIDATION (regex-based, no API needed)
+// ═══════════════════════════════════════════════════
+const US_STATES = new Set(['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC','PR','GU','VI','AS','MP']);
+const CA_PROVINCES = new Set(['AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT']);
+
+function validateAddress(o) {
+  const issues = [];
+  const add = (level, msg) => issues.push({ level, msg });
+  if (!o.name || o.name.length < 2) add('err', '缺少收件人姓名');
+  if (!o.addr1 || o.addr1.length < 5) add('err', '地址行1过短或缺失');
+  if (!o.city || o.city.length < 2) add('err', '缺少城市名称');
+  if (!o.state || o.state.length < 2) add('err', '缺少州/省缩写');
+  if (!o.zip) add('err', '缺少邮编');
+  if (o.country === 'US' || !o.country) {
+    if (o.state && !US_STATES.has(o.state)) add('err', `州代码"${o.state}"无效 (应为2字母如CA/NY/TX)`);
+    if (o.zip && !/^\d{5}(-\d{4})?$/.test(o.zip)) add('err', `邮编格式错误: ${o.zip} (应为12345或12345-6789)`);
+    if (o.addr1 && /p\.?\s*o\.?\s*box/i.test(o.addr1)) add('warn', '收件地址为PO Box — 部分快递不送');
+    if (o.addr1 && /^\d/.test(o.addr1) === false) add('warn', '地址未以数字开头 — 请确认格式');
+    const digits = (o.addr1 || '').match(/\d+/g);
+    if (digits && digits.some(d => d.length > 6)) add('warn', '地址中数字偏长 — 请检查');
+  } else if (o.country === 'CA') {
+    if (o.state && !CA_PROVINCES.has(o.state)) add('warn', `加拿大省份代码"${o.state}"可能有误`);
+    if (o.zip && !/^[A-Z]\d[A-Z]\s*\d[A-Z]\d$/i.test(o.zip)) add('warn', `加拿大邮编格式: ${o.zip} (应如K1A0B1)`);
+  }
+  if (o.addr1 && o.addr2) {
+    if (o.addr2.toLowerCase().startsWith(o.addr1.slice(0,10).toLowerCase())) add('warn', '地址行2与地址行1前段相同');
+  }
+  const fullAddr = [o.addr1, o.addr2, o.city, o.state, o.zip].join(' ');
+  if (/(\w+)\s+\1/i.test(fullAddr)) add('warn', '地址中有重复词语');
+  return issues;
+}
+
+function renderOrders() {
+  const total = orders.length;
+  const okCount = orders.filter(o => o.status === 'ok').length;
+  const warnCount = orders.filter(o => o.status === 'warn').length;
+  const errCount = orders.filter(o => o.status === 'err').length;
+  document.getElementById('order-count-badge').textContent = total + ' 单';
+  document.getElementById('order-count-badge').style.display = total ? '' : 'none';
+  document.getElementById('summary-row').innerHTML = `
+    <div class="summary-card"><div class="summary-num">${total}</div><div class="summary-label">全部订单</div></div>
+    <div class="summary-card"><div class="summary-num warn">${warnCount}</div><div class="summary-label">⚠️ 需确认</div></div>
+    <div class="summary-card"><div class="summary-num err">${errCount}</div><div class="summary-label">❌ 地址错误</div></div>`;
+  document.getElementById('address-results').style.display = '';
+  document.getElementById('empty-state-addr').style.display = 'none';
+  filterOrders(currentFilter);
+}
+
+function filterOrders(f) {
+  currentFilter = f;
+  ['all','ok','warn','err'].forEach(x => {
+    const btn = document.getElementById('filter-' + x);
+    if (btn) btn.className = 'btn' + (x === f ? ' btn-green active' : '');
+  });
+  const visible = f === 'all' ? orders : orders.filter(o => o.status === f);
+  const tbody = document.getElementById('orders-tbody');
+  tbody.innerHTML = visible.map(o => {
+    const statusClass = { ok: 'badge-ok', warn: 'badge-warn', err: 'badge-err' }[o.status];
+    const statusText = { ok: '✅ 正常', warn: '⚠️ 警告', err: '❌ 错误' }[o.status];
+    const issuesHtml = o.issues.map(i => `<div>• ${i.msg}</div>`).join('');
+    return `<tr>
+      <td style="font-family:monospace; font-size:11px;">${escHtml(o.id)}</td>
+      <td>${escHtml(o.name)}</td>
+      <td>${escHtml(o.addr1)}${o.addr2 ? '<br><span style="color:var(--muted)">' + escHtml(o.addr2) + '</span>' : ''}</td>
+      <td>${escHtml(o.city)}, ${escHtml(o.state)} ${escHtml(o.zip)}<br><span style="color:var(--muted); font-size:11px;">${escHtml(o.country)}</span></td>
+      <td><span class="badge ${statusClass}">${statusText}</span>${issuesHtml ? '<div class="addr-issues">' + issuesHtml + '</div>' : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function exportValidated() {
+  const rows = [['Order ID','Name','Address 1','Address 2','City','State','Zip','Country','Status','Issues']];
+  orders.forEach(o => rows.push([o.id, o.name, o.addr1, o.addr2, o.city, o.state, o.zip, o.country, o.status, o.issues.map(i => i.msg).join('; ')]));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'address_check_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════════
+function loadDemo() {
+  const csv = `Order ID,Recipient Name,Address Line 1,Address Line 2,City,State,Zip,Country,SKU,Quantity
+AMZ-001,John Smith,123 Oak Street,,Los Angeles,CA,90001,US,SKU-ABC,2
+AMZ-002,Mary Johnson,456 Elm Ave,Apt 3B,New York,NY,10001,US,SKU-DEF,1
+AMZ-003,Bob Lee,789 Pine Rd,,Chicago,IL,60601-1234,US,SKU-GHI,3
+AMZ-004,Alice Wong,P.O. Box 100,,Seattle,WA,98101,US,SKU-JKL,1
+AMZ-005,Carlos Garcia,321 Maple Dr,,Miami,FL,99999,US,SKU-MNO,2
+AMZ-006,Sarah Davis,555 Broadway,,New York,ZZ,10036,US,SKU-PQR,1
+AMZ-007,,,, , , , US,SKU-STU,1
+AMZ-008,Tom Brown,1000 Market St,,San Francisco,CA,94102,US,SKU-VWX,4`;
+  processCsv(csv);
+}
+
+// ═══════════════════════════════════════════════════
+// CARRIER SELECTION & RATES
+// ═══════════════════════════════════════════════════
+function selectCarrier(name) {
+  selectedCarrier = name;
+  ['USPS','UPS','FedEx','DHL'].forEach(c => {
+    document.getElementById('c-' + c).classList.toggle('selected', c === name);
+  });
+}
+
+function getRates() {
+  const w = parseFloat(document.getElementById('pkg-weight').value) || 0;
+  const toState = document.getElementById('to-state').value.trim();
+  if (!w) { alert('请先填写包裹重量'); return; }
+  if (!selectedCarrier) { alert('请选择快递公司'); return; }
+  if (!settings.shipengine && !settings.easypost) {
+    // Show placeholder rates
+    const mockRates = {
+      USPS: [{ svc: 'Priority Mail', days: '1-3', price: (2.89 + w * 0.8).toFixed(2) }, { svc: 'First Class', days: '1-5', price: (1.20 + w * 0.4).toFixed(2) }, { svc: 'Parcel Select', days: '2-8', price: (1.05 + w * 0.6).toFixed(2) }],
+      UPS: [{ svc: 'UPS Ground', days: '1-5', price: (7.50 + w * 1.2).toFixed(2) }, { svc: 'UPS 2-Day Air', days: '2', price: (18.50 + w * 2.5).toFixed(2) }],
+      FedEx: [{ svc: 'FedEx Ground', days: '1-5', price: (7.95 + w * 1.15).toFixed(2) }, { svc: 'FedEx Express Saver', days: '3', price: (15.20 + w * 2.2).toFixed(2) }],
+      DHL: [{ svc: 'DHL Express', days: '1-2', price: (22.00 + w * 3.0).toFixed(2) }],
+    };
+    const rates = mockRates[selectedCarrier] || [];
+    document.getElementById('rate-display').innerHTML = `
+      <div style="text-align:left;">
+        <div style="font-size:11px; color:var(--yellow); margin-bottom:10px; padding:6px 10px; background:#fff3e0; border-radius:6px;">
+          ⚠️ 当前显示的是<b>估算价格</b>（未配置 API Key）。在 API 设置中填入 ShipEngine 或 EasyPost key 后可获取真实报价。
+        </div>
+        ${rates.map((r, i) => `
+          <div style="display:flex; align-items:center; padding:10px; border:1.5px solid var(--line); border-radius:8px; margin-bottom:8px; cursor:pointer; background:${i===0?'#f0f7ff':'var(--paper)'};" onclick="selectRate('${selectedCarrier}','${r.svc}','${r.price}')">
+            <div style="flex:1;"><b>${r.svc}</b><br><span style="font-size:11px; color:var(--muted);">${r.days} 工作日</span></div>
+            <div style="font-size:18px; font-weight:800; color:var(--blue);">$${r.price}</div>
+          </div>`).join('')}
+        <button class="btn" onclick="document.getElementById('rate-display').innerHTML = '<p style=text-align:center;color:var(--muted);>选择上方服务后生成运单</p>'" style="margin-top:4px;">↩ 重新选择</button>
+      </div>`;
+  } else {
+    document.getElementById('rate-display').innerHTML = '<p style="text-align:center; color:var(--muted);">⏳ 正在查询运费... (API 集成开发中)</p>';
+  }
+}
+
+function selectRate(carrier, service, price) {
+  generateLabel(carrier, service, price);
+}
+
+function generateLabel(carrier, service, price) {
+  const to = {
+    name: document.getElementById('to-name').value,
+    addr1: document.getElementById('to-addr1').value,
+    addr2: document.getElementById('to-addr2').value,
+    city: document.getElementById('to-city').value,
+    state: document.getElementById('to-state').value,
+    zip: document.getElementById('to-zip').value,
+  };
+  const from = {
+    name: document.getElementById('from-name').value || settings.from_name || 'Your Company',
+    addr1: document.getElementById('from-addr1').value || settings.from_addr1 || '',
+    city: document.getElementById('from-city').value || settings.from_city || '',
+    state: document.getElementById('from-state').value || settings.from_state || '',
+  };
+  const trackingNum = carrier.slice(0,2).toUpperCase() + Date.now().toString().slice(-12);
+  const barCode = '|'.repeat(Math.floor(Math.random()*8+6)) + ' ' + '||'.repeat(Math.floor(Math.random()*5+4));
+
+  document.getElementById('label-preview-content').innerHTML = `
+    <div class="lp-from">FROM: ${escHtml(from.name)} · ${escHtml(from.addr1)}, ${escHtml(from.city)}, ${escHtml(from.state)}</div>
+    <div class="lp-service">${carrier} ${service} · $${price}</div>
+    <div class="lp-to">
+      ${escHtml(to.name)}<br>
+      ${escHtml(to.addr1)}${to.addr2 ? '<br>' + escHtml(to.addr2) : ''}<br>
+      ${escHtml(to.city)}, ${escHtml(to.state)} ${escHtml(to.zip)}
+    </div>
+    <div class="lp-bar">${barCode}</div>
+    <div class="lp-tracking">${trackingNum}</div>`;
+  document.getElementById('label-preview-section').style.display = '';
+}
+
+function printLabel() { window.print(); }
+function downloadLabelPdf() { alert('PDF 下载需要配置运费 API 后由服务器生成正式电子运单。\n当前请使用浏览器打印 → 另存为 PDF。'); }
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+loadSettings();
+</script>
+</body>
+</html>
