@@ -988,6 +988,8 @@
   .plan-price { float:right; font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; }
   .plan-orig  { font-size:10px; font-weight:400; color:var(--muted); text-decoration:line-through; margin-right:4px; }
   .plan-desc { display:block; font-size:11px; font-weight:400; color:var(--muted); margin-top:4px; clear:both; line-height:1.4; }
+  .plan-qr-btn { margin-left:6px; font-size:14px; background:none; border:none; cursor:pointer; padding:0 2px; vertical-align:middle; opacity:.7; line-height:1; }
+  .plan-qr-btn:active { opacity:1; transform:scale(1.2); }
   .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
   .settings-nav-row { display:flex; align-items:center; gap:12px; padding:13px 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--bg); cursor:pointer; margin-bottom:8px; -webkit-tap-highlight-color:transparent; }
@@ -1096,7 +1098,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1537,12 +1539,12 @@
           <div id="sub-status-display" style="font-size:13px; margin-bottom:8px;"></div>
           <div id="plan-upgrade-section">
             <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
-            <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">基础版 Basic<span class="plan-price"><span class="plan-orig">$31/月</span>$19/月</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</span></button>
-            <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')"> 基础版 年付<span class="plan-price"><span class="plan-orig">$372/年</span>$365/年</span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</span></button>
-            <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard<span class="plan-price"><span class="plan-orig">$88/月</span>$68/月</span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</span></button>
-            <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付<span class="plan-price"><span class="plan-orig">$1,056/年</span>$888/年</span><span class="plan-desc">2账户（老板＋经理或操作员）· 省16% · 小团队协作 · 订阅即送1个月免费期</span></button>
-            <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')">高级版 Premium<span class="plan-price"><span class="plan-orig">$228/月</span>$188/月</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</span></button>
-            <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')"> 高级版 年付<span class="plan-price"><span class="plan-orig">$2,736/年</span>$1,888/年</span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省31% · 全团队配置 · 订阅即送1个月免费期</span></button>
+            <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">基础版 Basic<span class="plan-price"><span class="plan-orig">$31/月</span>$19/月<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$19/月')" title="扫码付款">📲</button></span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</span></button>
+            <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')"> 基础版 年付<span class="plan-price"><span class="plan-orig">$372/年</span>$365/年<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$365/年')" title="扫码付款">📲</button></span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</span></button>
+            <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard<span class="plan-price"><span class="plan-orig">$88/月</span>$68/月<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_monthly','标准版 Standard','$68/月')" title="扫码付款">📲</button></span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</span></button>
+            <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付<span class="plan-price"><span class="plan-orig">$1,056/年</span>$888/年<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$888/年')" title="扫码付款">📲</button></span><span class="plan-desc">2账户（老板＋经理或操作员）· 省16% · 小团队协作 · 订阅即送1个月免费期</span></button>
+            <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')">高级版 Premium<span class="plan-price"><span class="plan-orig">$228/月</span>$188/月<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_monthly','高级版 Premium','$188/月')" title="扫码付款">📲</button></span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</span></button>
+            <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')"> 高级版 年付<span class="plan-price"><span class="plan-orig">$2,736/年</span>$1,888/年<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$1,888/年')" title="扫码付款">📲</button></span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省31% · 全团队配置 · 订阅即送1个月免费期</span></button>
             <div style="margin:4px 0 8px; padding:10px 12px; background:#fff8e6; border:1.5px solid #f5c542; border-radius:10px; font-size:12px; color:#7a5c00; line-height:1.6;">
               🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$188/月</b>，年付另加 <b>$1,888/年</b>。<br>
               如两个仓库高级版：月付 $188＋$188＝$376/月，年付 $1,888＋$1,888＝$3,776/年。
@@ -1679,7 +1681,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.7</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>订阅方案每个价格旁新增📲二维码按钮，可扫码或转发付款</li>
+            <li>二维码弹窗支持下载图片、复制链接，可发微信/邮件给他人代付</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v1.7</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -1822,6 +1835,32 @@
     </div>
     <div class="sheet-footer">
       <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plan QR code sheet -->
+<div class="sheet-backdrop modal-style" id="plan-qr-sheet">
+  <div class="sheet" style="max-height:88vh;">
+    <div class="sheet-body" style="text-align:center;">
+      <div style="font-size:13px; font-weight:700; margin-bottom:2px;" id="plan-qr-title">订阅方案</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:14px;" id="plan-qr-sub">扫码即可付款订阅，可截图发给他人代付</div>
+      <!-- QR code canvas -->
+      <div style="display:inline-block; padding:12px; background:#fff; border-radius:12px; border:1.5px solid var(--line); margin-bottom:12px;">
+        <canvas id="plan-qr-canvas" width="200" height="200"></canvas>
+      </div>
+      <!-- Checkout URL (copyable) -->
+      <div style="display:flex; align-items:center; gap:6px; background:var(--bg); border-radius:8px; padding:8px 10px; margin-bottom:12px; cursor:pointer;" onclick="_copyPlanQRLink()">
+        <div id="plan-qr-link-text" style="flex:1; font-size:10px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left;"></div>
+        <button style="flex-shrink:0; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit;" onclick="event.stopPropagation();_copyPlanQRLink()">复制链接</button>
+      </div>
+      <div style="font-size:11px; color:var(--muted); line-height:1.7; margin-bottom:4px;">
+        💡 下载二维码图片后可直接转发到微信、邮件<br>让他人扫码完成付款
+      </div>
+    </div>
+    <div class="sheet-footer" style="display:flex; gap:8px;">
+      <button class="sheet-cancel" data-close style="flex:1;">关闭</button>
+      <button onclick="_downloadPlanQR()" style="flex:2; padding:12px; background:var(--ink); color:var(--paper); border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">⬇️ 下载二维码</button>
     </div>
   </div>
 </div>
@@ -6743,6 +6782,68 @@ async function _startCheckout(planKey) {
   if (data.error) { toast('❌ ' + data.error, 6000); return; }
   if (data.url) location.href = data.url;
 }
+let _planQRUrl = '';
+
+async function _showPlanQR(planKey, planLabel, price) {
+  const titleEl  = document.getElementById('plan-qr-title');
+  const subEl    = document.getElementById('plan-qr-sub');
+  const linkEl   = document.getElementById('plan-qr-link-text');
+  const canvas   = document.getElementById('plan-qr-canvas');
+  const ctx      = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  titleEl.textContent = planLabel + ' · ' + price;
+  subEl.textContent   = '生成付款链接中，请稍候…';
+  linkEl.textContent  = '';
+  _planQRUrl = '';
+  showSheet('plan-qr-sheet');
+
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  let checkoutUrl;
+  try {
+    const res = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ planKey, warehouseId: _warehouse.id }),
+    });
+    const data = await res.json();
+    if (data.error) { subEl.textContent = '❌ ' + data.error; return; }
+    checkoutUrl = data.url;
+  } catch (e) {
+    subEl.textContent = '❌ 网络错误：' + e.message; return;
+  }
+
+  _planQRUrl = checkoutUrl;
+  linkEl.textContent = checkoutUrl;
+  subEl.textContent = '扫码即可付款订阅，可截图或下载转发给他人代付';
+
+  try {
+    const QRC = await _loadQRCodeLib();
+    await QRC.toCanvas(canvas, checkoutUrl, { width: 200, margin: 1, color: { dark: '#111', light: '#fff' } });
+  } catch (e) {
+    subEl.textContent = '⚠️ 二维码生成失败，可手动复制链接';
+  }
+}
+
+function _copyPlanQRLink() {
+  if (!_planQRUrl) return;
+  navigator.clipboard?.writeText(_planQRUrl).then(() => toast('✅ 链接已复制')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = _planQRUrl; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    toast('✅ 链接已复制');
+  });
+}
+
+function _downloadPlanQR() {
+  const canvas = document.getElementById('plan-qr-canvas');
+  const titleEl = document.getElementById('plan-qr-title');
+  const name = (titleEl.textContent || 'plan-qr').replace(/\s+/g, '_').replace(/·/g, '').replace(/\//g, '') + '.png';
+  const link = document.createElement('a');
+  link.download = name;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
 async function _openPortal() {
   const { data: { session } } = await sb.auth.getSession();
   const token = session?.access_token;
