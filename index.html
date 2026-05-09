@@ -7069,21 +7069,6 @@ async function _submitNewCard() {
   }
 }
 
-async function _addCard_legacy() {
-  try {
-    const token = (await sb.auth.getSession()).data.session?.access_token;
-    const r = await fetch('/api/create-card-setup', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-      body: JSON.stringify({ warehouseId: _warehouse?.id }),
-    });
-    const d = await r.json();
-    if (d.url) window.location.href = d.url;
-    else toast('添加银行卡失败: ' + (d.error || '未知错误'));
-  } catch (e) {
-    toast('请求失败: ' + e.message);
-  }
-}
 let _pendingTopupAmount = null;
 function _startTopupCustom() {
   const val = parseFloat(document.getElementById('topup-custom-amt')?.value || '0');

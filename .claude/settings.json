@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "Bash(copy \"d:\\\\ZEHEM.AI\\\\zehem.ai-web\\\\public\\\\ZEHEM-LOGO-28.png\" \"d:\\\\Store手机版\\\\atmm.store\\\\ZEHEM-LOGO-28.png\")",
+      "Bash(Get-Content shipping.html)",
+      "Bash(Measure-Object -Line)",
+      "Bash(Get-ChildItem api/ -Filter \"*.js\")",
+      "Bash(Measure-Object)",
+      "Bash(Select-Object -ExpandProperty Count)"
+    ],
+    "additionalDirectories": [
+      "d:\\Store???\\atmm.store",
+      "d:\\ZEHEM.AI\\zehem.ai-web\\public"
+    ]
+  }
+}
