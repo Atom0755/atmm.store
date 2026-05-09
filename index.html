@@ -1104,7 +1104,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1647,8 +1647,71 @@
 
       <!-- Help / FAQ -->
       <div style="margin-bottom:18px;">
-        <div class="team-section-title">❓ 帮助 / Help</div>
+        <div class="settings-sec-lbl">HELP 帮助</div>
         <div class="help-faq">
+
+          <!-- 图例说明 -->
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">颜色图例 &amp; 操作手势说明<span class="help-arr">▶</span></div>
+            <div class="help-a" style="padding:0;">
+              <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:28px; height:18px; background:var(--red); border-radius:3px; flex-shrink:0;"></div><span><b>红色</b> · 无货（一个都没有）</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:28px; height:18px; background:var(--yellow); border-radius:3px; flex-shrink:0;"></div><span><b>黄色</b> · 少量</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:28px; height:18px; background:var(--green); border-radius:3px; flex-shrink:0;"></div><span><b>绿色</b> · 充足</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:20px; height:20px; border:2px dashed rgba(0,0,0,0.45); border-radius:50%; flex-shrink:0;"></div><span><b>空圆框</b> · 未标注（单击选颜色）</span>
+                </div>
+              </div>
+              <div style="line-height:1.85; color:var(--muted);">
+                · <b>单击</b>○颜色圆框 → 选红/黄/绿<br>
+                · <b>长按</b>○颜色圆框 → 输入数量<br>
+                · <b>双击</b>型号格 → 5种输入：打字/拍照/扫码/手写/语音<br>
+                · <b>单击</b>单位框 → 选单位（套/个/对…）<br>
+                · <b>双击</b>表标题/通道名/层名 → 重命名<br>
+                · <b>长按拖动</b>型号 → 移到其他格位<br>
+                · <b>长按列名</b>（整行）→ 整列拖到别处<br>
+                · 列<b>底部 +</b> → 复制整列插到下方<br>
+                · 整箱区<b>拖到底部</b> → 删除该层<br>
+                · 区域标签按住 <b>⠿</b> 拖动 → 调整顺序<br>
+                · 工具栏"<b>总览</b>" → 网格预览模式<br>
+                · 顶部 <b>💾</b> → 导出/分享
+              </div>
+            </div>
+          </div>
+
+          <!-- 权限对照 -->
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">账户权限对照表<span class="help-arr">▶</span></div>
+            <div class="help-a" style="padding:0;">
+              <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                <thead>
+                  <tr style="background:var(--bg);">
+                    <th style="padding:6px 8px; text-align:left; font-weight:700; border-bottom:1px solid var(--line);">功能</th>
+                    <th style="padding:6px 4px; text-align:center; border-bottom:1px solid var(--line);">👑老板</th>
+                    <th style="padding:6px 4px; text-align:center; border-bottom:1px solid var(--line);">🔑经理</th>
+                    <th style="padding:6px 4px; text-align:center; border-bottom:1px solid var(--line);">👷操作员</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">查看库存</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td></tr>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">修改型号/颜色/数量</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td></tr>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">增删货架/排/层</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td></tr>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">上传型号库</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td></tr>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">增删区域</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td></tr>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">重置仓库</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td></tr>
+                  <tr><td style="padding:5px 8px; border-bottom:1px solid var(--line);">团队管理/邀请</td><td style="text-align:center; border-bottom:1px solid var(--line);">✅</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td><td style="text-align:center; border-bottom:1px solid var(--line);">❌</td></tr>
+                  <tr><td style="padding:5px 8px;">多仓库切换</td><td style="text-align:center;">✅</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div class="help-item" onclick="this.classList.toggle('open')">
             <div class="help-q">如何添加货架和库位？<span class="help-arr">▶</span></div>
             <div class="help-a">点击区域标签页 → 点击"+"按钮添加通道/货架，每个格位会自动生成库位编号（如 A-1-01）。点击库位编号可查看对应二维码和条形码。</div>
@@ -1711,7 +1774,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.8</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v1.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>付款二维码弹窗加注24小时有效期说明</li>
+            <li>图例说明更新：5种型号输入、区域拖排序等新操作</li>
+            <li>设置 HELP 栏新增"颜色图例 &amp; 操作手势"和"账户权限对照表"两项</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v1.8</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -1884,8 +1959,11 @@
         <div id="plan-qr-link-text" style="flex:1; font-size:10px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left;"></div>
         <button style="flex-shrink:0; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit;" onclick="event.stopPropagation();_copyPlanQRLink()">复制链接</button>
       </div>
-      <div style="font-size:11px; color:var(--muted); line-height:1.7; margin-bottom:4px;">
-        💡 下载二维码图片后可直接转发到微信、邮件<br>让他人扫码完成付款
+      <div style="font-size:11px; color:var(--muted); line-height:1.7; margin-bottom:8px;">
+        💡 下载二维码图片后可直接转发到微信、邮件，让他人扫码完成付款
+      </div>
+      <div style="font-size:11px; background:#fff8e6; border:1px solid #f5c542; border-radius:8px; padding:8px 12px; color:#7a5c00; line-height:1.6;">
+        ⚠️ 此付款链接<b>有效期 24 小时</b>，过期后关闭弹窗重新点击 📲 生成新链接
       </div>
     </div>
     <div class="sheet-footer" style="display:flex; gap:8px;">
@@ -1916,17 +1994,19 @@
           <div style="width:36px; height:24px; border:2.5px dashed rgba(0,0,0,0.55); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:rgba(0,0,0,0.45);">○</div>
           <div><strong>空圆框</strong> · 未标注 (单击选颜色)</div>
         </div>
-        <div style="font-size:12px; color:var(--muted); padding:10px; background:var(--bg); border-radius:8px; line-height:1.7;">
-          · <b>单击</b>○颜色圆框 → 选红/黄/绿(立即弹出,不等待)<br>
-          · <b>长按</b>○颜色圆框 → 输入数量(整数)<br>
-          · <b>双击</b>型号 → 4 种输入: 拍照/打字/手写/语音<br>
-          · <b>单击</b>单位框 → 选单位(套/个/对...)<br>
-          · <b>双击</b>表标题 / 通道名 / 货架层名 → 修改<br>
-          · <b>长按拖动</b>型号 → 移到其他位置<br>
-          · <b>长按列名</b>(整行) → 整列拖到别处(序号自动重排)<br>
-          · 每列<b>底部 +</b> → 复制此整列(含所有型号、颜色、数量)插到下方<br>
-          · 整箱表上 <b>拖到底部</b> → 删除(整箱搬走)<br>
-          · 顶部 <b>💾</b> 或表内 <b>Save 保存</b> → 导出/分享到微信/Drive/邮箱
+        <div style="font-size:12px; color:var(--muted); padding:10px; background:var(--bg); border-radius:8px; line-height:1.85;">
+          · <b>单击</b>○颜色圆框 → 选红/黄/绿（立即弹出，不等待）<br>
+          · <b>长按</b>○颜色圆框 → 输入数量（整数）<br>
+          · <b>双击</b>型号格 → 5 种输入：打字 / 拍照 / 扫码 / 手写 / 语音<br>
+          · <b>单击</b>单位框 → 选单位（套/个/对…）<br>
+          · <b>双击</b>表标题 / 通道名 / 货架层名 → 重命名<br>
+          · <b>长按拖动</b>型号 → 移到其他格位<br>
+          · <b>长按列名</b>（整行）→ 整列拖到别处（序号自动重排）<br>
+          · 每列<b>底部 +</b> → 复制此整列（含型号/颜色/数量）插到下方<br>
+          · 整箱区 <b>拖到底部</b> → 删除该层（整箱搬走）<br>
+          · 区域标签栏按住 <b>⠿</b> 拖动 → 调整区域顺序<br>
+          · 顶部工具栏"<b>总览</b>" → 切换网格预览模式<br>
+          · 顶部 <b>💾</b> 或表内 Save → 导出/分享到微信/Drive/邮箱
         </div>
       </div>
     </div>
