@@ -183,6 +183,7 @@
             <th>地址</th>
             <th>城市/州/邮编</th>
             <th>地址检查</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="orders-tbody"></tbody>
@@ -644,17 +645,39 @@ function filterOrders(f) {
     const statusClass = { ok: 'badge-ok', warn: 'badge-warn', err: 'badge-err' }[o.status];
     const statusText = { ok: '✅ 正常', warn: '⚠️ 警告', err: '❌ 错误' }[o.status];
     const issuesHtml = o.issues.map(i => `<div>• ${i.msg}</div>`).join('');
+    const idx = orders.indexOf(o);
     return `<tr>
       <td style="font-family:monospace; font-size:11px;">${escHtml(o.id)}</td>
       <td>${escHtml(o.name)}</td>
       <td>${escHtml(o.addr1)}${o.addr2 ? '<br><span style="color:var(--muted)">' + escHtml(o.addr2) + '</span>' : ''}</td>
       <td>${escHtml(o.city)}, ${escHtml(o.state)} ${escHtml(o.zip)}<br><span style="color:var(--muted); font-size:11px;">${escHtml(o.country)}</span></td>
       <td><span class="badge ${statusClass}">${statusText}</span>${issuesHtml ? '<div class="addr-issues">' + issuesHtml + '</div>' : ''}</td>
+      <td><button class="btn" style="padding:4px 10px; font-size:11px; white-space:nowrap;" onclick="fillLabelFromOrder(${idx})">📦 打单</button></td>
     </tr>`;
   }).join('');
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function fillLabelFromOrder(idx) {
+  const o = orders[idx];
+  if (!o) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('to-name', o.name);
+  set('to-addr1', o.addr1);
+  set('to-addr2', o.addr2);
+  set('to-city', o.city);
+  set('to-state', o.state);
+  set('to-zip', o.zip);
+  set('to-country', o.country || 'US');
+  set('to-phone', o.phone);
+  set('pkg-ref', o.id);
+  switchTab('labels');
+  setTimeout(() => {
+    const el = document.getElementById('to-name');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 120);
+}
 
 function exportValidated() {
   const rows = [['Order ID','Name','Address 1','Address 2','City','State','Zip','Country','Status','Issues']];
