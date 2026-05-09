@@ -1104,7 +1104,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1>ZEHEM哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v1.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="translate-btn" title="🌐 翻译整页 (Translate page)" aria-label="翻译">🌐</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1222,7 +1222,7 @@
 <div class="sheet-backdrop" id="upload-sheet">
   <div class="sheet">
     <div class="sheet-body">
-      <h3>📋 型号库管理 / Model Library</h3>
+      <h3>📋 型号库管理</h3>
 
       <!-- Current models in library, with search -->
       <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 12px;">
@@ -1294,7 +1294,7 @@
 <div class="sheet-backdrop modal-style" id="add-zone-sheet">
   <div class="sheet" style="max-height:60vh;">
     <div class="sheet-body">
-      <h3>新增区域 / Add Zone</h3>
+      <h3>新增区域</h3>
       <div style="margin-bottom:14px;">
         <label style="display:block; font-size:13px; margin-bottom:6px;">区域名称</label>
         <input id="new-zone-name" type="text" placeholder="如：零散货架三区" style="width:100%; padding:10px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; font-family:inherit; box-sizing:border-box;">
@@ -1327,8 +1327,8 @@
       </div>
     </div>
     <div class="sheet-footer">
-      <button class="sheet-confirm" id="confirm-delete-yes" style="background: var(--red); border-color: var(--red);">确定删除 / Confirm Delete</button>
-      <button class="sheet-cancel" data-close>取消 / Cancel</button>
+      <button class="sheet-confirm" id="confirm-delete-yes" style="background: var(--red); border-color: var(--red);">确定删除</button>
+      <button class="sheet-cancel" data-close>取消</button>
     </div>
   </div>
 </div>
@@ -1427,7 +1427,7 @@
 
     </div>
     <div class="sheet-footer">
-      <button class="sheet-cancel" data-close>关闭 / Close</button>
+      <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
 </div>
@@ -1436,7 +1436,7 @@
 <div class="sheet-backdrop modal-style" id="team-sheet" style="align-items:flex-start; padding-top:5vh;">
   <div class="sheet" style="max-height:67vh; border-radius:16px; border-bottom:1px solid var(--line);">
     <div class="sheet-body">
-      <h3>⚙️ 设置 / Settings</h3>
+      <h3>⚙️ 设置</h3>
 
       <!-- ACCOUNT section -->
       <div class="settings-sec-lbl" style="border-top:none; padding-top:4px; margin-top:0;">ACCOUNT 账户</div>
@@ -1544,7 +1544,7 @@
         <div id="sub-detail-panel" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
           <div id="sub-status-display" style="font-size:13px; margin-bottom:8px;"></div>
           <div id="plan-upgrade-section">
-            <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
+            <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案</div>
             <div class="plan-btn" id="plan-basic-m">
               <div class="plan-btn-top" onclick="_startCheckout('basic_monthly')"><span class="plan-btn-name">基础版 Basic</span><span class="plan-price"><span class="plan-orig">$31/月</span>$19/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$19/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
@@ -1579,7 +1579,7 @@
               🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$188/月</b>，年付另加 <b>$1,888/年</b>。<br>
               如两个仓库高级版：月付 $188＋$188＝$376/月，年付 $1,888＋$1,888＝$3,776/年。
             </div>
-            <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅 / Manage Subscription</button>
+            <button class="action-row" onclick="_openPortal()" style="margin-top:4px;"><span class="ico">🔗</span>管理订阅</button>
           </div>
         </div>
       </div>
@@ -1755,11 +1755,11 @@
 
       <!-- Logout -->
       <button class="action-row" onclick="_doLogout()" style="background:#ffe5e5; border-color:var(--red);">
-        <span class="ico">🚪</span><div style="flex:1; font-weight:700; color:var(--red);">退出登录 / Sign Out</div>
+        <span class="ico">🚪</span><div style="flex:1; font-weight:700; color:var(--red);">退出登录</div>
       </button>
     </div>
     <div class="sheet-footer">
-      <button class="sheet-cancel" data-close>关闭 / Close</button>
+      <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
 </div>
@@ -1768,7 +1768,7 @@
 <div class="sheet-backdrop modal-style" id="changelog-sheet">
   <div class="sheet" style="max-height:82vh; border-radius:16px; border-bottom:1px solid var(--line);">
     <div class="sheet-body">
-      <h3>📋 更新日志 / Changelog</h3>
+      <h3>📋 更新日志</h3>
 
       <div style="display:flex; flex-direction:column; gap:14px; font-size:13px;">
 
@@ -6017,7 +6017,7 @@ function renderPanes() {
           <div class="meta-fields">
             <label>填表人 <input type="text" data-meta="filler" data-table-meta="${z.id}" placeholder="姓名"></label>
             <label>日期 <input type="date" data-meta="date" data-table-meta="${z.id}"></label>
-            <button class="meta-save-btn" data-meta-save>💾 Save 保存</button>
+            <button class="meta-save-btn" data-meta-save>💾 保存</button>
           </div>
         </div>
         <div class="search-bar">
