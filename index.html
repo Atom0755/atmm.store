@@ -983,13 +983,19 @@
   .team-section-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:8px; }
   .team-member-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:13px; }
   .team-member-role { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--ink); color:var(--paper); }
-  .plan-btn { display:block; width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; text-align:left; margin-bottom:8px; }
-  .plan-btn.current-plan { border-color:var(--red); color:var(--red); }
-  .plan-price { float:right; font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; }
+  .plan-btn { border:1.5px solid var(--line); border-radius:10px; background:var(--paper); font-family:inherit; cursor:pointer; margin-bottom:8px; overflow:hidden; -webkit-tap-highlight-color:transparent; }
+  .plan-btn.current-plan { border-color:var(--red); }
+  .plan-btn-top { display:flex; align-items:center; gap:8px; padding:11px 12px; }
+  .plan-btn-top:active { background:var(--bg); }
+  .plan-btn-name { flex:1; font-size:13px; font-weight:700; text-align:left; color:var(--ink); }
+  .plan-btn.current-plan .plan-btn-name { color:var(--red); }
+  .plan-price { display:flex; align-items:center; font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; }
   .plan-orig  { font-size:10px; font-weight:400; color:var(--muted); text-decoration:line-through; margin-right:4px; }
-  .plan-desc { display:block; font-size:11px; font-weight:400; color:var(--muted); margin-top:4px; clear:both; line-height:1.4; }
-  .plan-qr-btn { margin-left:6px; font-size:14px; background:none; border:none; cursor:pointer; padding:0 2px; vertical-align:middle; opacity:.7; line-height:1; }
-  .plan-qr-btn:active { opacity:1; transform:scale(1.2); }
+  .plan-btn-sep { border-top:1px dashed rgba(0,0,0,0.13); margin:0 12px; }
+  .plan-desc { font-size:11px; font-weight:400; color:var(--muted); padding:7px 12px 10px; line-height:1.5; text-align:left; }
+  .plan-desc:active { background:var(--bg); }
+  .plan-qr-btn { flex-shrink:0; font-size:15px; background:none; border:none; cursor:pointer; padding:3px 5px; opacity:.65; line-height:1; border-radius:6px; margin-left:4px; }
+  .plan-qr-btn:active { opacity:1; background:var(--bg); }
   .wh-code-box { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; letter-spacing:.12em; }
   .wh-code-copy { margin-left:auto; font-size:11px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; font-family:inherit; }
   .settings-nav-row { display:flex; align-items:center; gap:12px; padding:13px 14px; border:1.5px solid var(--line); border-radius:10px; background:var(--bg); cursor:pointer; margin-bottom:8px; -webkit-tap-highlight-color:transparent; }
@@ -1539,12 +1545,36 @@
           <div id="sub-status-display" style="font-size:13px; margin-bottom:8px;"></div>
           <div id="plan-upgrade-section">
             <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案 / Choose Plan</div>
-            <button class="plan-btn" id="plan-basic-m"    onclick="_startCheckout('basic_monthly')">基础版 Basic<span class="plan-price"><span class="plan-orig">$31/月</span>$19/月<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$19/月')" title="扫码付款">📲</button></span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</span></button>
-            <button class="plan-btn" id="plan-basic-y"    onclick="_startCheckout('basic_annual')"> 基础版 年付<span class="plan-price"><span class="plan-orig">$372/年</span>$365/年<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$365/年')" title="扫码付款">📲</button></span><span class="plan-desc">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</span></button>
-            <button class="plan-btn" id="plan-standard-m" onclick="_startCheckout('standard_monthly')">标准版 Standard<span class="plan-price"><span class="plan-orig">$88/月</span>$68/月<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_monthly','标准版 Standard','$68/月')" title="扫码付款">📲</button></span><span class="plan-desc">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</span></button>
-            <button class="plan-btn" id="plan-standard-y" onclick="_startCheckout('standard_annual')"> 标准版 年付<span class="plan-price"><span class="plan-orig">$1,056/年</span>$888/年<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$888/年')" title="扫码付款">📲</button></span><span class="plan-desc">2账户（老板＋经理或操作员）· 省16% · 小团队协作 · 订阅即送1个月免费期</span></button>
-            <button class="plan-btn" id="plan-premium-m"  onclick="_startCheckout('premium_monthly')">高级版 Premium<span class="plan-price"><span class="plan-orig">$228/月</span>$188/月<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_monthly','高级版 Premium','$188/月')" title="扫码付款">📲</button></span><span class="plan-desc">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</span></button>
-            <button class="plan-btn" id="plan-premium-y"  onclick="_startCheckout('premium_annual')"> 高级版 年付<span class="plan-price"><span class="plan-orig">$2,736/年</span>$1,888/年<button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$1,888/年')" title="扫码付款">📲</button></span><span class="plan-desc">3账户（老板＋经理＋操作员）· 省31% · 全团队配置 · 订阅即送1个月免费期</span></button>
+            <div class="plan-btn" id="plan-basic-m">
+              <div class="plan-btn-top" onclick="_startCheckout('basic_monthly')"><span class="plan-btn-name">基础版 Basic</span><span class="plan-price"><span class="plan-orig">$31/月</span>$19/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$19/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('basic_monthly')">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</div>
+            </div>
+            <div class="plan-btn" id="plan-basic-y">
+              <div class="plan-btn-top" onclick="_startCheckout('basic_annual')"><span class="plan-btn-name">基础版 年付</span><span class="plan-price"><span class="plan-orig">$372/年</span>$365/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$365/年')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('basic_annual')">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</div>
+            </div>
+            <div class="plan-btn" id="plan-standard-m">
+              <div class="plan-btn-top" onclick="_startCheckout('standard_monthly')"><span class="plan-btn-name">标准版 Standard</span><span class="plan-price"><span class="plan-orig">$88/月</span>$68/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_monthly','标准版 Standard','$68/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('standard_monthly')">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</div>
+            </div>
+            <div class="plan-btn" id="plan-standard-y">
+              <div class="plan-btn-top" onclick="_startCheckout('standard_annual')"><span class="plan-btn-name">标准版 年付</span><span class="plan-price"><span class="plan-orig">$1,056/年</span>$888/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$888/年')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('standard_annual')">2账户（老板＋经理或操作员）· 省16% · 小团队协作 · 订阅即送1个月免费期</div>
+            </div>
+            <div class="plan-btn" id="plan-premium-m">
+              <div class="plan-btn-top" onclick="_startCheckout('premium_monthly')"><span class="plan-btn-name">高级版 Premium</span><span class="plan-price"><span class="plan-orig">$228/月</span>$188/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_monthly','高级版 Premium','$188/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('premium_monthly')">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</div>
+            </div>
+            <div class="plan-btn" id="plan-premium-y">
+              <div class="plan-btn-top" onclick="_startCheckout('premium_annual')"><span class="plan-btn-name">高级版 年付</span><span class="plan-price"><span class="plan-orig">$2,736/年</span>$1,888/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$1,888/年')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('premium_annual')">3账户（老板＋经理＋操作员）· 省31% · 全团队配置 · 订阅即送1个月免费期</div>
+            </div>
             <div style="margin:4px 0 8px; padding:10px 12px; background:#fff8e6; border:1.5px solid #f5c542; border-radius:10px; font-size:12px; color:#7a5c00; line-height:1.6;">
               🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$188/月</b>，年付另加 <b>$1,888/年</b>。<br>
               如两个仓库高级版：月付 $188＋$188＝$376/月，年付 $1,888＋$1,888＝$3,776/年。
