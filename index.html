@@ -50,6 +50,8 @@
   .add-zone-tab:hover { color: var(--red); }
   .zone-del-btn { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 10px; padding: 0 0 0 3px; line-height: 1; vertical-align: middle; }
   .zone-del-btn:hover { color: var(--red); }
+  .tab-drag-handle { cursor: grab; padding: 0 3px 0 0; font-size: 13px; opacity: 0.3; touch-action: none; user-select: none; -webkit-user-select: none; display: inline-block; line-height: 1; }
+  .tab-drag-handle:active { opacity: 0.75; cursor: grabbing; }
   .toolbar { flex-shrink: 0; padding: 8px 12px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .toolbar::-webkit-scrollbar { display: none; }
   .tool { flex-shrink: 0; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
@@ -5582,13 +5584,14 @@ function renderTabs() {
     const delBtn = (canZone && state.zones.length > 1)
       ? `<button class="zone-del-btn" data-del-zone="${z.id}" title="删除此区域">✕</button>`
       : '';
-    return `<button class="table-tab ${z.id===currentTable?'active':''}" data-tab-zone="${z.id}">${escapeHtml(z.name)}<small>${z.type==='shelf'?'货架区':'托盘区'}</small>${delBtn}</button>`;
+    const handle = canZone ? `<span class="tab-drag-handle" title="拖动排序">⠿</span>` : '';
+    return `<button class="table-tab ${z.id===currentTable?'active':''}" data-tab-zone="${z.id}">${handle}${escapeHtml(z.name)}<small>${z.type==='shelf'?'货架区':'托盘区'}</small>${delBtn}</button>`;
   }).join('') + (canZone ? `<button class="add-zone-tab" id="add-zone-tab-btn" title="新增区域">＋</button>` : '');
 
   let dragZoneId = null;
   bar.querySelectorAll('[data-tab-zone]').forEach(btn => {
     btn.addEventListener('click', e => {
-      if (e.target.closest('[data-del-zone]')) return;
+      if (e.target.closest('[data-del-zone]') || e.target.closest('.tab-drag-handle')) return;
       switchZone(btn.dataset.tabZone);
     });
     btn.addEventListener('dblclick', e => {
@@ -5607,9 +5610,17 @@ function renderTabs() {
     if (canZone) {
       btn.setAttribute('draggable', 'true');
       btn.addEventListener('dragstart', e => {
-        dragZoneId = btn.dataset.tabZone;
-        e.dataTransfer.effectAllowed = 'move';
-        btn.style.opacity = '0.5';
+        if (!e.target.closest('.tab-drag-handle') && window.innerWidth >= 768) {
+          dragZoneId = btn.dataset.tabZone;
+          e.dataTransfer.effectAllowed = 'move';
+          btn.style.opacity = '0.5';
+        } else if (!e.target.closest('.tab-drag-handle')) {
+          e.preventDefault();
+        } else {
+          dragZoneId = btn.dataset.tabZone;
+          e.dataTransfer.effectAllowed = 'move';
+          btn.style.opacity = '0.5';
+        }
       });
       btn.addEventListener('dragend', () => { btn.style.opacity = ''; dragZoneId = null; });
       btn.addEventListener('dragover', e => { if (dragZoneId && dragZoneId !== btn.dataset.tabZone) { e.preventDefault(); btn.style.outline = '2px solid var(--ink)'; } });
@@ -5621,9 +5632,45 @@ function renderTabs() {
         const tgtIdx = state.zones.findIndex(z => z.id === btn.dataset.tabZone);
         if (srcIdx < 0 || tgtIdx < 0) return;
         const [item] = state.zones.splice(srcIdx, 1);
-        state.zones.splice(tgtIdx > srcIdx ? tgtIdx - 1 : tgtIdx + 1, 0, item);
+        state.zones.splice(srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx, 0, item);
         saveState(); renderTabs();
       });
+      // Touch drag via the handle (mobile)
+      const handle = btn.querySelector('.tab-drag-handle');
+      if (handle) {
+        handle.addEventListener('touchstart', e => {
+          dragZoneId = btn.dataset.tabZone;
+          btn.style.opacity = '0.6';
+          e.preventDefault();
+          e.stopPropagation();
+        }, { passive: false });
+        handle.addEventListener('touchmove', e => {
+          if (!dragZoneId) return;
+          e.preventDefault();
+          const t = e.touches[0];
+          bar.querySelectorAll('[data-tab-zone]').forEach(b => b.style.outline = '');
+          const el = document.elementFromPoint(t.clientX, t.clientY);
+          const target = el?.closest('[data-tab-zone]');
+          if (target && target.dataset.tabZone !== dragZoneId) target.style.outline = '2px solid var(--ink)';
+        }, { passive: false });
+        handle.addEventListener('touchend', e => {
+          if (!dragZoneId) return;
+          bar.querySelectorAll('[data-tab-zone]').forEach(b => { b.style.outline = ''; b.style.opacity = ''; });
+          const t = e.changedTouches[0];
+          const el = document.elementFromPoint(t.clientX, t.clientY);
+          const target = el?.closest('[data-tab-zone]');
+          if (target && target.dataset.tabZone && target.dataset.tabZone !== dragZoneId) {
+            const srcIdx = state.zones.findIndex(z => z.id === dragZoneId);
+            const tgtIdx = state.zones.findIndex(z => z.id === target.dataset.tabZone);
+            if (srcIdx >= 0 && tgtIdx >= 0) {
+              const [item] = state.zones.splice(srcIdx, 1);
+              state.zones.splice(srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx, 0, item);
+              saveState(); renderTabs();
+            }
+          }
+          dragZoneId = null;
+        });
+      }
     }
   });
   bar.querySelectorAll('[data-del-zone]').forEach(btn => {
