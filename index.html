@@ -1122,7 +1122,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="tts-btn" title="语音朗读 (翻译后悬停朗读)" aria-label="语音朗读" style="display:none;">🔊</button>
@@ -1445,6 +1445,24 @@
   </div>
 </div>
 
+<!-- Card Management Sheet -->
+<div class="sheet-backdrop modal-style" id="card-manage-sheet" style="align-items:flex-start; padding-top:8vh;">
+  <div class="sheet" style="max-height:80vh; border-radius:16px;">
+    <div class="sheet-body">
+      <h3>💳 银行卡管理</h3>
+      <div id="card-manage-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">加载中…</div>
+      </div>
+      <button onclick="hideSheets();setTimeout(_addCard,150);" style="width:100%;padding:12px;background:#e8f0fe;color:#1a73e8;border:1.5px solid #1a73e8;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        ➕ 添加新银行卡（手填/扫卡）
+      </button>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- User Profile Sheet -->
 <div class="sheet-backdrop modal-style" id="profile-sheet" style="align-items:flex-start; padding-top:4vh;">
   <div class="sheet" style="max-height:88vh; border-radius:16px;">
@@ -1453,7 +1471,7 @@
 
       <!-- Avatar + name row -->
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-        <div onclick="_pickAvatar()" title="更换头像" style="width:64px;height:64px;border-radius:50%;border:2px dashed var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+        <div onclick="_pickAvatar()" title="更换头像" style="width:64px;height:64px;border-radius:50%;border:2px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
           <img id="profile-avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
           <span id="profile-avatar-ph" style="font-size:30px;">👤</span>
         </div>
@@ -1612,7 +1630,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;border-top:none;padding-top:4px;margin-top:0;margin-bottom:0;">
         <div class="settings-sec-lbl" style="border-top:none;padding-top:0;margin-top:0;margin-bottom:0;">ACCOUNT 账户</div>
         <!-- Avatar upload circle -->
-        <div id="avatar-wrap" onclick="_pickAvatar()" title="点击上传头像" style="width:48px;height:48px;border-radius:50%;border:2px dashed var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+        <div id="avatar-wrap" onclick="_pickAvatar()" title="点击上传头像" style="width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
           <img id="avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
           <span id="avatar-placeholder" style="font-size:22px;">👤</span>
         </div>
@@ -1958,7 +1976,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.1</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.2</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复"添加新银行卡"和"详细"弹窗被设置页遮挡问题</li>
+            <li>银行卡管理改为内置页面：列出所有卡、设默认、删除（保留≥1张）、添加新卡</li>
+            <li>头像边框由虚线改为实线</li>
+            <li>🔊 朗读按钮在语言设置激活后立即显示</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.1</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -5517,7 +5548,7 @@ let _ttsVolume = 0.85;
 let _ttsPlaying = false;
 
 function _updateXlatUI() {
-  const active = !!_xlat_lang;
+  const active = !!(_xlat_lang || _perm_lang);
   const ttsBtn = document.getElementById('tts-btn');
   if (ttsBtn) { ttsBtn.style.display = active ? 'grid' : 'none'; if (!active) { ttsBtn.classList.remove('tts-playing'); _ttsHoverOff(); } }
   document.getElementById('lang-btn')?.classList.toggle('perm-active', !!_perm_lang);
@@ -7023,6 +7054,7 @@ async function _addCard() {
     if (nameInp) nameInp.value = _displayName || '';
     document.getElementById('card-submit-btn').textContent = '➕ 添加此卡';
     document.getElementById('card-submit-btn').disabled = false;
+    hideSheets();
     showSheet('new-card-sheet');
   } catch (e) {
     toast('❌ ' + e.message);
@@ -7400,15 +7432,86 @@ function _toggleHelpSection() {
   if (arr) arr.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
 }
 
-// ── Card management (Stripe portal for add/update/delete/default) ──
+// ── Card management ──
 async function _manageCards() {
   if (_savedCard) {
-    // Card exists → open portal for full management (add, remove, set default)
-    await _openPortal();
+    await _openCardManageSheet();
   } else {
-    // No card → use setup intent flow to add first card
     await _addCard();
   }
+}
+
+async function _openCardManageSheet() {
+  document.getElementById('card-manage-list').innerHTML =
+    '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">加载中…</div>';
+  hideSheets();
+  showSheet('card-manage-sheet');
+  await _loadCardManageList();
+}
+
+async function _loadCardManageList() {
+  const listEl = document.getElementById('card-manage-list');
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+    const res = await fetch('/api/customer-portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'list', warehouseId: _warehouse?.id }),
+    });
+    const d = await res.json();
+    if (d.error) {
+      listEl.innerHTML = `<div style="color:var(--red);font-size:13px;text-align:center;padding:20px;">${d.error}</div>`;
+      return;
+    }
+    const cards = d.cards || [];
+    if (!cards.length) {
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">未绑定银行卡</div>';
+      return;
+    }
+    listEl.innerHTML = cards.map(c => {
+      const brand = c.brand.charAt(0).toUpperCase() + c.brand.slice(1);
+      const exp = `${String(c.exp_month).padStart(2,'0')}/${String(c.exp_year).slice(-2)}`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:10px;border:1.5px solid ${c.is_default ? '#1a73e8' : 'var(--line)'};">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;">${brand} •••• ${c.last4}</div>
+          <div style="font-size:11px;color:var(--muted);">到期 ${exp}${c.is_default ? '&nbsp;&nbsp;✅ 默认' : ''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${!c.is_default ? `<button onclick="_setDefaultCard('${c.id}')" style="font-size:11px;padding:5px 9px;background:#f0fdf4;color:#16a34a;border:1px solid #16a34a;border-radius:7px;cursor:pointer;font-family:inherit;font-weight:700;">设为默认</button>` : ''}
+          ${cards.length > 1 ? `<button onclick="_deleteCard('${c.id}')" style="font-size:11px;padding:5px 9px;background:#fff0f0;color:var(--red);border:1px solid var(--red);border-radius:7px;cursor:pointer;font-family:inherit;font-weight:700;">删除</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    listEl.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:20px;">加载失败</div>';
+  }
+}
+
+async function _setDefaultCard(pmId) {
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const res = await fetch('/api/customer-portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ action: 'set_default', warehouseId: _warehouse?.id, paymentMethodId: pmId }),
+  });
+  const d = await res.json();
+  if (d.ok) { toast('✅ 已设为默认卡'); _loadCardManageList(); _loadPaymentInfo(); }
+  else toast('❌ ' + (d.error || '操作失败'));
+}
+
+async function _deleteCard(pmId) {
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const res = await fetch('/api/customer-portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ action: 'delete', warehouseId: _warehouse?.id, paymentMethodId: pmId }),
+  });
+  const d = await res.json();
+  if (d.ok) { toast('🗑️ 银行卡已删除'); _loadCardManageList(); _loadPaymentInfo(); }
+  else toast('❌ ' + (d.error || '操作失败'));
 }
 
 // ── Avatar upload ──
@@ -7452,6 +7555,7 @@ function _openProfileSheet() {
     const el = document.getElementById('pf-' + k);
     if (el) el.value = pf[k] || '';
   });
+  hideSheets();
   showSheet('profile-sheet');
 }
 function _saveProfile() {
