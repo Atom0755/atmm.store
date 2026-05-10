@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const PLATFORM_FEE_PCT = 6; // 6% platform cut
+const PLATFORM_FEE_PCT = 15; // 15% platform cut
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');

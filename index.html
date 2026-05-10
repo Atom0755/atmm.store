@@ -7891,7 +7891,7 @@ document.addEventListener('touchend', (e) => {
 function _openShopEntry() {
   if (!_user) { _openAuthModal(); toast('请先登录后开店'); return; }
   if (!_warehouse?.id) { toast('请先创建或选择仓库'); return; }
-  window.location.href = `/shop.html?mode=seller&wh=${_warehouse.id}`;
+  window.location.href = `/shop?mode=seller&wh=${_warehouse.id}`;
 }
 </script>
 <!-- ZEHEM.AI brand footer -->
