@@ -40,13 +40,7 @@
   #lang-btn.perm-active .gt-a, #lang-btn.perm-active .gt-zh { color:#1a73e8; }
   .translate-lang.lang-selected, .lang-sheet-lang.lang-selected { background:#e8f0fe; border-color:#1a73e8; }
   .translate-lang.lang-selected > div, .lang-sheet-lang.lang-selected > div { color:#1a73e8; font-weight:800; }
-  #tts-btn { display:none; }
-  #tts-btn.tts-visible { display:grid; }
-  #tts-btn.tts-playing { border-color:var(--red); background:#fff0f0; color:var(--red); }
-  body.tts-hover-mode *:not(input):not(textarea):not(button):hover { outline:2px solid rgba(214,51,64,0.35) !important; cursor:crosshair !important; }
-  body.tts-hover-mode { cursor:crosshair; }
   #avatar-wrap:hover { border-color:var(--red) !important; border-style:solid !important; }
-  #tts-vol-panel { position:fixed; z-index:3100; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 10px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.18); display:flex; flex-direction:column; align-items:center; gap:8px; }
   .table-tabs { flex-shrink: 0; display: flex; background: var(--paper); border-bottom: 1px solid var(--line); }
   .table-tab {
     flex: 1; padding: 10px 6px; font-size: 12px; font-weight: 500;
@@ -1122,10 +1116,9 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
-    <button class="icon-btn" id="tts-btn" title="语音朗读 (翻译后悬停朗读)" aria-label="语音朗读" style="display:none;">🔊</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
     <button class="icon-btn" id="addr-check-btn" title="📍 地址核查 — 从Amazon/eBay导入订单检查收件地址" aria-label="地址核查" onclick="window.open('shipping.html?tab=address','_blank')">📍</button>
     <button class="icon-btn" id="label-print-btn" title="📦 打单发货 — 选择UPS/FedEx/USPS/DHL打印快递单" aria-label="打单发货" onclick="window.open('shipping.html?tab=labels','_blank')">📦</button>
@@ -1976,14 +1969,24 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.2</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.3</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>附加型号支持独立拖拽移动：可移到空格（升为主型号）或有主型号的格（加入附加列表）</li>
+            <li>移除语音朗读按钮（手机兼容性差）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.2</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
             <li>修复"添加新银行卡"和"详细"弹窗被设置页遮挡问题</li>
             <li>银行卡管理改为内置页面：列出所有卡、设默认、删除（保留≥1张）、添加新卡</li>
             <li>头像边框由虚线改为实线</li>
-            <li>🔊 朗读按钮在语言设置激活后立即显示</li>
           </ul>
         </div>
 
@@ -1994,7 +1997,6 @@
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
             <li>移除临时翻译按钮，固定语言（📌 A文）已满足需求</li>
-            <li>语音朗读改为悬停模式：翻译激活后点🔊，光标悬停在文字上即时朗读</li>
             <li>换仓按钮加"换仓"文字，且只在老板拥有多个仓库时才显示</li>
             <li>HELP 帮助栏目折叠收起，点击标题展开</li>
             <li>银行卡改为"更新银行卡 Update Card"，支持通过 Stripe 门户添加多张卡和设置默认卡</li>
@@ -2012,7 +2014,6 @@
             <li>翻译图标改为 Google Translate 风格「A文」双字母设计</li>
             <li>新增 📌 固定语言按钮（28种语言），选后全站保持，刷新不重置</li>
             <li>修复翻译切换区域 tab 后自动消失的问题</li>
-            <li>新增 🔊 语音朗读功能</li>
           </ul>
         </div>
 
@@ -2698,7 +2699,7 @@ function renderListView() {
             const smm = sm.modelId ? getModel(sm.modelId) : null;
             const smAbc = String.fromCharCode(97 + smi);
             const smModelHtml = sm.modelId
-              ? `<div class="model-cell has-model sub-model-cell" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}" data-mid="${sm.modelId}">${escapeHtml(smm?.name||'?')}</div>`
+              ? `<div class="model-cell has-model sub-model-cell" draggable="true" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}" data-mid="${sm.modelId}" data-table="${currentTable}">${escapeHtml(smm?.name||'?')}</div>`
               : `<div class="model-cell empty-clickable sub-model-cell" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">空 (点击添加)</div>`;
             const smColorHtml = sm.modelId
               ? `<div class="color-cell sub-color-cell" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}"></div>`
@@ -2941,6 +2942,12 @@ function attachListHandlers(root) {
       e.stopPropagation();
       requestDeleteSlot(+el.dataset.ai, +el.dataset.ci, +el.dataset.si);
     });
+  });
+  // ── Sub-model drag-to-move (independent move like main model) ──
+  root.querySelectorAll('.sub-model-cell.has-model').forEach(el => {
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend', onDragEnd);
+    addTouchDrag(el);
   });
   // ── Sub-model handlers ──────────────────────────────────────
   // Add sub-model button (+ on loc-code row)
@@ -3779,7 +3786,8 @@ function startEdit(el) {
 let dragMid = null, dragSrc = null, dragSrcTable = null;
 function onDragStart(e) {
   dragMid = this.dataset.mid; dragSrcTable = this.dataset.table;
-  dragSrc = { ai: +this.dataset.ai, ci: +this.dataset.ci, si: +this.dataset.si };
+  const hasSmi = this.dataset.smi !== undefined && this.dataset.smi !== '';
+  dragSrc = { ai: +this.dataset.ai, ci: +this.dataset.ci, si: +this.dataset.si, smi: hasSmi ? +this.dataset.smi : null };
   this.classList.add('dragging');
   if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragMid); }
   if (currentTable === 'pallet') showDeleteZone();
@@ -3788,7 +3796,9 @@ function onDragEnd() { this.classList.remove('dragging'); document.querySelector
 function onDropSlot(e) {
   e.preventDefault(); this.classList.remove('dragover');
   if (!dragMid || !dragSrc || dragSrcTable !== currentTable) { dragMid = null; dragSrc = null; return; }
-  performMove(dragSrc, { ai: +this.dataset.ai, ci: +this.dataset.ci, si: +this.dataset.si });
+  const tgt = { ai: +this.dataset.ai, ci: +this.dataset.ci, si: +this.dataset.si };
+  if (dragSrc.smi !== null) performSubModelMove(dragSrc, tgt);
+  else performMove(dragSrc, tgt);
   dragMid = null; dragSrc = null;
 }
 function performMove(src, tgt) {
@@ -3798,6 +3808,24 @@ function performMove(src, tgt) {
   tSlot.modelId = sSlot.modelId; tSlot.color = sSlot.color; tSlot.qty = sSlot.qty; tSlot.unit = sSlot.unit;
   sSlot.modelId = tmp.modelId; sSlot.color = tmp.color; sSlot.qty = tmp.qty; sSlot.unit = tmp.unit;
   render();
+}
+function performSubModelMove(src, tgt) {
+  if (src.ai === tgt.ai && src.ci === tgt.ci && src.si === tgt.si) return;
+  const srcSlot = getSlot(src.ai, src.ci, src.si);
+  const tgtSlot = getSlot(tgt.ai, tgt.ci, tgt.si);
+  if (!srcSlot?.subModels?.[src.smi]) return;
+  const sm = srcSlot.subModels[src.smi];
+  if (!tgtSlot.modelId) {
+    // 目标空格：附加型号升级为主型号
+    tgtSlot.modelId = sm.modelId; tgtSlot.color = sm.color; tgtSlot.qty = sm.qty; tgtSlot.unit = sm.unit;
+  } else {
+    // 目标有主型号：作为附加型号加入
+    if (!tgtSlot.subModels) tgtSlot.subModels = [];
+    if (tgtSlot.subModels.length >= 3) { toast('⚠️ 目标库位已有3个附加型号'); return; }
+    tgtSlot.subModels.push({ modelId: sm.modelId, color: sm.color, qty: sm.qty, unit: sm.unit, restock: sm.restock || 0 });
+  }
+  srcSlot.subModels.splice(src.smi, 1);
+  saveState(); render();
 }
 function showDeleteZone() { document.getElementById('delete-zone').classList.add('show'); }
 function hideDeleteZone() { const z = document.getElementById('delete-zone'); z.classList.remove('show'); z.classList.remove('active'); }
@@ -3809,7 +3837,8 @@ function addTouchDrag(el) {
     longPressTimer = setTimeout(() => {
       dragging = true;
       dragMid = el.dataset.mid; dragSrcTable = el.dataset.table;
-      dragSrc = { ai: +el.dataset.ai, ci: +el.dataset.ci, si: +el.dataset.si };
+      const _hasSmi = el.dataset.smi !== undefined && el.dataset.smi !== '';
+      dragSrc = { ai: +el.dataset.ai, ci: +el.dataset.ci, si: +el.dataset.si, smi: _hasSmi ? +el.dataset.smi : null };
       ghost = el.cloneNode(true);
       Object.assign(ghost.style, {
         position: 'fixed', zIndex: '300', pointerEvents: 'none', background: 'var(--paper)',
@@ -3852,12 +3881,21 @@ function addTouchDrag(el) {
       el.classList.remove('dragging');
       const dz = document.getElementById('delete-zone'); const dzRect = dz.getBoundingClientRect();
       if (currentTable === 'pallet' && t.clientY > dzRect.top) {
-        const s = getSlot(dragSrc.ai, dragSrc.ci, dragSrc.si);
-        s.modelId = null; s.color = null; s.qty = 0; s.unit = null;
-        toast('🗑️ 整箱已搬走'); render();
+        if (dragSrc.smi !== null) {
+          const srcSlot = getSlot(dragSrc.ai, dragSrc.ci, dragSrc.si);
+          if (srcSlot?.subModels) srcSlot.subModels.splice(dragSrc.smi, 1);
+          toast('🗑️ 附加型号已移除'); render();
+        } else {
+          const s = getSlot(dragSrc.ai, dragSrc.ci, dragSrc.si);
+          s.modelId = null; s.color = null; s.qty = 0; s.unit = null;
+          toast('🗑️ 整箱已搬走'); render();
+        }
       } else {
         const slot = under?.closest('.slot, .grid-slot');
-        if (slot && dragMid) performMove(dragSrc, { ai: +slot.dataset.ai, ci: +slot.dataset.ci, si: +slot.dataset.si });
+        if (slot && dragMid) {
+          if (dragSrc.smi !== null) performSubModelMove(dragSrc, { ai: +slot.dataset.ai, ci: +slot.dataset.ci, si: +slot.dataset.si });
+          else performMove(dragSrc, { ai: +slot.dataset.ai, ci: +slot.dataset.ci, si: +slot.dataset.si });
+        }
       }
       document.querySelectorAll('.dragover').forEach(x => x.classList.remove('dragover'));
       hideDeleteZone();
@@ -5543,14 +5581,7 @@ let _xlat_lang = null;
 let _perm_lang = localStorage.getItem('atmm_ui_lang') || null;
 const _xlat_orig = new Map(); // TextNode → original text
 
-const _TTS_LANG = { en:'en-US', es:'es-ES', ja:'ja-JP', ko:'ko-KR', fr:'fr-FR', de:'de-DE', vi:'vi-VN', ru:'ru-RU', ar:'ar-SA', hi:'hi-IN', th:'th-TH', pt:'pt-PT', it:'it-IT', id:'id-ID', ms:'ms-MY', tr:'tr-TR', uk:'uk-UA', pl:'pl-PL', nl:'nl-NL', sv:'sv-SE', da:'da-DK', fi:'fi-FI', no:'nb-NO', el:'el-GR', he:'he-IL', bn:'bn-BD', tl:'fil-PH', sw:'sw' };
-let _ttsVolume = 0.85;
-let _ttsPlaying = false;
-
 function _updateXlatUI() {
-  const active = !!(_xlat_lang || _perm_lang);
-  const ttsBtn = document.getElementById('tts-btn');
-  if (ttsBtn) { ttsBtn.style.display = active ? 'grid' : 'none'; if (!active) { ttsBtn.classList.remove('tts-playing'); _ttsHoverOff(); } }
   document.getElementById('lang-btn')?.classList.toggle('perm-active', !!_perm_lang);
   document.querySelectorAll('.translate-lang, .lang-sheet-lang').forEach(b => {
     b.classList.toggle('lang-selected', b.dataset.lang === _xlat_lang);
@@ -5633,7 +5664,6 @@ function stopTranslation() {
   _xlat_lang = null;
   _xlat_orig.forEach((orig, node) => { if (node.parentElement) node.textContent = orig; });
   _xlat_orig.clear();
-  _ttsStop();
   _updateXlatUI();
   toast('已恢复原文');
 }
@@ -5653,74 +5683,6 @@ function clearPermanentLang() {
   stopTranslation();
   toast('已恢复中文界面');
 }
-
-// TTS — hover-to-read mode
-let _ttsHoverActive = false;
-let _ttsHoverTimer = null;
-
-function _ttsStop() {
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
-  _ttsPlaying = false;
-  document.getElementById('tts-btn')?.classList.remove('tts-playing');
-}
-
-function _ttsHoverOff() {
-  if (!_ttsHoverActive) return;
-  _ttsHoverActive = false;
-  _ttsStop();
-  document.body.classList.remove('tts-hover-mode');
-  document.removeEventListener('mouseover', _onTtsHover);
-  document.removeEventListener('touchstart', _onTtsTouch, true);
-  document.getElementById('tts-bar')?.remove();
-  document.getElementById('tts-btn')?.classList.remove('tts-playing');
-}
-
-function _speakText(text) {
-  if (!text || !text.trim() || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const langCode = _TTS_LANG[_xlat_lang || _perm_lang || 'zh'] || (_xlat_lang || 'zh-CN');
-  const utter = new SpeechSynthesisUtterance(text.trim().slice(0, 300));
-  utter.lang = langCode;
-  utter.volume = _ttsVolume;
-  utter.rate = 0.92;
-  window.speechSynthesis.speak(utter);
-}
-
-function _onTtsHover(e) {
-  clearTimeout(_ttsHoverTimer);
-  const el = e.target;
-  if (!el || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'BUTTON') return;
-  const text = (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3)
-    ? el.textContent.trim()
-    : el.getAttribute('title') || el.getAttribute('aria-label') || '';
-  if (!text || text.length < 2) return;
-  _ttsHoverTimer = setTimeout(() => _speakText(text), 180);
-}
-
-function _onTtsTouch(e) {
-  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-  if (!el) return;
-  const text = (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3)
-    ? el.textContent.trim()
-    : el.getAttribute('title') || '';
-  if (text && text.length >= 2) _speakText(text);
-}
-
-document.getElementById('tts-btn').addEventListener('click', function() {
-  if (_ttsHoverActive) { _ttsHoverOff(); return; }
-  _ttsHoverActive = true;
-  this.classList.add('tts-playing');
-  document.body.classList.add('tts-hover-mode');
-  document.addEventListener('mouseover', _onTtsHover);
-  document.addEventListener('touchstart', _onTtsTouch, true);
-  // Floating hint bar
-  const bar = document.createElement('div');
-  bar.id = 'tts-bar';
-  bar.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.78);color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;z-index:3200;pointer-events:none;white-space:nowrap;';
-  bar.textContent = '🔊 将光标悬停在文字上即可朗读';
-  document.body.appendChild(bar);
-  toast('🔊 语音模式已开启');
-});
 
 document.getElementById('lang-btn').addEventListener('click', () => {
   if (!_user) { _pulseLoginBtn(); return; }
