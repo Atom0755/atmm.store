@@ -183,15 +183,32 @@
       <!-- Create form -->
       <div style="background:var(--bg); border-radius:10px; padding:14px; margin-bottom:16px;">
         <div style="font-size:12px; font-weight:700; margin-bottom:10px;">新建活动</div>
-        <div style="display:grid; grid-template-columns:1fr 120px 120px 70px 60px 60px; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-          <input id="c-name"    class="camp-form-inp" placeholder="活动名称" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
-          <input id="c-start"   class="camp-form-inp" type="date" title="开始日期" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
-          <input id="c-end"     class="camp-form-inp" type="date" title="截止日期" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
-          <input id="c-max"     class="camp-form-inp" type="number" min="1" value="10" title="每人最多推荐人数" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
-          <input id="c-rfer"    class="camp-form-inp" type="number" min="1" value="50"  title="推荐人得 Credits" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
-          <input id="c-rfee"    class="camp-form-inp" type="number" min="1" value="150" title="被推荐人得 Credits" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+        <!-- Row 1: name -->
+        <input id="c-name" placeholder="活动名称（如：2026年夏季推荐活动）"
+          style="display:block; width:100%; padding:8px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; margin-bottom:8px;">
+        <!-- Row 2: dates + numbers -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center;">
+          <div style="display:flex; flex-direction:column; gap:3px; flex:1; min-width:110px;">
+            <label style="font-size:10px; color:var(--muted); font-weight:600;">开始日期</label>
+            <input id="c-start" type="date" style="padding:7px 8px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:100%;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px; flex:1; min-width:110px;">
+            <label style="font-size:10px; color:var(--muted); font-weight:600;">截止日期</label>
+            <input id="c-end" type="date" style="padding:7px 8px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:100%;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px; width:70px;">
+            <label style="font-size:10px; color:var(--muted); font-weight:600;">推荐上限</label>
+            <input id="c-max" type="number" min="1" value="10" style="padding:7px 8px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:100%;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px; width:70px;">
+            <label style="font-size:10px; color:var(--muted); font-weight:600;">推荐人Credits</label>
+            <input id="c-rfer" type="number" min="1" value="50" style="padding:7px 8px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:100%;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px; width:70px;">
+            <label style="font-size:10px; color:var(--muted); font-weight:600;">被推荐Credits</label>
+            <input id="c-rfee" type="number" min="1" value="150" style="padding:7px 8px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:100%;">
+          </div>
         </div>
-        <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">字段顺序：活动名 · 开始日期 · 截止日期 · 每人上限 · 推荐人积分 · 被推荐人积分</div>
         <button class="camp-btn camp-btn-blue" onclick="createCampaign()">＋ 创建活动</button>
         <span id="camp-create-msg" style="font-size:12px; margin-left:12px;"></span>
       </div>

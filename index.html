@@ -2732,7 +2732,7 @@ function renderListView() {
               <div class="product-name en ${enName ? '' : 'empty'}" data-field="enName" data-mid="${slot.modelId}">${enName ? escapeHtml(enName) : 'English Name (点击输入)'}</div>
               <div class="product-name cn ${cnName ? '' : 'empty'}" data-field="cnName" data-mid="${slot.modelId}">${cnName ? escapeHtml(cnName) : '中文名称 (点击输入)'}</div>
               <div class="loc-code-row">
-                <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码&#10;格式：区域-通道-列-格位&#10;如 1-A-2-03 = 第1货架区·A通道·第2列·03格位&#10;无前缀时表示仓库只有一个同类区域">${escapeHtml(locCode)}</div>
+                <div class="loc-code" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码/条形码&#10;格式：区域-货架/排-列-格位&#10;如 J-1-A-2-03 = 第1货架区·A货架·第2列·03格位&#10;无前缀时表示仓库只有一个同类区域">${escapeHtml(locCode)}</div>
                 ${canMgr ? `<button class="add-sub-model-btn" data-ai="${ai}" data-ci="${ci}" data-si="${si}" title="在此库位添加附加型号">+</button>` : ''}
               </div>
             </div>
