@@ -1030,11 +1030,13 @@
   #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
   #invite-form input, #invite-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
   /* ZEHEM.AI footer brand bar */
-  #zehem-footer { position:fixed; bottom:0; left:0; right:0; z-index:200; height:42px; background:var(--paper); border-top:1px solid var(--line); display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; cursor:pointer; }
+  #zehem-footer { position:fixed; bottom:0; left:0; right:0; z-index:200; height:42px; background:var(--paper); border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:0 12px; }
+  #zehem-footer .zf-left { display:flex; align-items:center; gap:6px; text-decoration:none; }
   #zehem-footer img.zf-logo { height:22px; width:22px; object-fit:contain; }
   #zehem-footer .zf-name { font-size:13px; font-weight:800; color:#6c47ff; letter-spacing:-0.01em; }
   #zehem-footer .zf-text { font-size:10px; color:var(--muted); }
-  #zehem-footer:hover { background:var(--bg); }
+  #zehem-footer .zf-open-shop { font-size:15px; font-weight:800; color:var(--accent); letter-spacing:0.04em; cursor:pointer; padding:6px 10px; border-radius:8px; border:1.5px solid var(--accent); line-height:1; background:none; }
+  #zehem-footer .zf-open-shop:active { background:var(--accent); color:#fff; }
   main { padding-bottom:42px; }
 </style>
 </head>
@@ -7885,12 +7887,19 @@ document.addEventListener('touchend', (e) => {
   if (now - lastTouchEnd < 300) e.preventDefault();
   lastTouchEnd = now;
 }, { passive: false });
+
+function _openShopEntry() {
+  toast('🛍️ 网店平台即将上线，敬请期待！');
+}
 </script>
 <!-- ZEHEM.AI brand footer -->
-<a id="zehem-footer" href="https://zehem.ai" target="_blank" rel="noopener">
-  <img class="zf-logo" src="/ZEHEM-LOGO-28.png" alt="ZEHEM.AI">
-  <span class="zf-name">ZEHEM.AI</span>
-  <span class="zf-text">· 社交电商平台 · 注册后通用登录 ·</span>
-</a>
+<div id="zehem-footer">
+  <a class="zf-left" href="https://zehem.ai" target="_blank" rel="noopener">
+    <img class="zf-logo" src="/ZEHEM-LOGO-28.png" alt="ZEHEM.AI">
+    <span class="zf-name">ZEHEM.AI</span>
+    <span class="zf-text">注册后通用登录</span>
+  </a>
+  <button class="zf-open-shop" onclick="_openShopEntry()">开店</button>
+</div>
 </body>
 </html>
