@@ -1116,7 +1116,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1994,7 +1994,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-10</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>拍照和扫码新增手电筒按钮，可开关手机闪光灯辅助照明</li>
+            <li>拍照和扫码新增「保存设置」选项，勾选后自动记忆手电筒开关状态</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2344,6 +2355,12 @@
         <div class="camera-controls">
           <button id="camera-start">📷 开启摄像头</button>
           <button id="camera-retake" style="display:none;">↻ 重拍</button>
+          <button id="camera-torch" style="display:none;">🔦 手电筒</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="cam-save-pref" checked style="width:14px;height:14px;accent-color:var(--accent);"> 保存设置
+          </label>
         </div>
         <div id="ocr-status" style="display:none; padding: 8px 12px; background: #fff8d6; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 10px;"></div>
       </div>
@@ -2362,6 +2379,12 @@
         <div class="camera-controls">
           <button id="barcode-start">📊 开始扫码</button>
           <button id="barcode-stop" style="display:none;">⏹️ 停止</button>
+          <button id="barcode-torch" style="display:none;">🔦 手电筒</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:6px;margin-bottom:4px;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="barcode-save-pref" checked style="width:14px;height:14px;accent-color:var(--accent);"> 保存设置
+          </label>
         </div>
         <div id="barcode-status" style="display:none; padding: 8px 12px; background: #fff8d6; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 10px;"></div>
         <div id="barcode-result" style="display:none; padding: 10px 12px; background: #e8f5e8; border: 2px solid var(--green); border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 10px; word-break: break-all;"></div>
@@ -4363,6 +4386,50 @@ document.getElementById('unit-confirm').addEventListener('click', () => {
 // ===== MODEL PICKER with 4 input methods =====
 let pendingModelTarget = null, cameraStream = null, selectedSuggestionId = null, modelPickerCallback = null;
 let voiceRecognition = null, voiceActive = false;
+let cameraTorchOn = false, barcodeTorchOn = false;
+
+async function applyTorch(stream, on) {
+  if (!stream) return false;
+  const track = stream.getVideoTracks()[0];
+  if (!track) return false;
+  try { await track.applyConstraints({ advanced: [{ torch: on }] }); return true; }
+  catch(e) { return false; }
+}
+function updateTorchBtn(btnId, on) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.style.background = on ? '#f5c518' : '';
+  btn.style.color = on ? '#111' : '';
+  btn.style.fontWeight = on ? '700' : '';
+}
+async function toggleCameraTorch() {
+  cameraTorchOn = !cameraTorchOn;
+  const ok = await applyTorch(cameraStream, cameraTorchOn);
+  if (!ok) {
+    cameraTorchOn = false;
+    toast('此设备不支持手电筒');
+    const b = document.getElementById('camera-torch');
+    if (b) b.style.display = 'none';
+    return;
+  }
+  updateTorchBtn('camera-torch', cameraTorchOn);
+  const cb = document.getElementById('cam-save-pref');
+  if (cb && cb.checked) localStorage.setItem('atmm_torch', cameraTorchOn ? '1' : '0');
+}
+async function toggleBarcodeTorch() {
+  barcodeTorchOn = !barcodeTorchOn;
+  const ok = await applyTorch(barcodeStream, barcodeTorchOn);
+  if (!ok) {
+    barcodeTorchOn = false;
+    toast('此设备不支持手电筒');
+    const b = document.getElementById('barcode-torch');
+    if (b) b.style.display = 'none';
+    return;
+  }
+  updateTorchBtn('barcode-torch', barcodeTorchOn);
+  const cb = document.getElementById('barcode-save-pref');
+  if (cb && cb.checked) localStorage.setItem('atmm_torch', barcodeTorchOn ? '1' : '0');
+}
 
 function openModelPicker(ai, ci, si, withCamera, callback) {
   pendingModelTarget = (ai === null) ? null : { ai, ci, si };
@@ -4447,6 +4514,18 @@ async function startCameraNow() {
     btn.textContent = '📸 拍下';
     btn.dataset.mode = 'capture';
     video.addEventListener('click', tryFocus);
+    // Torch: show button, auto-apply saved preference
+    const torchBtn = document.getElementById('camera-torch');
+    if (torchBtn) torchBtn.style.display = '';
+    if (localStorage.getItem('atmm_torch') === '1') {
+      cameraTorchOn = true;
+      const ok = await applyTorch(cameraStream, true);
+      if (ok) updateTorchBtn('camera-torch', true);
+      else { cameraTorchOn = false; if (torchBtn) torchBtn.style.display = 'none'; }
+    } else {
+      cameraTorchOn = false;
+      updateTorchBtn('camera-torch', false);
+    }
   } catch(e) { toast('无法打开摄像头: ' + (e.message || e.name)); }
 }
 
@@ -4590,9 +4669,14 @@ document.getElementById('camera-retake').addEventListener('click', () => {
   const btn = document.getElementById('camera-start');
   btn.style.display = ''; btn.textContent = '📷 开启摄像头'; btn.dataset.mode = 'start';
 });
+document.getElementById('camera-torch').addEventListener('click', toggleCameraTorch);
+document.getElementById('barcode-torch').addEventListener('click', toggleBarcodeTorch);
 
 function stopCamera() {
   if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  cameraTorchOn = false;
+  const torchBtn = document.getElementById('camera-torch');
+  if (torchBtn) { torchBtn.style.display = 'none'; torchBtn.style.background = ''; torchBtn.style.color = ''; torchBtn.style.fontWeight = ''; }
   const btn = document.getElementById('camera-start');
   if (btn) { btn.textContent = '📷 开启摄像头'; btn.dataset.mode = 'start'; btn.style.display = ''; }
   const video = document.getElementById('camera-video');
@@ -4779,6 +4863,18 @@ async function startBarcodeScanner() {
     startBtn.style.display = 'none';
     stopBtn.style.display = '';
     if (status) status.textContent = '🔍 扫描中... 请将条码/二维码对准框内';
+    // Torch: show button, auto-apply saved preference
+    const torchBtn = document.getElementById('barcode-torch');
+    if (torchBtn) torchBtn.style.display = '';
+    if (localStorage.getItem('atmm_torch') === '1') {
+      barcodeTorchOn = true;
+      const ok = await applyTorch(barcodeStream, true);
+      if (ok) updateTorchBtn('barcode-torch', true);
+      else { barcodeTorchOn = false; if (torchBtn) torchBtn.style.display = 'none'; }
+    } else {
+      barcodeTorchOn = false;
+      updateTorchBtn('barcode-torch', false);
+    }
 
     // Try native BarcodeDetector first
     if ('BarcodeDetector' in window) {
@@ -5043,6 +5139,9 @@ function handleBarcodeFound(code, format) {
 function stopBarcodeScanner() {
   if (barcodeRafId) { cancelAnimationFrame(barcodeRafId); barcodeRafId = null; }
   barcodeDetector = null;
+  barcodeTorchOn = false;
+  const torchBtn = document.getElementById('barcode-torch');
+  if (torchBtn) { torchBtn.style.display = 'none'; torchBtn.style.background = ''; torchBtn.style.color = ''; torchBtn.style.fontWeight = ''; }
   // Release screen orientation lock
   try {
     if (screen.orientation && typeof screen.orientation.unlock === 'function') {
