@@ -7310,10 +7310,10 @@ async function _convertToCredits() {
   const amt = parseFloat(document.getElementById('wallet-convert-amt')?.value);
   if (!amt || amt < 1) { toast('请输入至少 $1'); return; }
   const token = (await sb.auth.getSession()).data.session?.access_token;
-  const r = await fetch('/api/convert-to-credits', {
+  const r = await fetch('/api/get-wallet-credits', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-    body: JSON.stringify({ warehouseId: _warehouse.id, amountUsd: amt }),
+    body: JSON.stringify({ action: 'wallet_to_credits', warehouseId: _warehouse.id, amountUsd: amt }),
   });
   const d = await r.json();
   if (d.ok) {
@@ -7889,7 +7889,9 @@ document.addEventListener('touchend', (e) => {
 }, { passive: false });
 
 function _openShopEntry() {
-  toast('🛍️ 网店平台即将上线，敬请期待！');
+  if (!_user) { _openAuthModal(); toast('请先登录后开店'); return; }
+  if (!_warehouse?.id) { toast('请先创建或选择仓库'); return; }
+  window.location.href = `/shop.html?mode=seller&wh=${_warehouse.id}`;
 }
 </script>
 <!-- ZEHEM.AI brand footer -->

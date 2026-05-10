@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="theme-color" content="#d94f3b">
+<title>ATMM 网店广场</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<style>
+:root {
+  --accent:#d94f3b; --ink:#1a1a1a; --paper:#ffffff; --bg:#f5f5f0;
+  --muted:#888; --line:#e0ddd6; --green:#2e7d32; --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* Header */
+#hdr{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--line);padding:0 14px;height:50px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:15px;cursor:pointer;color:var(--ink);}
+.hdr-logo span{color:var(--accent);}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+#wallet-badge{font-size:12px;color:var(--muted);font-weight:600;}
+#auth-btn{background:var(--accent);color:#fff;border:none;padding:5px 13px;border-radius:18px;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* Main */
+main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:80px;}
+
+/* Breadcrumb */
+#bc{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-bottom:12px;flex-wrap:wrap;}
+#bc a{color:var(--accent);cursor:pointer;}
+
+/* Views */
+.view{display:none;}.view.on{display:block;}
+
+/* Cards */
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;}
+.store-card{background:var(--paper);border-radius:var(--r);padding:14px;cursor:pointer;border:1px solid var(--line);text-align:center;}
+.store-card:active{opacity:.85;}
+.sc-ico{font-size:30px;margin-bottom:7px;}
+.sc-name{font-weight:700;font-size:13px;margin-bottom:3px;}
+.sc-desc{font-size:11px;color:var(--muted);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+
+.prod-card{background:var(--paper);border-radius:var(--r);overflow:hidden;cursor:pointer;border:1px solid var(--line);}
+.prod-card:active{opacity:.85;}
+.pc-img{width:100%;aspect-ratio:1;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:44px;overflow:hidden;}
+.pc-img img{width:100%;height:100%;object-fit:cover;}
+.pc-body{padding:9px;}
+.pc-name{font-weight:700;font-size:13px;margin-bottom:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.pc-price{color:var(--accent);font-weight:800;font-size:15px;}
+.pc-stock{font-size:10px;color:var(--muted);margin-top:2px;}
+.ref-tag{font-size:10px;background:#fff3cd;color:#856404;padding:2px 6px;border-radius:10px;display:inline-block;margin-top:3px;}
+
+/* Store header */
+#sh-wrap{background:var(--paper);border-radius:var(--r);padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;border:1px solid var(--line);}
+#sh-ico{font-size:38px;}
+#sh-name{font-weight:800;font-size:16px;}
+#sh-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4;}
+
+/* Modals */
+.ov{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);}
+.ov.on{display:flex;align-items:flex-end;justify-content:center;}
+.mbox{background:var(--paper);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:18px;}
+.handle{width:40px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px;}
+.mbox h3{font-size:16px;font-weight:800;margin-bottom:12px;}
+.mcls{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);margin-top:-4px;}
+
+/* Buttons */
+.btn{display:block;width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;text-align:center;}
+.btn-r{background:var(--accent);color:#fff;}
+.btn-g{background:var(--green);color:#fff;}
+.btn-s{background:var(--bg);color:var(--ink);border:1.5px solid var(--line);}
+.brow{display:flex;gap:9px;}.brow .btn{flex:1;}
+.btn+.btn{margin-top:9px;}
+
+/* Forms */
+.fg{margin-bottom:11px;}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;}
+.fg input,.fg textarea,.fg select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;background:var(--bg);color:var(--ink);font-family:inherit;outline:none;}
+.fg input:focus,.fg textarea:focus{border-color:var(--accent);}
+.fg textarea{resize:none;min-height:72px;}
+.frow{display:flex;gap:9px;}.frow .fg{flex:1;}
+
+/* Toggle switch */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);}
+.tog-row .tl label{font-size:13px;font-weight:600;}
+.tog-row .tl small{font-size:11px;color:var(--muted);}
+.tog{position:relative;width:42px;height:24px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:12px;transition:.2s;}
+.tog-sl:before{content:'';position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.tog input:checked+.tog-sl{background:var(--accent);}
+.tog input:checked+.tog-sl:before{transform:translateX(18px);}
+
+/* Tabs */
+.tabbar{display:flex;border-bottom:2px solid var(--line);margin-bottom:14px;}
+.tabbtn{flex:1;padding:10px;background:none;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tabbtn.on{color:var(--accent);border-bottom-color:var(--accent);}
+.tabpane{display:none;}.tabpane.on{display:block;}
+
+/* Orders */
+.ocard{background:var(--bg);border-radius:10px;padding:11px;margin-bottom:9px;border:1px solid var(--line);}
+.ocard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.ocard-name{font-weight:700;font-size:13px;}
+.ocard-earn{color:var(--accent);font-weight:800;}
+.ocard-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+.badge{font-size:10px;padding:3px 8px;border-radius:10px;font-weight:700;}
+.s-paid{background:#e3f2fd;color:#1565c0;}
+.s-shipped{background:#fff3e0;color:#e65100;}
+.s-completed{background:#e8f5e9;color:#2e7d32;}
+.s-refunded{background:#fce4ec;color:#c62828;}
+
+/* Seller product row */
+.spr{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
+.spr-ico{width:46px;height:46px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;}
+.spr-ico img{width:100%;height:100%;object-fit:cover;}
+.spr-inf{flex:1;min-width:0;}
+.spr-nm{font-weight:700;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.spr-mt{font-size:11px;color:var(--muted);}
+.spr-acts{display:flex;gap:5px;flex-shrink:0;}
+.mini-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:none;font-size:12px;cursor:pointer;}
+.mini-btn.red{color:var(--accent);border-color:var(--accent);}
+
+/* Share */
+#share-qr{display:block;margin:0 auto 10px;border-radius:8px;}
+#share-link{word-break:break-all;font-size:11px;background:var(--bg);padding:8px;border-radius:8px;color:var(--muted);margin-bottom:11px;}
+
+/* Misc */
+.sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:11px;}
+.loading{text-align:center;color:var(--muted);padding:40px;font-size:14px;}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;}
+.empty .ei{font-size:44px;margin-bottom:8px;}
+
+/* Product modal */
+#pm-img{width:100%;aspect-ratio:1;background:var(--bg);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:60px;margin-bottom:12px;overflow:hidden;}
+#pm-img img{width:100%;height:100%;object-fit:cover;}
+#pm-name{font-size:18px;font-weight:800;margin-bottom:5px;}
+#pm-price{font-size:20px;font-weight:800;color:var(--accent);margin-bottom:5px;}
+#pm-stock{font-size:12px;color:var(--muted);margin-bottom:7px;}
+#pm-desc{font-size:13px;color:#444;line-height:1.6;margin-bottom:13px;}
+#pm-ref-info{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:9px 11px;font-size:12px;color:#6d4c41;margin-bottom:12px;line-height:1.5;}
+
+/* Auth modal */
+.auth-tabs{display:flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:14px;}
+.auth-tab{flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);}
+.auth-tab.on{background:var(--accent);color:#fff;}
+.auth-inp{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:14px;margin-bottom:9px;background:var(--bg);color:var(--ink);outline:none;}
+.auth-inp:focus{border-color:var(--accent);}
+#auth-err{font-size:12px;color:var(--accent);min-height:14px;margin-bottom:7px;}
+
+/* Summary box */
+.summary-box{background:var(--bg);border-radius:10px;padding:13px;margin-bottom:13px;font-size:13px;line-height:1.9;}
+
+/* Toast */
+#toast{position:fixed;bottom:68px;left:50%;transform:translateX(-50%) translateY(16px);background:#222;color:#fff;padding:9px 17px;border-radius:18px;font-size:13px;opacity:0;transition:all .25s;z-index:9999;pointer-events:none;white-space:nowrap;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(min-width:480px){.grid2{grid-template-columns:repeat(3,1fr);}}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="hdr-logo" onclick="goMarket()">🏪 <span>ATMM</span> 网店广场</div>
+  <div class="hdr-right">
+    <span id="wallet-badge"></span>
+    <button id="auth-btn" onclick="authClick()">登录</button>
+  </div>
+</div>
+
+<main>
+  <div id="bc"></div>
+
+  <!-- Marketplace -->
+  <div class="view on" id="v-market">
+    <div class="sec-title">全部店铺</div>
+    <div class="grid2" id="store-grid"><div class="loading">加载中…</div></div>
+  </div>
+
+  <!-- Store -->
+  <div class="view" id="v-store">
+    <div id="sh-wrap">
+      <div id="sh-ico">🏪</div>
+      <div><div id="sh-name"></div><div id="sh-desc"></div></div>
+    </div>
+    <div class="sec-title">商品</div>
+    <div class="grid2" id="prod-grid"></div>
+  </div>
+
+  <!-- Seller dashboard -->
+  <div class="view" id="v-seller">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:17px;font-weight:800;">我的店铺</div>
+      <button class="btn btn-s" id="view-shop-btn" style="width:auto;padding:6px 13px;font-size:12px;display:none;" onclick="viewMyShop()">查看店面 →</button>
+    </div>
+
+    <!-- No store yet -->
+    <div id="no-store">
+      <div class="empty"><div class="ei">🏪</div><div style="font-weight:700;font-size:14px;margin-bottom:6px;">还没有店铺</div><div style="font-size:13px;">创建店铺，开始销售商品或服务</div></div>
+      <div class="fg"><label>店铺名称 *</label><input id="ns-name" placeholder="输入店铺名称"></div>
+      <div class="fg"><label>简介</label><textarea id="ns-desc" placeholder="描述你的店铺…"></textarea></div>
+      <div class="frow">
+        <div class="fg"><label>一级转发佣金 %</label><input type="number" id="ns-l1" value="5" min="0" max="30"></div>
+        <div class="fg"><label>二级转发佣金 %</label><input type="number" id="ns-l2" value="2" min="0" max="20"></div>
+      </div>
+      <button class="btn btn-r" onclick="createStore()">🏪 创建店铺</button>
+    </div>
+
+    <!-- Has store -->
+    <div id="has-store" style="display:none;">
+      <div class="tabbar">
+        <button class="tabbtn on" onclick="selTab('info')">店铺信息</button>
+        <button class="tabbtn" onclick="selTab('prods')">商品管理</button>
+        <button class="tabbtn" onclick="selTab('orders')">订单</button>
+      </div>
+
+      <div class="tabpane on" id="tab-info">
+        <div class="fg"><label>店铺名称</label><input id="es-name"></div>
+        <div class="fg"><label>简介</label><textarea id="es-desc"></textarea></div>
+        <div class="frow">
+          <div class="fg"><label>默认一级佣金 %</label><input type="number" id="es-l1" min="0" max="30"></div>
+          <div class="fg"><label>默认二级佣金 %</label><input type="number" id="es-l2" min="0" max="20"></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:11px;">平台抽佣 6%，其余归卖家。有分佣商品额外扣除。</div>
+        <button class="btn btn-r" onclick="saveStore()">保存</button>
+        <div style="margin-top:20px;">
+          <div class="sec-title">本月收入（已结算）</div>
+          <div id="month-earn" style="font-size:26px;font-weight:800;color:var(--accent);">—</div>
+        </div>
+      </div>
+
+      <div class="tabpane" id="tab-prods">
+        <button class="btn btn-r" style="margin-bottom:13px;" onclick="openPF(null)">+ 添加商品/服务</button>
+        <div id="spr-list"></div>
+      </div>
+
+      <div class="tabpane" id="tab-orders">
+        <div id="orders-list"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Product modal -->
+<div class="ov" id="pm">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('pm')">✕</button>
+    <div id="pm-img"></div>
+    <div id="pm-name"></div>
+    <div id="pm-price"></div>
+    <div id="pm-stock"></div>
+    <div id="pm-desc"></div>
+    <div id="pm-ref-info" style="display:none;"></div>
+    <div class="brow">
+      <button class="btn btn-r" onclick="openBuy()">🛒 购买</button>
+      <button class="btn btn-s" id="share-btn" onclick="openShare()" style="display:none;">📤 分享赚钱</button>
+    </div>
+  </div>
+</div>
+
+<!-- Buy modal -->
+<div class="ov" id="bm">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('bm')">✕</button>
+    <h3>确认购买</h3>
+    <div class="summary-box" id="bm-sum"></div>
+    <div class="fg"><label>留言给卖家（选填）</label><input id="bm-note" placeholder="备注…"></div>
+    <div id="bm-wallet" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+    <button class="btn btn-r" onclick="confirmBuy()">确认 — 钱包余额支付</button>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div class="ov" id="sm">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('sm')">✕</button>
+    <h3>📤 分享赚佣金</h3>
+    <canvas id="share-qr" width="200" height="200"></canvas>
+    <div id="share-link"></div>
+    <div id="share-hint" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px;"></div>
+    <div class="brow">
+      <button class="btn btn-r" onclick="copyLink()">复制链接</button>
+      <button class="btn btn-s" onclick="nativeShare()">分享</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product form modal -->
+<div class="ov" id="pfm">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('pfm')">✕</button>
+    <h3 id="pf-title">添加商品</h3>
+    <div class="fg"><label>名称 *</label><input id="pf-name" placeholder="商品或服务名称"></div>
+    <div class="fg"><label>描述</label><textarea id="pf-desc" placeholder="详细描述…"></textarea></div>
+    <div class="fg"><label>图片 URL（选填）</label><input id="pf-img" placeholder="https://…"></div>
+    <div class="frow">
+      <div class="fg"><label>价格（美元）*</label><input type="number" id="pf-price" placeholder="0.00" step="0.01" min="0.01"></div>
+      <div class="fg"><label>单位</label><input id="pf-unit" value="件"></div>
+    </div>
+    <div class="fg"><label>库存（留空 = 无限）</label><input type="number" id="pf-stock" placeholder="不限" min="0"></div>
+    <div class="tog-row">
+      <div class="tl"><label>开启转发分佣</label><small id="pf-ref-sub"></small></div>
+      <label class="tog"><input type="checkbox" id="pf-ref" checked onchange="updRefSub()"><span class="tog-sl"></span></label>
+    </div>
+    <div id="pf-com" style="margin-top:9px;">
+      <div class="frow">
+        <div class="fg"><label>一级佣金 %</label><input type="number" id="pf-l1" min="0" max="30" step="0.5"></div>
+        <div class="fg"><label>二级佣金 %</label><input type="number" id="pf-l2" min="0" max="20" step="0.5"></div>
+      </div>
+    </div>
+    <button class="btn btn-r" style="margin-top:7px;" onclick="saveProd()">保存商品</button>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="ov" id="am">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('am')">✕</button>
+    <h3>登录 / 注册</h3>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="authTab('login')">登录</button>
+      <button class="auth-tab" onclick="authTab('reg')">注册</button>
+    </div>
+    <div id="auth-err"></div>
+    <input class="auth-inp" type="email" id="a-email" placeholder="邮箱">
+    <input class="auth-inp" type="password" id="a-pwd" placeholder="密码">
+    <button class="btn btn-r" onclick="doAuth()">确认</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SB_URL  = 'https://vkwndhdqbmuyogieccph.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrd25kaGRxYm11eW9naWVjY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDg2NzcsImV4cCI6MjA4MTkyNDY3N30.Q2Kf4rzJWJdWnYjpLRofmGUp6DNWBgFoDkFJ4yr473k';
+const sb = window.supabase.createClient(SB_URL, SB_ANON);
+
+let user = null, token = null, whId = null;
+let curStore = null, curProd = null, curRefCode = null;
+let prodsMap = {}; // id -> product
+let editProdId = null;
+let shareUrl = '';
+let authMode = 'login';
+let pendingAfterAuth = null; // fn to call after login
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+let toastT;
+function toast(m, d=2400){const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),d);}
+function openOv(id){document.getElementById(id).classList.add('on');}
+function closeOv(id){document.getElementById(id).classList.remove('on');}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById('v-'+id).classList.add('on');}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function api(path,opts={}){
+  const headers={'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})};
+  const r=await fetch(path,{headers,...opts});
+  return r.json();
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────
+function authClick(){if(user){if(confirm('退出登录？'))sb.auth.signOut().then(()=>location.reload());}else openOv('am');}
+function authTab(m){authMode=m;document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('on',(m==='login'&&i===0)||(m==='reg'&&i===1)));}
+async function doAuth(){
+  const email=document.getElementById('a-email').value.trim();
+  const pwd=document.getElementById('a-pwd').value;
+  const err=document.getElementById('auth-err');err.textContent='';
+  if(!email||!pwd){err.textContent='请填写邮箱和密码';return;}
+  const fn=authMode==='login'?sb.auth.signInWithPassword({email,password:pwd}):sb.auth.signUp({email,password:pwd});
+  const{data,error}=await fn;
+  if(error){err.textContent=error.message;return;}
+  user=data.user;token=data.session?.access_token;
+  closeOv('am');updAuthUI();toast('✅ 登录成功');
+  if(pendingAfterAuth){pendingAfterAuth();pendingAfterAuth=null;}
+  if(document.getElementById('v-seller').classList.contains('on'))loadSeller();
+}
+function updAuthUI(){
+  const btn=document.getElementById('auth-btn');
+  btn.textContent=user?'已登录':'登录';
+  if(user&&whId)loadWallet();
+}
+async function loadWallet(){
+  try{
+    const d=await api(`/api/get-wallet-credits?warehouse_id=${whId}`);
+    document.getElementById('wallet-badge').textContent=d.wallet_cents!=null?`💰 $${(d.wallet_cents/100).toFixed(2)}`:'';
+  }catch(e){}
+}
+
+// ─── Navigation ────────────────────────────────────────────────────────────
+function bc(html){document.getElementById('bc').innerHTML=html;}
+function goMarket(){bc('');showView('market');loadMarket();}
+function goStore(id){bc(`<a onclick="goMarket()">广场</a> › <span id="bc-sn">店铺</span>`);showView('store');loadStore(id);}
+function goSeller(){bc(`<a onclick="goMarket()">广场</a> › 我的店铺`);showView('seller');loadSeller();}
+function viewMyShop(){if(curStore)goStore(curStore.id);}
+
+// ─── Marketplace ───────────────────────────────────────────────────────────
+async function loadMarket(){
+  const g=document.getElementById('store-grid');
+  g.innerHTML='<div class="loading">加载中…</div>';
+  const d=await api('/api/shop?action=marketplace');
+  if(!d.shops?.length){g.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="ei">🏪</div><div>暂无店铺</div></div>';return;}
+  g.innerHTML=d.shops.map(s=>`
+    <div class="store-card" onclick="goStore('${s.id}')">
+      <div class="sc-ico">🏪</div>
+      <div class="sc-name">${esc(s.name)}</div>
+      ${s.description?`<div class="sc-desc">${esc(s.description)}</div>`:''}
+    </div>`).join('');
+}
+
+// ─── Store page ────────────────────────────────────────────────────────────
+async function loadStore(sid){
+  prodsMap={};
+  document.getElementById('prod-grid').innerHTML='<div class="loading" style="grid-column:1/-1">加载中…</div>';
+  const d=await api(`/api/shop?action=store&store_id=${sid}`);
+  if(d.error){toast('店铺不存在');goMarket();return;}
+  document.getElementById('sh-name').textContent=d.shop.name;
+  document.getElementById('sh-desc').textContent=d.shop.description||'';
+  const bn=document.getElementById('bc-sn');if(bn)bn.textContent=d.shop.name;
+  const g=document.getElementById('prod-grid');
+  if(!d.products.length){g.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="ei">📦</div><div>暂无商品</div></div>';return;}
+  d.products.forEach(p=>{prodsMap[p.id]=p;prodsMap[p.id]._sid=sid;});
+  g.innerHTML=d.products.map(p=>`
+    <div class="prod-card" onclick="openProd('${p.id}')">
+      <div class="pc-img">${p.image_url?`<img src="${esc(p.image_url)}" onerror="this.parentNode.innerHTML='📦'">` :'📦'}</div>
+      <div class="pc-body">
+        <div class="pc-name">${esc(p.name)}</div>
+        <div class="pc-price">$${(p.price_cents/100).toFixed(2)}</div>
+        <div class="pc-stock">${p.stock!=null?`库存 ${p.stock} ${esc(p.unit)}`:'无限供应'}</div>
+        ${p.referral_enabled?`<div class="ref-tag">📤 分享赚 ${p.commission_l1_pct}%</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ─── Product modal ─────────────────────────────────────────────────────────
+function openProd(pid){
+  curProd=prodsMap[pid];if(!curProd)return;
+  const p=curProd;
+  const imgEl=document.getElementById('pm-img');
+  imgEl.innerHTML=p.image_url?`<img src="${esc(p.image_url)}" onerror="this.parentNode.innerHTML='📦'">`:'📦';
+  document.getElementById('pm-name').textContent=p.name;
+  document.getElementById('pm-price').textContent=`$${(p.price_cents/100).toFixed(2)} / ${p.unit}`;
+  document.getElementById('pm-stock').textContent=p.stock!=null?`库存：${p.stock} ${p.unit}`:'无限供应';
+  document.getElementById('pm-desc').textContent=p.description||'';
+  const ri=document.getElementById('pm-ref-info'),sb_=document.getElementById('share-btn');
+  if(p.referral_enabled){
+    ri.style.display='';
+    ri.textContent=`📤 分享给朋友购买后你得 ${p.commission_l1_pct}% 佣金${p.commission_l2_pct>0?`，二级再得 ${p.commission_l2_pct}%`:''}，自动入账钱包。`;
+    sb_.style.display='';
+  }else{ri.style.display='none';sb_.style.display='none';}
+  openOv('pm');
+}
+
+// ─── Buy ────────────────────────────────────────────────────────────────────
+function openBuy(){
+  if(!user){pendingAfterAuth=openBuy;openOv('am');toast('请先登录');return;}
+  if(!whId){toast('请先在仓管首页选择仓库，再点"开店"进入购买');return;}
+  const p=curProd;
+  const total=(p.price_cents/100).toFixed(2);
+  document.getElementById('bm-sum').innerHTML=
+    `<b>${esc(p.name)}</b><br>单价：$${total} × 1 = <b style="color:var(--accent)">$${total}</b>`+
+    (curRefCode?`<br><span style="font-size:11px;color:var(--muted);">通过好友链接购买</span>`:'');
+  document.getElementById('bm-wallet').textContent='支付方式：钱包余额';
+  document.getElementById('bm-note').value='';
+  closeOv('pm');openOv('bm');
+}
+async function confirmBuy(){
+  if(!token||!whId||!curProd)return;
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify({
+    action:'buy',warehouseId:whId,product_id:curProd.id,
+    quantity:1,ref_code:curRefCode||null,
+    notes:document.getElementById('bm-note').value||null,
+  })});
+  if(d.ok){closeOv('bm');toast('✅ 购买成功！');loadWallet();}
+  else toast('❌ '+(d.error||'购买失败'));
+}
+
+// ─── Share ──────────────────────────────────────────────────────────────────
+async function openShare(){
+  if(!curProd)return;
+  if(!user){pendingAfterAuth=openShare;openOv('am');toast('请先登录后分享');return;}
+  closeOv('pm');
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify({
+    action:'record_share',warehouseId:whId||null,
+    product_id:curProd.id,parent_ref_code:curRefCode||null,
+  })});
+  if(!d.ok){toast('生成链接失败');return;}
+  const sid=curProd._sid;
+  shareUrl=`${location.origin}/shop.html?store=${sid}&product=${curProd.id}&ref=${d.ref_code}`;
+  document.getElementById('share-link').textContent=shareUrl;
+  document.getElementById('share-hint').textContent=
+    `有人通过你的链接购买，你自动得 ${curProd.commission_l1_pct}% 佣金`;
+  new QRious({element:document.getElementById('share-qr'),value:shareUrl,size:200,padding:8});
+  openOv('sm');
+}
+function copyLink(){navigator.clipboard.writeText(shareUrl).then(()=>toast('✅ 链接已复制'));}
+function nativeShare(){
+  if(navigator.share)navigator.share({title:curProd?.name||'ATMM 网店',url:shareUrl});
+  else copyLink();
+}
+
+// ─── Seller dashboard ────────────────────────────────────────────────────────
+async function loadSeller(){
+  if(!user){openOv('am');return;}
+  if(!whId){toast('请通过仓管首页底部"开店"按钮进入，以便绑定仓库');return;}
+  const d=await api(`/api/shop?action=my_store&warehouse_id=${whId}`);
+  if(d.error){toast(d.error);return;}
+  if(!d.shop){
+    document.getElementById('no-store').style.display='';
+    document.getElementById('has-store').style.display='none';
+    document.getElementById('view-shop-btn').style.display='none';
+    return;
+  }
+  curStore=d.shop;
+  document.getElementById('no-store').style.display='none';
+  document.getElementById('has-store').style.display='';
+  document.getElementById('view-shop-btn').style.display='';
+  document.getElementById('es-name').value=d.shop.name;
+  document.getElementById('es-desc').value=d.shop.description||'';
+  document.getElementById('es-l1').value=d.shop.default_l1_pct;
+  document.getElementById('es-l2').value=d.shop.default_l2_pct;
+  document.getElementById('pf-l1').value=d.shop.default_l1_pct;
+  document.getElementById('pf-l2').value=d.shop.default_l2_pct;
+  updRefSub();
+
+  // Monthly earnings
+  const mon=new Date().toISOString().slice(0,7);
+  const earned=(d.orders||[]).filter(o=>(o.created_at||'').startsWith(mon)).reduce((s,o)=>s+(o.seller_cents||0),0);
+  document.getElementById('month-earn').textContent=`$${(earned/100).toFixed(2)}`;
+
+  renderSPR(d.products||[]);
+  renderOrders(d.orders||[]);
+}
+
+async function createStore(){
+  const name=document.getElementById('ns-name').value.trim();
+  if(!name){toast('请输入店铺名称');return;}
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify({
+    action:'create_store',warehouseId:whId,name,
+    description:document.getElementById('ns-desc').value||null,
+    default_l1_pct:parseFloat(document.getElementById('ns-l1').value)||5,
+    default_l2_pct:parseFloat(document.getElementById('ns-l2').value)||2,
+  })});
+  if(d.ok){toast('✅ 店铺创建成功！');loadSeller();}
+  else toast('❌ '+(d.error||'创建失败'));
+}
+
+async function saveStore(){
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify({
+    action:'update_store',warehouseId:whId,
+    name:document.getElementById('es-name').value.trim(),
+    description:document.getElementById('es-desc').value||null,
+    default_l1_pct:parseFloat(document.getElementById('es-l1').value)||5,
+    default_l2_pct:parseFloat(document.getElementById('es-l2').value)||2,
+  })});
+  if(d.ok)toast('✅ 已保存');else toast('❌ '+(d.error||'保存失败'));
+}
+
+function renderSPR(prods){
+  const el=document.getElementById('spr-list');
+  if(!prods.length){el.innerHTML='<div class="empty"><div class="ei">📦</div><div>还没有商品</div></div>';return;}
+  el.innerHTML=prods.map(p=>`
+    <div class="spr">
+      <div class="spr-ico">${p.image_url?`<img src="${esc(p.image_url)}" onerror="this.style.display='none'">`:'📦'}</div>
+      <div class="spr-inf">
+        <div class="spr-nm">${esc(p.name)}</div>
+        <div class="spr-mt">$${(p.price_cents/100).toFixed(2)} · ${p.stock!=null?p.stock+' '+esc(p.unit):'无限'} · ${p.referral_enabled?`分佣${p.commission_l1_pct}%`:'无分佣'} · ${p.active?'上架':'下架'}</div>
+      </div>
+      <div class="spr-acts">
+        <button class="mini-btn" onclick='openPF(${JSON.stringify(p).replace(/'/g,"&#39;")})'>编辑</button>
+        <button class="mini-btn red" onclick="delProd('${p.id}')">删除</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderOrders(orders){
+  const el=document.getElementById('orders-list');
+  if(!orders.length){el.innerHTML='<div class="empty"><div class="ei">📋</div><div>暂无订单</div></div>';return;}
+  const statusLabel={paid:'已付款',shipped:'已发货',completed:'已完成',refunded:'已退款'};
+  el.innerHTML=orders.map(o=>`
+    <div class="ocard">
+      <div class="ocard-top">
+        <div class="ocard-name">${esc(o.product_name||'商品')}</div>
+        <div class="ocard-earn">+$${((o.seller_cents||0)/100).toFixed(2)}</div>
+      </div>
+      <div class="ocard-meta">
+        <span>${o.quantity}件 · ${new Date(o.created_at).toLocaleDateString('zh-CN')}${o.buyer_name?' · '+esc(o.buyer_name):''}</span>
+        <span class="badge s-${o.status}">${statusLabel[o.status]||o.status}</span>
+      </div>
+      ${o.status==='paid'?`<button class="mini-btn" style="margin-top:7px;width:100%;" onclick="markShip('${o.id}')">标记已发货</button>`:''}
+    </div>`).join('');
+}
+
+function selTab(id){
+  document.querySelectorAll('.tabbtn').forEach((b,i)=>{const ids=['info','prods','orders'];b.classList.toggle('on',ids[i]===id);});
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+}
+
+// ─── Product form ─────────────────────────────────────────────────────────
+function openPF(prod){
+  editProdId=prod?.id||null;
+  document.getElementById('pf-title').textContent=prod?'编辑商品':'添加商品';
+  document.getElementById('pf-name').value=prod?.name||'';
+  document.getElementById('pf-desc').value=prod?.description||'';
+  document.getElementById('pf-img').value=prod?.image_url||'';
+  document.getElementById('pf-price').value=prod?(prod.price_cents/100).toFixed(2):'';
+  document.getElementById('pf-unit').value=prod?.unit||'件';
+  document.getElementById('pf-stock').value=prod?.stock??'';
+  document.getElementById('pf-ref').checked=prod?.referral_enabled??true;
+  document.getElementById('pf-l1').value=prod?.commission_l1_pct??curStore?.default_l1_pct??5;
+  document.getElementById('pf-l2').value=prod?.commission_l2_pct??curStore?.default_l2_pct??2;
+  updRefSub();
+  openOv('pfm');
+}
+function updRefSub(){
+  const en=document.getElementById('pf-ref').checked;
+  const l1=parseFloat(document.getElementById('pf-l1').value)||0;
+  const l2=parseFloat(document.getElementById('pf-l2').value)||0;
+  document.getElementById('pf-ref-sub').textContent=en?` 一级 ${l1}%，二级 ${l2}%`:' 关闭';
+  document.getElementById('pf-com').style.display=en?'':'none';
+}
+async function saveProd(){
+  const name=document.getElementById('pf-name').value.trim();
+  const priceUsd=parseFloat(document.getElementById('pf-price').value);
+  if(!name||!priceUsd||priceUsd<=0){toast('请填写名称和价格');return;}
+  const payload={
+    warehouseId:whId,name,
+    description:document.getElementById('pf-desc').value||null,
+    image_url:document.getElementById('pf-img').value||null,
+    price_cents:Math.round(priceUsd*100),
+    unit:document.getElementById('pf-unit').value||'件',
+    stock:document.getElementById('pf-stock').value!==''?parseInt(document.getElementById('pf-stock').value):null,
+    referral_enabled:document.getElementById('pf-ref').checked,
+    commission_l1_pct:parseFloat(document.getElementById('pf-l1').value)||0,
+    commission_l2_pct:parseFloat(document.getElementById('pf-l2').value)||0,
+  };
+  if(editProdId){payload.action='update_product';payload.product_id=editProdId;}
+  else{payload.action='create_product';payload.store_id=curStore.id;}
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify(payload)});
+  if(d.ok){closeOv('pfm');toast('✅ 已保存');loadSeller();}
+  else toast('❌ '+(d.error||'保存失败'));
+}
+async function delProd(pid){
+  if(!confirm('确认删除？'))return;
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify({action:'delete_product',warehouseId:whId,product_id:pid})});
+  if(d.ok){toast('✅ 已删除');loadSeller();}else toast('❌ '+(d.error||'失败'));
+}
+async function markShip(oid){
+  const d=await api('/api/shop',{method:'POST',body:JSON.stringify({action:'update_order',order_id:oid,status:'shipped'})});
+  if(d.ok){toast('✅ 已标记发货');loadSeller();}else toast('❌ '+(d.error||'失败'));
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+async function init(){
+  const p=new URLSearchParams(location.search);
+  const sid=p.get('store');
+  const pid=p.get('product');
+  curRefCode=p.get('ref')||null;
+  const mode=p.get('mode');
+  whId=p.get('wh')||localStorage.getItem('atmm_shop_wh')||null;
+  if(whId)localStorage.setItem('atmm_shop_wh',whId);
+
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){user=session.user;token=session.access_token;}
+  updAuthUI();
+
+  sb.auth.onAuthStateChange((_,s)=>{user=s?.user||null;token=s?.access_token||null;updAuthUI();});
+
+  if(mode==='seller'){goSeller();}
+  else if(sid){
+    await new Promise(r=>{
+      showView('store');
+      bc(`<a onclick="goMarket()">广场</a> › <span id="bc-sn">店铺</span>`);
+      loadStore(sid).then(r);
+    });
+    if(pid&&prodsMap[pid])setTimeout(()=>openProd(pid),200);
+  }else{
+    goMarket();
+  }
+}
+init();
+</script>
+</body>
+</html>

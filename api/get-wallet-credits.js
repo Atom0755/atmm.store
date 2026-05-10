@@ -110,6 +110,28 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, wallet_cents: cur + earnCents, credits: cr.balance - useCredits });
     }
 
+    // Convert wallet → credits ($1 = 12 credits)
+    if (action === 'wallet_to_credits') {
+      if (member.role !== 'boss') return res.status(403).json({ error: 'Only boss can convert' });
+      const amtUsd = parseFloat(req.body.amountUsd || 0);
+      if (!amtUsd || amtUsd < 1) return res.status(400).json({ error: '最少兑换 $1' });
+      const deductCents = Math.round(amtUsd * 100);
+      const earnCredits = Math.round(amtUsd * CREDITS_PER_DOLLAR);
+      const { data: walletRow } = await sb.from('wallets').select('id,balance_cents').eq('warehouse_id', warehouseId).maybeSingle();
+      if (!walletRow || walletRow.balance_cents < deductCents) return res.status(400).json({ error: '钱包余额不足' });
+      await sb.from('wallets').update({ balance_cents: walletRow.balance_cents - deductCents, updated_at: new Date().toISOString() }).eq('id', walletRow.id);
+      await sb.from('warehouse_transactions').insert({ warehouse_id: warehouseId, type: 'deduction', amount_cents: -deductCents, description: `兑换 ${earnCredits} Credits` });
+      const { data: cr } = await sb.from('credits').select('id,balance').eq('warehouse_id', warehouseId).maybeSingle();
+      const curCred = cr?.balance ?? 0;
+      if (cr?.id) {
+        await sb.from('credits').update({ balance: curCred + earnCredits, updated_at: new Date().toISOString() }).eq('id', cr.id);
+      } else {
+        await sb.from('credits').insert({ warehouse_id: warehouseId, balance: earnCredits });
+      }
+      await sb.from('warehouse_credit_transactions').insert({ warehouse_id: warehouseId, type: 'purchase', amount: earnCredits, description: `从钱包兑换 $${amtUsd}` });
+      return res.json({ ok: true, wallet_cents: walletRow.balance_cents - deductCents, credits: curCred + earnCredits });
+    }
+
     return res.status(400).json({ error: 'Unknown action' });
   }
 
