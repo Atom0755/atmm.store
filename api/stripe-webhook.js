@@ -69,5 +69,20 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // Subscription first payment — mark referral as subscribed
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object;
+    if (invoice.billing_reason === 'subscription_create' && invoice.customer) {
+      const { data: sub } = await sb.from('subscriptions')
+        .select('warehouse_id').eq('stripe_customer_id', invoice.customer).maybeSingle();
+      if (sub?.warehouse_id) {
+        await sb.from('referrals')
+          .update({ status: 'subscribed', subscribed_at: new Date().toISOString() })
+          .eq('referee_warehouse_id', sub.warehouse_id)
+          .eq('status', 'pending');
+      }
+    }
+  }
+
   res.json({ received: true });
 };

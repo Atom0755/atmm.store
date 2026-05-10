@@ -1116,7 +1116,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1692,7 +1692,7 @@
             <button class="plan-btn" style="flex:1; min-width:60px; margin:0; padding:10px 6px; text-align:center;" onclick="_startTopup(200)">$200</button>
           </div>
           <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
-            <input id="topup-custom-amt" type="number" min="1" placeholder="自定义金额 $（最少 $1）" style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
+            <input id="topup-custom-amt" type="number" min="220" placeholder="自定义金额 $（最少 $220）" style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
             <button onclick="_startTopupCustom()" style="padding:8px 14px; background:var(--ink); color:var(--paper); border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">充值</button>
           </div>
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">兑换为 Credits（$1 = 12 Credits）</div>
@@ -1715,12 +1715,20 @@
           <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
             <span style="font-size:22px; font-weight:800;" id="credits-balance-big">0</span>
             <span style="font-size:11px; color:var(--muted);">Credits</span>
+            <span style="font-size:11px; color:var(--muted);" id="credits-dollar-equiv"></span>
           </div>
           <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">汇率：$10 = 120 Credits（约 $0.083/Credit）</div>
           <div style="font-size:12px; color:var(--muted); background:var(--paper); border-radius:8px; padding:8px; margin-bottom:10px; line-height:1.7;">
             Credits 可用于订阅、功能解锁等所有收费项目，<br>
             余额长期有效，不会过期。<br>
             <span style="color:var(--ink); font-weight:600;">$10 = 120 Credits &nbsp;·&nbsp; $50 = 600 Credits &nbsp;·&nbsp; $100 = 1200 Credits</span>
+          </div>
+          <div style="border-top:1px solid var(--line); padding-top:10px; margin-bottom:10px;">
+            <div style="font-size:12px; font-weight:600; margin-bottom:6px; color:var(--ink);">积分兑换到钱包余额（12 Credits = $1）</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="credits-convert-amt" type="number" min="12" step="12" placeholder="积分数（最少12）" style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
+              <button onclick="_creditsToWallet()" style="padding:8px 14px; background:var(--red); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">兑换</button>
+            </div>
           </div>
           <div id="credit-tx-list" style="font-size:11px; color:var(--muted);"></div>
         </div>
@@ -1780,21 +1788,38 @@
       <!-- SOCIAL section -->
       <div style="margin-bottom:18px;">
         <div class="settings-sec-lbl">SOCIAL 推荐</div>
+        <!-- Notifications inbox -->
+        <div class="settings-nav-row" onclick="_toggleNotifications()">
+          <span class="snr-ico">📬</span>
+          <div class="snr-body">
+            <div class="snr-title">消息通知</div>
+            <div class="snr-sub" id="notif-sub-text">暂无消息</div>
+          </div>
+          <span class="snr-arr" id="notif-arr">›</span>
+        </div>
+        <div id="notif-panel" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
+          <div id="notif-list" style="font-size:12px; color:var(--ink); line-height:1.7;">暂无消息</div>
+        </div>
         <!-- Refer a friend (all users) -->
         <div class="settings-nav-row" onclick="_toggleReferral()">
           <span class="snr-ico">🎁</span>
           <div class="snr-body">
             <div class="snr-title">推荐朋友 Refer a Friend</div>
-            <div class="snr-sub">分享专属链接，好友注册即可免费体验</div>
+            <div class="snr-sub">你得50积分 · 好友得150积分 · 活动期间有效</div>
           </div>
           <span class="snr-arr">›</span>
         </div>
         <div id="referral-detail" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
-          <div style="font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.6;">分享你的专属链接，好友注册即可立即开始免费体验 ATMM.store。</div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.7;">
+            分享专属链接，好友注册付费订阅、添加至少一个型号满一周后自动到账：<br>
+            <strong style="color:var(--ink);">你得 50 Credits（约 $4.17）· 好友得 150 Credits（约 $12.50）</strong>
+          </div>
           <div class="wh-code-box" style="margin-bottom:10px; font-size:12px; letter-spacing:0;">
             <span id="referral-code-display" style="flex:1; font-size:11px; word-break:break-all; letter-spacing:0; font-family:inherit;">—</span>
             <button class="wh-code-copy" onclick="_copyReferralLink()">复制</button>
           </div>
+          <div id="campaign-status-banner" style="display:none; font-size:11px; background:var(--paper); border-radius:8px; padding:8px; margin-bottom:10px; line-height:1.6;"></div>
+          <div id="referral-stats" style="display:none; font-size:11px; color:var(--muted); background:var(--paper); border-radius:8px; padding:8px; margin-bottom:10px;"></div>
           <div class="ref-share-row">
             <button class="ref-share-btn" onclick="_shareReferral('sms')">💬<br>SMS</button>
             <button class="ref-share-btn" onclick="_shareReferral('email')">📧<br>邮件</button>
@@ -1969,7 +1994,32 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.4</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>推荐活动由管理员统一设定时间段并一键激活，活动期间推荐码有效</li>
+            <li>奖励调整：推荐人得 50 Credits，被推荐新用户得 150 Credits（约 $12.50）</li>
+            <li>每个账号每次活动最多推荐 10 人；活动激活时站内收件箱自动收到通知</li>
+            <li>自定义充值金额最低 $220（$20/$50/$100/$200 在快捷按钮已覆盖）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.5</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>推荐计划：好友付费、添加型号满一周，双方各得积分，自动到账</li>
+            <li>推荐链接改用仓库码（ATOM-XXXX）作为专属推荐标识</li>
+            <li>积分面板新增 $ 等值显示及积分 → 钱包余额兑换（12 Credits = $1）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.4</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -6788,6 +6838,23 @@ async function _onSignIn(user) {
   _role      = m.role;
   _displayName = m.display_name || user.user_metadata?.display_name || '';
 
+  // Record referral if boss registered via a ref link (one-time per warehouse)
+  if (_role === 'boss') {
+    const _refCode = localStorage.getItem('atmm_ref');
+    if (_refCode && !localStorage.getItem('atmm_ref_rec_' + _warehouse.id)) {
+      try {
+        const _refTok = (await sb.auth.getSession()).data.session?.access_token;
+        const _refRes = await fetch('/api/get-wallet-credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_refTok}` },
+          body: JSON.stringify({ action: 'record_referral', warehouseId: _warehouse.id, refCode: _refCode }),
+        });
+        const _refD = await _refRes.json();
+        if (_refD.ok) localStorage.setItem('atmm_ref_rec_' + _warehouse.id, '1');
+      } catch(e) {}
+    }
+  }
+
   // Load subscription
   const { data: sub } = await sb.from('subscriptions')
     .select('*').eq('warehouse_id', _warehouse.id).single();
@@ -6961,11 +7028,10 @@ async function _openSettings() {
   // Payment method
   _loadPaymentInfo();
 
-  // Referral code (based on user ID)
+  // Referral link (uses warehouse code as referral identifier)
   const refEl = document.getElementById('referral-code-display');
-  if (refEl && _user) {
-    const refCode = (_user.id || '').replace(/-/g, '').substring(0, 8).toUpperCase();
-    refEl.textContent = `https://atmm.store/?ref=${refCode}`;
+  if (refEl && _warehouse?.code) {
+    refEl.textContent = `https://atmm.store/?ref=${_warehouse.code}`;
   }
 
   // Load wallet & credits balances
@@ -7096,7 +7162,7 @@ async function _submitNewCard() {
 let _pendingTopupAmount = null;
 function _startTopupCustom() {
   const val = parseFloat(document.getElementById('topup-custom-amt')?.value || '0');
-  if (!val || val < 1) { toast('请输入至少 $1'); return; }
+  if (!val || val < 220) { toast('自定义充值最少 $220'); return; }
   _startTopup(Math.floor(val));
 }
 function _startTopup(amountUsd) {
@@ -7156,6 +7222,26 @@ async function _convertToCredits() {
     toast('兑换失败: ' + (d.error || ''));
   }
 }
+async function _creditsToWallet() {
+  const inp = document.getElementById('credits-convert-amt');
+  const creditsAmount = parseInt(inp?.value || '0', 10);
+  if (!creditsAmount || creditsAmount < 12) { toast('⚠️ 最少兑换 12 Credits'); return; }
+  const token = (await sb.auth.getSession()).data.session?.access_token;
+  const r = await fetch('/api/get-wallet-credits', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ action: 'credits_to_wallet', warehouseId: _warehouse.id, creditsAmount }),
+  });
+  const d = await r.json();
+  if (d.ok) {
+    const earned = Math.floor(creditsAmount / 12);
+    toast(`✅ ${creditsAmount} Credits 已兑换 → $${earned.toFixed(2)} 到钱包`);
+    if (inp) inp.value = '';
+    _loadWalletCredits();
+  } else {
+    toast('兑换失败: ' + (d.error || ''));
+  }
+}
 async function _loadWalletCredits() {
   if (!_warehouse?.id) return;
   const token = (await sb.auth.getSession()).data.session?.access_token;
@@ -7170,10 +7256,60 @@ async function _loadWalletCredits() {
   const walEl2 = document.getElementById('wallet-balance-big');
   const crEl1  = document.getElementById('settings-credits-display');
   const crEl2  = document.getElementById('credits-balance-big');
+  const crDolEl = document.getElementById('credits-dollar-equiv');
   if (walEl1) walEl1.textContent = `余额 $${walDollars}`;
   if (walEl2) walEl2.textContent = `$${walDollars}`;
   if (crEl1)  crEl1.textContent  = `${creds} Credits`;
   if (crEl2)  crEl2.textContent  = creds;
+  if (crDolEl) crDolEl.textContent = creds > 0 ? `≈ $${(creds / 12).toFixed(2)}` : '';
+
+  // Referral stats
+  const refStats = d.referral_stats || {};
+  const refStatsEl = document.getElementById('referral-stats');
+  if (refStatsEl) {
+    if (refStats.total > 0) {
+      refStatsEl.style.display = '';
+      refStatsEl.innerHTML = `已推荐 <b>${refStats.total}</b> 人，<b>${refStats.awarded}</b> 人成功 · 共获 <b>+${refStats.awarded * 50} Credits</b>`;
+    } else {
+      refStatsEl.style.display = 'none';
+    }
+  }
+
+  // Active campaign status in referral panel
+  const camp = d.active_campaign;
+  const campBannerEl = document.getElementById('campaign-status-banner');
+  if (campBannerEl) {
+    if (camp) {
+      campBannerEl.style.display = '';
+      campBannerEl.style.borderLeft = '3px solid var(--red)';
+      campBannerEl.innerHTML = `<b style="color:var(--red);">🎁 活动进行中：${escapeHtml(camp.name)}</b><br>截止 ${camp.end_date} · 推荐人得 ${camp.referrer_credits} Credits · 好友得 ${camp.referee_credits} Credits · 每人最多推荐 ${camp.max_referrals_per_warehouse} 人`;
+    } else {
+      campBannerEl.style.display = '';
+      campBannerEl.style.borderLeft = '3px solid var(--line)';
+      campBannerEl.innerHTML = '<span style="color:var(--muted);">当前暂无进行中的推荐活动，活动开启时你将收到通知。</span>';
+    }
+  }
+
+  // Notifications inbox
+  const notifs = d.notifications || [];
+  const newCount = d.new_notifications || 0;
+  const notifSubEl  = document.getElementById('notif-sub-text');
+  const notifListEl = document.getElementById('notif-list');
+  if (notifSubEl) notifSubEl.textContent = newCount > 0 ? `${newCount} 条新消息` : notifs.length ? '查看历史消息' : '暂无消息';
+  if (notifListEl) {
+    if (notifs.length) {
+      notifListEl.innerHTML = notifs.map(n => {
+        const date = new Date(n.created_at).toLocaleDateString('zh-CN');
+        return `<div style="padding:8px 0; border-bottom:1px solid var(--line);">
+          <div style="font-weight:700; margin-bottom:2px;">${escapeHtml(n.title)}</div>
+          <div style="font-size:11px; color:var(--muted); line-height:1.6;">${escapeHtml(n.body)}</div>
+          <div style="font-size:10px; color:var(--muted); margin-top:4px;">${date}</div>
+        </div>`;
+      }).join('');
+    } else {
+      notifListEl.innerHTML = '<div style="color:var(--muted);font-size:11px;">暂无消息</div>';
+    }
+  }
 
   const txFmt = (tx) => {
     const sign = tx.amount_cents > 0 || tx.amount > 0 ? '+' : '';
@@ -7208,29 +7344,35 @@ function _toggleInviteCode() {
   if (!panel) return;
   panel.style.display = panel.style.display !== 'none' ? 'none' : '';
 }
+function _toggleNotifications() {
+  const panel = document.getElementById('notif-panel');
+  const arr   = document.getElementById('notif-arr');
+  if (!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : '';
+  if (arr) arr.textContent = open ? '›' : '˅';
+}
 function _toggleReferral() {
   const panel = document.getElementById('referral-detail');
   if (!panel) return;
   panel.style.display = panel.style.display !== 'none' ? 'none' : '';
 }
 function _copyReferralLink() {
-  if (!_user) return;
-  const refCode = (_user.id || '').replace(/-/g, '').substring(0, 8).toUpperCase();
-  navigator.clipboard.writeText(`https://atmm.store/?ref=${refCode}`).then(() => toast('推荐链接已复制'));
+  if (!_warehouse?.code) return;
+  navigator.clipboard.writeText(`https://atmm.store/?ref=${_warehouse.code}`).then(() => toast('推荐链接已复制'));
 }
 function _shareReferral(type) {
-  if (!_user) return;
-  const refCode = (_user.id || '').replace(/-/g, '').substring(0, 8).toUpperCase();
-  const link = encodeURIComponent(`https://atmm.store/?ref=${refCode}`);
-  const text = encodeURIComponent('我在用 ATMM.store 管理仓库库存，简单高效！注册免费体验：');
+  if (!_warehouse?.code) return;
+  const link = encodeURIComponent(`https://atmm.store/?ref=${_warehouse.code}`);
+  const text = encodeURIComponent('我在用 ATMM.store 管理仓库库存，简单高效！注册免费体验（双方各得积分奖励）：');
   if (type === 'sms') window.open(`sms:?body=${text}%20${link}`);
   else if (type === 'email') window.open(`mailto:?subject=${encodeURIComponent('推荐使用 ATMM.store 仓库管理')}&body=${text}%0A${link}`);
   else if (type === 'whatsapp') window.open(`https://wa.me/?text=${text}%20${link}`);
   else if (type === 'wechat') {
-    navigator.clipboard.writeText(`https://atmm.store/?ref=${refCode}`).then(() => toast('链接已复制，请打开微信粘贴分享'));
+    navigator.clipboard.writeText(`https://atmm.store/?ref=${_warehouse.code}`).then(() => toast('链接已复制，请打开微信粘贴分享'));
   }
   else if (type === 'xiaohongshu') {
-    navigator.clipboard.writeText(`https://atmm.store/?ref=${refCode}`).then(() => toast('链接已复制，请打开小红书粘贴分享'));
+    navigator.clipboard.writeText(`https://atmm.store/?ref=${_warehouse.code}`).then(() => toast('链接已复制，请打开小红书粘贴分享'));
   }
 }
 
@@ -7564,6 +7706,13 @@ function _saveProfile() {
 async function _initAuth() {
   loadState(); render(); // Show app preview behind overlay before auth check
   const params = new URLSearchParams(location.search);
+
+  // Capture referral code from URL → localStorage (persists across register/login)
+  const _refParam = params.get('ref');
+  if (_refParam) {
+    localStorage.setItem('atmm_ref', _refParam);
+    history.replaceState({}, '', '/');
+  }
 
   // Handle invite URL from Supabase auth email
   _inviteWarehouseId = params.get('invite_warehouse');

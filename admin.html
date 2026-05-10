@@ -64,6 +64,25 @@
 
   #loading { text-align: center; padding: 60px; color: var(--muted); font-size: 13px; }
 
+  /* ── Campaign management ── */
+  .camp-row { display:grid; grid-template-columns:1fr 90px 90px 60px 60px 60px auto; gap:8px; align-items:center; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
+  .camp-row:last-child { border-bottom:none; }
+  .camp-row.header { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding-bottom:6px; border-bottom:2px solid var(--line); }
+  .camp-badge-on  { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; background:#d1fae5; color:#065f46; }
+  .camp-badge-off { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; background:#f3f4f6; color:#6b7280; }
+  .camp-form { display:grid; grid-template-columns:1fr 120px 120px 80px 60px 60px; gap:8px; align-items:center; margin-bottom:12px; }
+  .camp-form input { padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; }
+  .camp-form input:focus { border-color:var(--ink); }
+  .camp-btn { padding:6px 14px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .camp-btn-green { background:#d1fae5; color:#065f46; }
+  .camp-btn-green:hover { background:#a7f3d0; }
+  .camp-btn-red   { background:#fee2e2; color:#991b1b; }
+  .camp-btn-red:hover { background:#fecaca; }
+  .camp-btn-gray  { background:#f3f4f6; color:#374151; }
+  .camp-btn-gray:hover { background:#e5e7eb; }
+  .camp-btn-blue  { background:#dbeafe; color:#1e40af; }
+  .camp-btn-blue:hover { background:#bfdbfe; }
+
   /* ── User list modal ── */
   #user-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000; align-items:center; justify-content:center; padding:24px; }
   #user-modal-overlay.open { display:flex; }
@@ -155,6 +174,39 @@
       </div>
       <div id="tbl-count" style="font-size:12px; color:var(--muted); margin-top:10px;"></div>
     </div>
+
+    <!-- Campaign management -->
+    <div class="section" id="campaign-section">
+      <h2>🎁 推荐活动管理</h2>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:16px;">创建活动后点击「激活」，系统自动向所有用户发送站内通知（邮件需配置 RESEND_API_KEY）。活动期间用户可凭推荐链接发展新用户并获得 Credits 奖励。</p>
+
+      <!-- Create form -->
+      <div style="background:var(--bg); border-radius:10px; padding:14px; margin-bottom:16px;">
+        <div style="font-size:12px; font-weight:700; margin-bottom:10px;">新建活动</div>
+        <div style="display:grid; grid-template-columns:1fr 120px 120px 70px 60px 60px; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+          <input id="c-name"    class="camp-form-inp" placeholder="活动名称" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+          <input id="c-start"   class="camp-form-inp" type="date" title="开始日期" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+          <input id="c-end"     class="camp-form-inp" type="date" title="截止日期" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+          <input id="c-max"     class="camp-form-inp" type="number" min="1" value="10" title="每人最多推荐人数" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+          <input id="c-rfer"    class="camp-form-inp" type="number" min="1" value="50"  title="推荐人得 Credits" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+          <input id="c-rfee"    class="camp-form-inp" type="number" min="1" value="150" title="被推荐人得 Credits" style="padding:7px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none;">
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">字段顺序：活动名 · 开始日期 · 截止日期 · 每人上限 · 推荐人积分 · 被推荐人积分</div>
+        <button class="camp-btn camp-btn-blue" onclick="createCampaign()">＋ 创建活动</button>
+        <span id="camp-create-msg" style="font-size:12px; margin-left:12px;"></span>
+      </div>
+
+      <!-- Campaign list -->
+      <div style="overflow-x:auto;">
+        <div class="camp-row header">
+          <span>活动名称</span><span>开始</span><span>截止</span><span>上限</span><span>推荐人</span><span>被推荐</span><span>状态 / 操作</span>
+        </div>
+        <div id="camp-list">
+          <div style="text-align:center; padding:20px; color:var(--muted); font-size:13px;">暂无活动</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -194,7 +246,8 @@ const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const ADMIN_EMAIL = 'atom22628@gmail.com';
 const sb = supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
-let _allRows = [], _allUsers = [], _sortKey = 'registered_at', _sortAsc = false;
+let _allRows = [], _allUsers = [], _allCampaigns = [], _sortKey = 'registered_at', _sortAsc = false;
+let _admToken = null;
 
 // ── Auth ──────────────────────────────────────────────────
 async function doLogin() {
@@ -215,10 +268,11 @@ function doBack() {
 async function showDashboard() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session || session.user.email !== ADMIN_EMAIL) return;
+  _admToken = session.access_token;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('adm-email-label').textContent = session.user.email;
-  loadStats(session.access_token);
+  loadStats(_admToken);
 }
 
 // ── Data ──────────────────────────────────────────────────
@@ -254,9 +308,11 @@ function renderStats(data) {
   renderChart(data.daily || []);
 
   // Users + table
-  _allUsers = data.users || [];
-  _allRows  = data.rows  || [];
+  _allUsers    = data.users     || [];
+  _allRows     = data.rows      || [];
+  _allCampaigns = data.campaigns || [];
   renderTable(_allRows);
+  renderCampaigns(_allCampaigns);
 }
 
 // ── Chart ─────────────────────────────────────────────────
@@ -354,6 +410,86 @@ function renderTable(rows) {
 
 function esc(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── Campaign management ───────────────────────────────────────
+function renderCampaigns(camps) {
+  const el = document.getElementById('camp-list');
+  if (!camps.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">暂无活动</div>';
+    return;
+  }
+  el.innerHTML = camps.map(c => {
+    const rc = c.referral_counts || {};
+    const total = (rc.pending||0)+(rc.subscribed||0)+(rc.awarded||0);
+    const today = new Date().toISOString().slice(0,10);
+    const expired = c.end_date < today;
+    const badge = c.active && !expired
+      ? `<span class="camp-badge-on">进行中</span>`
+      : expired
+      ? `<span class="camp-badge-off">已结束</span>`
+      : `<span class="camp-badge-off">未激活</span>`;
+    const activateBtn = (!c.active && !expired)
+      ? `<button class="camp-btn camp-btn-green" onclick="campaignAction('activate_campaign','${c.id}')">激活</button>`
+      : c.active
+      ? `<button class="camp-btn camp-btn-gray"  onclick="campaignAction('deactivate_campaign','${c.id}')">停止</button>`
+      : '';
+    const delBtn = total === 0
+      ? `<button class="camp-btn camp-btn-red" onclick="campaignAction('delete_campaign','${c.id}')">删除</button>`
+      : `<span style="font-size:11px;color:var(--muted);">推荐 ${total} 条<br>获奖 ${rc.awarded}</span>`;
+    return `<div class="camp-row">
+      <span style="font-weight:600;">${esc(c.name)}</span>
+      <span>${c.start_date}</span>
+      <span>${c.end_date}</span>
+      <span style="text-align:center">${c.max_referrals_per_warehouse}</span>
+      <span style="text-align:center">+${c.referrer_credits}</span>
+      <span style="text-align:center">+${c.referee_credits}</span>
+      <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${badge}${activateBtn}${delBtn}</span>
+    </div>`;
+  }).join('');
+}
+
+async function createCampaign() {
+  const name      = document.getElementById('c-name').value.trim();
+  const start_date = document.getElementById('c-start').value;
+  const end_date   = document.getElementById('c-end').value;
+  const max_referrals_per_warehouse = parseInt(document.getElementById('c-max').value) || 10;
+  const referrer_credits = parseInt(document.getElementById('c-rfer').value) || 50;
+  const referee_credits  = parseInt(document.getElementById('c-rfee').value) || 150;
+  const msgEl = document.getElementById('camp-create-msg');
+  if (!name || !start_date || !end_date) { msgEl.style.color='var(--red)'; msgEl.textContent = '请填写所有字段'; return; }
+  msgEl.textContent = '创建中…'; msgEl.style.color = 'var(--muted)';
+  try {
+    const r = await fetch('/api/admin-stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _admToken },
+      body: JSON.stringify({ action: 'create_campaign', campaign: { name, start_date, end_date, max_referrals_per_warehouse, referrer_credits, referee_credits } }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      msgEl.style.color = 'var(--green)'; msgEl.textContent = '✅ 活动已创建';
+      ['c-name','c-start','c-end'].forEach(id => document.getElementById(id).value = '');
+      loadStats(_admToken);
+    } else { msgEl.style.color = 'var(--red)'; msgEl.textContent = d.error || '创建失败'; }
+  } catch(e) { msgEl.style.color = 'var(--red)'; msgEl.textContent = e.message; }
+}
+
+async function campaignAction(action, id) {
+  const LABELS = { activate_campaign:'激活', deactivate_campaign:'停止', delete_campaign:'删除' };
+  if (!confirm(`确认${LABELS[action] || action}此活动？${action==='activate_campaign' ? '\n激活后将向所有用户发送站内通知。' : ''}`)) return;
+  try {
+    const r = await fetch('/api/admin-stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _admToken },
+      body: JSON.stringify({ action, campaign: { id } }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      const info = action === 'activate_campaign' ? `已通知 ${d.notified} 个仓库，发送邮件 ${d.emailed} 封` : '';
+      alert(`✅ ${LABELS[action]}成功。${info}`);
+      loadStats(_admToken);
+    } else { alert('操作失败：' + (d.error || '')); }
+  } catch(e) { alert('请求失败：' + e.message); }
 }
 
 // ── User modal ────────────────────────────────────────────
