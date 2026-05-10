@@ -145,24 +145,50 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
 /* ── Full-page AUTH (ZEHEM.AI style) ────────────────── */
 #auth-full{display:none;position:fixed;inset:0;z-index:600;
   background:linear-gradient(135deg,#6c47ff 0%,#9b59b6 45%,#e04f6b 100%);
-  flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+  flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
 #auth-full.on{display:flex;}
 .af-back{position:absolute;top:14px;left:14px;background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(4px);}
-.auth-card{background:#fff;border-radius:20px;padding:26px 22px;width:100%;max-width:390px;box-shadow:0 24px 60px rgba(0,0,0,.25);}
-.auth-brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.auth-card{background:#fff;border-radius:32px;padding:22px 20px;width:100%;max-width:390px;box-shadow:0 24px 60px rgba(0,0,0,.25);}
+.auth-brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .auth-brand-l{display:flex;align-items:center;gap:8px;}
 .auth-brand-ico{font-size:26px;}
 .auth-brand-name{font-weight:800;font-size:16px;color:#6c47ff;}
 .auth-brand-r{font-size:10px;color:var(--muted);text-align:right;line-height:1.4;}
-.auth-tabs2{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px;}
-.auth-tab2{flex:1;padding:11px;border:none;background:none;font-size:14px;font-weight:700;cursor:pointer;color:var(--muted);transition:.15s;}
-.auth-tab2.on{background:#6c47ff;color:#fff;}
-#auth-err2{font-size:12px;color:var(--accent);min-height:14px;margin-bottom:8px;}
-.auth-inp2{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:10px;background:var(--bg);color:var(--ink);outline:none;font-family:inherit;}
-.auth-inp2:focus{border-color:#6c47ff;}
-.auth-submit{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(90deg,#6c47ff,#a855f7);color:#fff;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.02em;}
-.auth-submit:active{opacity:.9;}
-.auth-note{font-size:11px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6;}
+/* Input type tabs */
+.auth-type-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.att{flex:1;padding:8px 6px;border-radius:12px;border:none;font-size:11px;font-weight:800;cursor:pointer;transition:.15s;color:#888;background:rgba(139,92,246,.1);}
+.att.on{background:#6c47ff;color:#fff;box-shadow:0 2px 8px rgba(108,71,255,.35);}
+/* Field label */
+.afl-label{font-size:10px;font-weight:800;color:#aaa;text-transform:uppercase;margin-bottom:5px;margin-left:2px;letter-spacing:.04em;}
+/* Email row */
+.auth-email-row{display:flex;gap:7px;margin-bottom:10px;}
+.auth-email-row .aei{flex:1;margin-bottom:0;}
+.auth-domain-sel{width:114px;padding:10px 7px;border:1.5px solid rgba(139,92,246,.22);border-radius:12px;font-size:11px;font-weight:700;color:#6c47ff;background:#f5f3ff;outline:none;cursor:pointer;}
+.auth-domain-sel:focus{border-color:#6c47ff;}
+/* Password row */
+.auth-pwd-row{position:relative;margin-bottom:10px;}
+.auth-pwd-row .apwi{margin-bottom:0;padding-right:42px;}
+.auth-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#aaa;padding:4px;}
+/* Input */
+.auth-inp2{width:100%;padding:11px 13px;border:1.5px solid rgba(139,92,246,.22);border-radius:12px;font-size:14px;margin-bottom:10px;background:#f9f8ff;color:var(--ink);font-family:inherit;outline:none;transition:.15s;}
+.auth-inp2:focus{border-color:#6c47ff;background:#fff;}
+/* Error */
+#auth-err2{font-size:12px;color:#d94f3b;min-height:14px;margin-bottom:6px;font-weight:600;}
+/* Submit */
+.auth-submit{width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(90deg,#6c47ff,#a855f7);color:#fff;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.02em;margin-bottom:10px;display:block;}
+.auth-submit:active{opacity:.9;}.auth-submit:disabled{opacity:.6;cursor:not-allowed;}
+/* Checkboxes */
+.auth-check-row{display:flex;align-items:flex-start;gap:7px;font-size:10.5px;font-weight:600;color:#888;cursor:pointer;line-height:1.4;margin-bottom:8px;}
+.auth-check-row input{width:14px;height:14px;accent-color:#6c47ff;flex-shrink:0;margin-top:1px;}
+.auth-check-row a{color:#6c47ff;text-decoration:none;}
+/* Bottom row */
+.auth-bot-row{display:flex;align-items:center;gap:6px;margin:4px 0 10px;}
+.auth-signup-btn{flex:1;padding:8px 6px;border-radius:12px;border:1.5px solid #e0ddf8;background:#fff;font-size:11px;font-weight:800;color:#6c47ff;cursor:pointer;}
+.auth-signup-btn:hover{background:#f5f3ff;}
+.auth-forgot-btn{flex:1;padding:8px 4px;border-radius:12px;border:none;background:none;font-size:10px;font-weight:700;color:#aaa;cursor:pointer;text-align:center;}
+.auth-forgot-btn:hover{color:#6c47ff;}
+/* Note */
+.auth-note{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;}
 .auth-note a{color:#6c47ff;text-decoration:none;}
 
 /* ── Footer bar ─────────────────────────────────────── */
@@ -348,14 +374,74 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       </div>
       <div class="auth-brand-r">ZEHEM.AI<br>通用账号</div>
     </div>
-    <div class="auth-tabs2">
-      <button class="auth-tab2 on" onclick="authTab2('login')">登录 Sign In</button>
-      <button class="auth-tab2" onclick="authTab2('reg')">注册 Sign Up</button>
+
+    <!-- Input type tabs -->
+    <div id="auth-type-tabs" class="auth-type-tabs">
+      <button class="att on" id="att-email" onclick="setAuthType('email')">📧 邮箱</button>
+      <button class="att" id="att-id" onclick="setAuthType('id')">👤 用户名/编号</button>
     </div>
+
+    <!-- Email section -->
+    <div id="auth-email-sec">
+      <div class="afl-label">EMAIL ADDRESS 邮箱号码</div>
+      <div class="auth-email-row">
+        <input class="auth-inp2 aei" id="a2-uname" placeholder="username">
+        <select class="auth-domain-sel" id="a2-domain">
+          <option value="@gmail.com">@gmail.com</option>
+          <option value="@zehem.com">@zehem.com</option>
+          <option value="@qq.com">@qq.com</option>
+          <option value="@163.com">@163.com</option>
+          <option value="@icloud.com">@icloud.com</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Identifier section -->
+    <div id="auth-id-sec" style="display:none;">
+      <div class="afl-label">Username / User Number 用户名称或数字编号</div>
+      <input class="auth-inp2" id="a2-identifier" placeholder="输入用户名 或 数字编号 (如 10001)">
+    </div>
+
+    <!-- Password -->
+    <div id="auth-pwd-sec">
+      <div class="afl-label">PASSWORD 输入密码</div>
+      <div class="auth-pwd-row">
+        <input class="auth-inp2 apwi" id="a2-pwd" type="password" placeholder="Password 密码">
+        <button class="auth-eye" type="button" onclick="togglePwdEye()" id="pwd-eye-btn">👁</button>
+      </div>
+    </div>
+
     <div id="auth-err2"></div>
-    <input class="auth-inp2" type="email" id="a2-email" placeholder="邮箱 Email">
-    <input class="auth-inp2" type="password" id="a2-pwd" placeholder="密码 Password">
-    <button class="auth-submit" onclick="doAuth2()">登录 / Sign In</button>
+    <button class="auth-submit" id="auth-submit-btn" onclick="doAuth2()">Sign In → 登录</button>
+
+    <!-- Save credentials (login only) -->
+    <div id="auth-save-sec">
+      <label class="auth-check-row">
+        <input type="checkbox" id="a2-save" checked>
+        Save 保存登录名称和密码（下次直接点击登录）
+      </label>
+    </div>
+
+    <!-- Terms -->
+    <div id="auth-terms-sec">
+      <label class="auth-check-row">
+        <input type="checkbox" id="a2-terms" checked>
+        我已阅读并同意 <a href="javascript:void(0)" onclick="showPrivacyModal()">隐私政策与用户协议</a> / I agree to the <a href="javascript:void(0)" onclick="showPrivacyModal()">Privacy Policy &amp; Terms</a>
+      </label>
+    </div>
+
+    <!-- Forgot: send email -->
+    <div id="auth-forgot-send" style="display:none;">
+      <button class="auth-submit" onclick="sendForgotEmail()">📧 发送重置密码链接到注册邮箱</button>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="auth-bot-row" id="auth-bot-row">
+      <button class="auth-signup-btn" id="auth-mode-btn" onclick="toggleAuthMode()">Sign up / 注册</button>
+      <span style="font-size:10px;color:#ccc;font-weight:700;flex-shrink:0;">or/或</span>
+      <button class="auth-forgot-btn" id="auth-forgot-toggle" onclick="enterForgot()">Forgot Password? 忘记密码</button>
+    </div>
+
     <div class="auth-note">
       注册后可同时登录 <a href="https://zehem.ai" target="_blank">ZEHEM.AI</a> &amp; ATMM.store<br>
       账号数据互通，钱包积分统一管理
@@ -440,6 +526,26 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
   </div>
 </div>
 
+<!-- Privacy Policy Modal -->
+<div class="ov" id="privacy-modal">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('privacy-modal')">✕</button>
+    <h3>🔐 隐私政策与用户协议</h3>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:12px;">ZEHEM.AI / ATMM.store · 最后更新：2026-04-07</div>
+    <div style="font-size:12px;line-height:1.9;color:#444;max-height:52vh;overflow-y:auto;">
+      <p style="margin-bottom:9px;"><b>一、总则</b><br>使用本平台即表示您接受本协议全部条款。By using the Platform, you accept all terms herein.</p>
+      <p style="margin-bottom:9px;"><b>二、信息收集</b><br>我们收集注册信息（邮箱、可选用户名）、使用数据及设备信息，不用于广告追踪。数据存储于美国服务器（Supabase），使用即同意跨境传输。</p>
+      <p style="margin-bottom:9px;"><b>三、账号安全</b><br>密码经哈希处理，不以明文存储。账号注销后个人数据在30天内删除。</p>
+      <p style="margin-bottom:9px;"><b>四、虚拟货币</b><br>平台内虚拟货币（Credits/钱包余额）不可直接兑换现金，不构成金融资产，平台保留调整规则权利。</p>
+      <p style="margin-bottom:9px;"><b>五、交易规则</b><br>每笔成交平台抽取15%服务费，推荐佣金由卖家设置，实时自动结算至钱包。</p>
+      <p style="margin-bottom:9px;"><b>六、禁止行为</b><br>禁止发布违法/欺诈/侵权内容，禁止攻击平台安全，违者封号处理。</p>
+      <p><b>七、联系我们</b><br>如需帮助请发邮件至 atom22628@zehem.ai</p>
+    </div>
+    <button class="btn btn-r" style="margin-top:14px;" onclick="agreePrivacy()">✅ 我已阅读并同意 / I Agree</button>
+  </div>
+</div>
+
 <!-- Help modal -->
 <div class="ov" id="help-modal">
   <div class="mbox">
@@ -481,7 +587,7 @@ const sb = window.supabase.createClient(SB_URL, SB_ANON);
 let user=null, token=null, whId=null;
 let curStore=null, curProd=null, curRefCode=null;
 let prodsMap={}, editProdId=null, shareUrl='';
-let authMode2='login', pendingAfterAuth=null;
+let authType2='email', authMode2='login', pendingAfterAuth=null;
 let prevView='market';
 
 // ─── Helpers ────────────────────────────────────────────
@@ -496,49 +602,152 @@ async function api(path,opts={}){
 }
 
 // ─── Auth ────────────────────────────────────────────────
-function authClick(){
-  if(user){goSettings();}
-  else{openAuth();}
-}
+function authClick(){if(user){goSettings();}else{openAuth();}}
 function openAuth(after){
   if(after)pendingAfterAuth=after;
   document.getElementById('auth-full').classList.add('on');
+  setAuthMode('login');
+  const sId=localStorage.getItem('atmm_shop_identifier');
+  const sEmail=localStorage.getItem('atmm_shop_email');
+  const sDomain=localStorage.getItem('atmm_shop_domain');
+  const sPass=localStorage.getItem('atmm_shop_pass');
+  if(sId){setAuthType('id');document.getElementById('a2-identifier').value=sId;}
+  else if(sEmail){document.getElementById('a2-uname').value=sEmail;if(sDomain)document.getElementById('a2-domain').value=sDomain;}
+  if(sPass)document.getElementById('a2-pwd').value=sPass;
 }
 function closeAuth(){
   document.getElementById('auth-full').classList.remove('on');
   pendingAfterAuth=null;
+  document.getElementById('auth-err2').textContent='';
 }
-function authTab2(m){
+function setAuthType(t){
+  authType2=t;
+  document.getElementById('att-email').classList.toggle('on',t==='email');
+  document.getElementById('att-id').classList.toggle('on',t==='id');
+  document.getElementById('auth-email-sec').style.display=t==='email'?'':'none';
+  document.getElementById('auth-id-sec').style.display=t==='id'?'':'none';
+  document.getElementById('auth-err2').textContent='';
+}
+function setAuthMode(m){
   authMode2=m;
-  document.querySelectorAll('.auth-tab2').forEach((b,i)=>b.classList.toggle('on',(m==='login'&&i===0)||(m==='reg'&&i===1)));
-  document.querySelector('.auth-submit').textContent=m==='login'?'登录 / Sign In':'注册 / Sign Up';
+  const isForgot=m==='forgot',isReg=m==='reg';
+  document.getElementById('auth-type-tabs').style.display=isReg?'none':'';
+  if(isReg)setAuthType('email');
+  document.getElementById('auth-pwd-sec').style.display=isForgot?'none':'';
+  document.getElementById('a2-pwd').placeholder=isReg?'Password 密码（至少8位含一个大小写字母和数字）':'Password 密码';
+  const sBtn=document.getElementById('auth-submit-btn');
+  sBtn.style.display=isForgot?'none':'';
+  sBtn.textContent=isReg?'Register 注册':'Sign In → 登录';
+  document.getElementById('auth-save-sec').style.display=m==='login'?'':'none';
+  document.getElementById('auth-forgot-send').style.display=isForgot?'':'none';
+  const mBtn=document.getElementById('auth-mode-btn');
+  const fBtn=document.getElementById('auth-forgot-toggle');
+  if(isForgot||isReg){
+    mBtn.textContent='← Back to Login 返回登录';
+    mBtn.onclick=()=>setAuthMode('login');
+    fBtn.style.display='none';
+  }else{
+    mBtn.textContent='Sign up / 注册';
+    mBtn.onclick=toggleAuthMode;
+    fBtn.style.display='';
+  }
+  document.getElementById('auth-err2').textContent='';
+}
+function toggleAuthMode(){setAuthMode(authMode2==='login'?'reg':'login');}
+function enterForgot(){setAuthMode('forgot');setAuthType('email');}
+function togglePwdEye(){
+  const inp=document.getElementById('a2-pwd');
+  const btn=document.getElementById('pwd-eye-btn');
+  const on=inp.type==='password';
+  inp.type=on?'text':'password';
+  btn.textContent=on?'🔒':'👁';
 }
 async function doAuth2(){
-  const email=document.getElementById('a2-email').value.trim();
-  const pwd=document.getElementById('a2-pwd').value;
   const err=document.getElementById('auth-err2');err.textContent='';
-  if(!email||!pwd){err.textContent='请填写邮箱和密码';return;}
-  const fn=authMode2==='login'?sb.auth.signInWithPassword({email,password:pwd}):sb.auth.signUp({email,password:pwd});
-  const{data,error}=await fn;
-  if(error){err.textContent=error.message;return;}
-  user=data.user;token=data.session?.access_token;
-  closeAuth();
-  updAuthUI();
-  toast(authMode2==='login'?'✅ 登录成功':'✅ 注册成功，欢迎！');
-  if(pendingAfterAuth){pendingAfterAuth();pendingAfterAuth=null;}
-  if(document.getElementById('v-seller').classList.contains('on'))loadSeller();
+  if(!document.getElementById('a2-terms').checked){err.textContent='请先同意隐私政策与用户协议';return;}
+  const sBtn=document.getElementById('auth-submit-btn');
+  sBtn.disabled=true;const origTxt=sBtn.textContent;sBtn.textContent='处理中…';
+  try{
+    let email='';
+    if(authType2==='id'){
+      const id=document.getElementById('a2-identifier').value.trim();
+      if(!id){err.textContent='请输入用户名或数字编号';return;}
+      const idClean=id.replace(/@$/,'');
+      const isNum=/^\d+$/.test(idClean);
+      let profile=null;
+      if(isNum){
+        const{data}=await sb.from('profiles').select('email_contact,email').eq('user_number',parseInt(idClean)).maybeSingle();
+        profile=data;
+      }else{
+        const{data:d1}=await sb.from('profiles').select('email_contact,email').eq('username',id).maybeSingle();
+        if(d1){profile=d1;}else{
+          const alt=id.endsWith('@')?id.slice(0,-1):id+'@';
+          const{data:d2}=await sb.from('profiles').select('email_contact,email').eq('username',alt).maybeSingle();
+          profile=d2;
+        }
+      }
+      email=profile?.email_contact||profile?.email||'';
+      if(!email){err.textContent='❌ 找不到该用户，请检查用户名/编号';return;}
+    }else{
+      const uname=document.getElementById('a2-uname').value.trim();
+      if(!uname){err.textContent='请输入邮箱用户名';return;}
+      email=uname+document.getElementById('a2-domain').value;
+    }
+    const pwd=document.getElementById('a2-pwd').value;
+    if(!pwd){err.textContent='请输入密码';return;}
+    if(authMode2==='reg'){
+      if(!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(pwd)){err.textContent='密码需8位以上，含大写、小写字母和数字';return;}
+      const{error}=await sb.auth.signUp({email,password:pwd});
+      if(error){err.textContent='❌ '+error.message;return;}
+      toast('✅ 注册成功！请查收验证邮件激活账号');
+      setAuthMode('login');
+    }else{
+      const{data,error}=await sb.auth.signInWithPassword({email,password:pwd});
+      if(error){err.textContent='❌ '+(error.message==='Invalid login credentials'?'邮箱或密码错误':error.message);return;}
+      user=data.user;token=data.session?.access_token;
+      if(document.getElementById('a2-save').checked){
+        if(authType2==='id'){
+          localStorage.setItem('atmm_shop_identifier',document.getElementById('a2-identifier').value.trim());
+          localStorage.removeItem('atmm_shop_email');localStorage.removeItem('atmm_shop_domain');
+        }else{
+          localStorage.setItem('atmm_shop_email',document.getElementById('a2-uname').value.trim());
+          localStorage.setItem('atmm_shop_domain',document.getElementById('a2-domain').value);
+          localStorage.removeItem('atmm_shop_identifier');
+        }
+        localStorage.setItem('atmm_shop_pass',pwd);
+      }else{
+        ['atmm_shop_email','atmm_shop_domain','atmm_shop_pass','atmm_shop_identifier'].forEach(k=>localStorage.removeItem(k));
+      }
+      closeAuth();updAuthUI();toast('✅ 登录成功');
+      if(pendingAfterAuth){pendingAfterAuth();pendingAfterAuth=null;}
+      if(document.getElementById('v-seller').classList.contains('on'))loadSeller();
+    }
+  }finally{sBtn.disabled=false;sBtn.textContent=origTxt;}
 }
+async function sendForgotEmail(){
+  const err=document.getElementById('auth-err2');err.textContent='';
+  const uname=document.getElementById('a2-uname').value.trim();
+  if(!uname){err.textContent='请输入邮箱用户名';return;}
+  const email=uname+document.getElementById('a2-domain').value;
+  const btn=document.getElementById('auth-forgot-send').querySelector('button');
+  if(btn){btn.disabled=true;btn.textContent='发送中…';}
+  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://atmm.store/shop'});
+  if(btn){btn.disabled=false;btn.textContent='📧 发送重置密码链接到注册邮箱';}
+  if(error){err.textContent='❌ 发送失败：'+error.message;return;}
+  toast('✅ 重置密码链接已发送，请查收邮件');
+  setAuthMode('login');
+}
+function showPrivacyModal(){openOv('privacy-modal');}
+function agreePrivacy(){document.getElementById('a2-terms').checked=true;closeOv('privacy-modal');}
 function updAuthUI(){
   const btn=document.getElementById('auth-btn');
   const sBtn=document.getElementById('settings-btn');
   if(user){
-    btn.textContent='已登录';
-    sBtn.style.display='';
+    btn.textContent='已登录';sBtn.style.display='';
     if(whId)loadWallet();
     if(user.email===ADMIN_EMAIL)document.getElementById('admin-section').style.display='';
   }else{
-    btn.textContent='登录';
-    sBtn.style.display='none';
+    btn.textContent='登录';sBtn.style.display='none';
   }
 }
 async function loadWallet(){
