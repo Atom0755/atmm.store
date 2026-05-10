@@ -1689,28 +1689,30 @@
       <h3>⚙️ 设置</h3>
 
       <!-- ACCOUNT section -->
-      <div style="display:flex;align-items:center;justify-content:space-between;border-top:none;padding-top:4px;margin-top:0;margin-bottom:0;">
-        <div class="settings-sec-lbl" style="border-top:none;padding-top:0;margin-top:0;margin-bottom:0;">ACCOUNT 账户</div>
-        <!-- Avatar upload circle -->
+      <div class="settings-sec-lbl" style="border-top:none;padding-top:0;margin-top:0;margin-bottom:8px;">ACCOUNT 账户</div>
+      <!-- Current user row: avatar + nickname + level badge + buttons -->
+      <div id="settings-user-row" style="display:none; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); margin-bottom:14px;">
+        <!-- Avatar -->
         <div id="avatar-wrap" onclick="_pickAvatar()" title="点击上传头像" style="width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
           <img id="avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
           <span id="avatar-placeholder" style="font-size:22px;">👤</span>
         </div>
         <input type="file" id="avatar-file-inp" accept="image/*" style="display:none;" onchange="_onAvatarFile(event)">
-      </div>
-      <!-- Current user row -->
-      <div id="settings-user-row" style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:14px;">
+        <!-- Name + Level -->
         <div style="flex:1; min-width:0;">
-          <div id="settings-display-name" style="font-weight:700; font-size:14px; margin-bottom:2px;"></div>
-          <div id="settings-user-email" style="font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+          <div style="font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:2px;">用户昵称</div>
+          <div id="settings-display-name" style="font-weight:700; font-size:14px; margin-bottom:4px;"></div>
+          <div id="settings-user-level" style="line-height:1;"></div>
         </div>
-        <button onclick="_openProfileSheet()" style="font-size:12px; padding:5px 10px; border:1.5px solid #1a73e8; border-radius:8px; background:#e8f0fe; color:#1a73e8; cursor:pointer; white-space:nowrap; flex-shrink:0; font-family:inherit; font-weight:700;">详细</button>
-        <button onclick="_toggleRenameForm()" style="font-size:12px; padding:5px 10px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); cursor:pointer; white-space:nowrap; flex-shrink:0;">改名</button>
+        <!-- Buttons -->
+        <button onclick="_toggleRenameForm()" style="font-size:11px; padding:5px 9px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); cursor:pointer; white-space:nowrap; flex-shrink:0; font-family:inherit; font-weight:700;">修改用户昵称</button>
+        <button onclick="_openProfileSheet()" style="font-size:11px; padding:5px 9px; border:1.5px solid #1a73e8; border-radius:8px; background:#e8f0fe; color:#1a73e8; cursor:pointer; white-space:nowrap; flex-shrink:0; font-family:inherit; font-weight:700;">详细</button>
       </div>
       <div id="settings-rename-form" style="display:none; margin-bottom:14px; background:var(--bg); border-radius:10px; padding:12px; border:1.5px solid var(--line);">
-        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">新用户名（在公司内唯一，用于"填表人"自动填写）</div>
-        <div style="display:flex; gap:8px;">
-          <input id="rename-input" type="text" placeholder="输入用户名..." style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
+        <div style="font-size:11px; font-weight:700; color:var(--ink); margin-bottom:3px;">用户昵称（仓库内显示，代替填表人名称）</div>
+        <div style="font-size:10px; color:var(--red); margin-bottom:2px;">昵称不能为纯数字，须包含字母或其他字符</div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <input id="rename-input" type="text" placeholder="输入用户昵称..." style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--paper); font-family:inherit; outline:none; color:var(--ink);">
           <button onclick="_confirmRename()" style="padding:8px 14px; background:var(--red); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit;">确认</button>
         </div>
       </div>
@@ -1732,10 +1734,7 @@
             <div id="set-backup-email-idx" style="font-size:11px; font-weight:600; color:var(--muted);">—</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button onclick="_openChangeUsernameIdx()" style="flex:1; min-width:140px; padding:8px; border:1.5px solid var(--line); border-radius:8px; background:var(--paper); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink);">✏️ 修改用户名</button>
-          <button id="idx-myshop-btn" style="display:none;flex:1;min-width:120px;padding:8px;border:1.5px solid var(--accent);border-radius:8px;background:#fff5f5;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--red);" onclick="_goMyShop()">🏪 我的店铺</button>
-        </div>
+        <button id="idx-myshop-btn" style="display:none;width:100%;padding:8px;border:1.5px solid var(--accent);border-radius:8px;background:#fff5f5;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--red);" onclick="_goMyShop()">🏪 我的网店 Go to My Shop</button>
       </div>
 
       <!-- PAYMENT section -->
@@ -6893,6 +6892,30 @@ function _agreeAtmmTerms() {
   if (el) el.style.display = 'none';
 }
 
+// ── User value level system (ported from zehem.ai/src/lib/userLevel.js) ──
+const _LEVELS = [
+  {label:'绿苗',timeZh:'新注册',emoji:'🌿',color:'#22c55e',bg:'#f0fdf4',days:0},
+  {label:'灰石',timeZh:'一周',  emoji:'🪨',color:'#6b7280',bg:'#f9fafb',days:7},
+  {label:'黑铁',timeZh:'一月',  emoji:'⚫',color:'#374151',bg:'#f3f4f6',days:30},
+  {label:'白银',timeZh:'一季',  emoji:'⚪',color:'#9ca3af',bg:'#f9fafb',days:90},
+  {label:'黄金',timeZh:'一年',  emoji:'🟡',color:'#f59e0b',bg:'#fffbeb',days:365},
+  {label:'铂金',timeZh:'三年',  emoji:'💠',color:'#06b6d4',bg:'#ecfeff',days:1095},
+  {label:'彩钻',timeZh:'十年',  emoji:'💎',color:'#8b5cf6',bg:'#f5f3ff',days:3650},
+  {label:'红月',timeZh:'廿年',  emoji:'☽', color:'#ef4444',bg:'#fef2f2',days:7300},
+  {label:'火星',timeZh:'卅年',  emoji:'🪐',color:'#f97316',bg:'#fff7ed',days:10950},
+];
+function _getUserLevel(createdAt) {
+  if (!createdAt) return _LEVELS[0];
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+  let lv = _LEVELS[0];
+  for (const l of _LEVELS) { if (days >= l.days) lv = l; }
+  return lv;
+}
+function _levelBadgeHtml(createdAt) {
+  const lv = _getUserLevel(createdAt);
+  return `<span title="用户价值成长等级: ${lv.label} ${lv.emoji}｜注册${lv.timeZh}以上" style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${lv.bg};color:${lv.color};cursor:help;">${lv.emoji} ${lv.label}</span>`;
+}
+
 // ── Login type tab (email / username·number) ──
 let _loginType = 'email';
 function _setLoginType(t) {
@@ -7270,7 +7293,6 @@ async function _openSettings() {
   const renameInp = document.getElementById('rename-input');
   if (userRow) userRow.style.display = _user ? 'flex' : 'none';
   if (nameEl)  nameEl.textContent  = _displayName || '';
-  if (emailEl) emailEl.textContent = _user?.email || '';
   if (renameInp) renameInp.value   = _displayName || '';
   const renameForm = document.getElementById('settings-rename-form');
   if (renameForm) renameForm.style.display = 'none';
@@ -7314,7 +7336,7 @@ async function _openSettings() {
 
   // Fetch profile info from profiles table (shared with zehem.ai)
   try {
-    const { data: prof } = await sb.from('profiles').select('user_number,username,avatar_url').eq('id', _user.id).maybeSingle();
+    const { data: prof } = await sb.from('profiles').select('user_number,username,avatar_url,created_at').eq('id', _user.id).maybeSingle();
     const profInfoEl = document.getElementById('settings-profile-info');
     if (profInfoEl && prof) {
       const numEl   = document.getElementById('set-user-num-idx');
@@ -7324,10 +7346,13 @@ async function _openSettings() {
       if (nameEl2)  nameEl2.textContent  = prof.username || '未设置';
       if (emailEl2) emailEl2.textContent = _user.email || '—';
       profInfoEl.style.display = '';
-      // Load avatar from profiles (auto-synced with zehem.ai)
+      // Avatar from profiles (auto-synced with zehem.ai)
       const avImg = document.getElementById('avatar-img');
       const avPh  = document.getElementById('avatar-placeholder');
       if (prof.avatar_url && avImg) { avImg.src = prof.avatar_url; avImg.style.display = ''; if (avPh) avPh.style.display = 'none'; }
+      // Level badge (replaces email display)
+      const lvEl = document.getElementById('settings-user-level');
+      if (lvEl) lvEl.innerHTML = _levelBadgeHtml(prof.created_at);
     }
   } catch(e) {}
 

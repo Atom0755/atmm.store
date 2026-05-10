@@ -299,24 +299,30 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
 
     <!-- Account -->
     <div class="set-section">
+      <!-- Nickname + level badge + avatar -->
       <div class="set-row set-row-nc">
         <div class="sr-left">
-          <div class="sr-label" id="set-email">—</div>
-          <div class="sr-sub">ZEHEM.AI / ATMM.store 通用账号</div>
+          <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">用户昵称</div>
+          <div class="sr-label" id="set-nickname">—</div>
+          <div id="set-level-badge" style="margin-top:5px;"></div>
         </div>
         <div class="set-avatar" id="set-avatar" style="overflow:hidden;"><img id="set-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover;" src="" alt=""><span id="set-avatar-ph">👤</span></div>
       </div>
+      <!-- Profile details (number + email) -->
       <div class="set-row set-row-nc" id="set-profile-row" style="display:none;">
         <div class="sr-left">
           <div style="display:flex;gap:16px;flex-wrap:wrap;">
             <div><div style="font-size:10px;color:var(--muted);font-weight:600;">数字编号</div><div style="font-size:13px;font-weight:700;font-family:monospace;" id="set-user-num">—</div></div>
-            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">用户名</div><div style="font-size:13px;font-weight:700;" id="set-username">—</div></div>
             <div><div style="font-size:10px;color:var(--muted);font-weight:600;">注册邮箱（只读）</div><div style="font-size:12px;font-weight:600;color:var(--muted);" id="set-backup-email">—</div></div>
           </div>
         </div>
       </div>
+      <!-- Modify nickname -->
       <div class="set-row" id="set-change-uname-row" style="display:none;" onclick="openChangeUsername()">
-        <div class="sr-left"><div class="sr-label">✏️ 修改用户名</div><div class="sr-sub">3位以上，不能为纯数字，全平台唯一</div></div>
+        <div class="sr-left">
+          <div class="sr-label">✏️ 修改用户昵称</div>
+          <div class="sr-sub">用户昵称一年只能修改一次，请慎好了再修改 / 不能为纯数字，须包含字母或其他字符</div>
+        </div>
         <div class="sr-right"><span class="arrow">›</span></div>
       </div>
     </div>
@@ -369,10 +375,17 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       </div>
     </div>
 
-    <!-- Admin panel (admin only) -->
+    <!-- Seller admin (for shop owners, non-platform-admin) -->
+    <div class="set-section" id="seller-admin-section" style="display:none;">
+      <div class="set-row" onclick="goSeller()">
+        <div class="sr-left"><div class="sr-label" style="color:#6c47ff;">📊 我的店铺后台</div><div class="sr-sub">管理商品、订单、佣金设置</div></div>
+        <div class="sr-right"><span class="arrow">›</span></div>
+      </div>
+    </div>
+    <!-- Platform admin only -->
     <div class="set-section" id="admin-section" style="display:none;">
       <div class="set-row" onclick="window.open('/admin.html','_blank')">
-        <div class="sr-left"><div class="sr-label" style="color:#6c47ff;">🔐 管理员后台</div><div class="sr-sub">用户统计、推荐活动、订阅管理</div></div>
+        <div class="sr-left"><div class="sr-label" style="color:#6c47ff;">🔐 平台管理员后台</div><div class="sr-sub">用户统计、推荐活动、订阅管理</div></div>
         <div class="sr-right"><span class="arrow">›</span></div>
       </div>
     </div>
@@ -624,6 +637,25 @@ const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const ADMIN_EMAIL = 'atom22628@gmail.com';
 const sb = window.supabase.createClient(SB_URL, SB_ANON);
 
+// ── User value level system ──
+const _SHOP_LVLS=[
+  {label:'绿苗',timeZh:'新注册',emoji:'🌿',color:'#22c55e',bg:'#f0fdf4',days:0},
+  {label:'灰石',timeZh:'一周',  emoji:'🪨',color:'#6b7280',bg:'#f9fafb',days:7},
+  {label:'黑铁',timeZh:'一月',  emoji:'⚫',color:'#374151',bg:'#f3f4f6',days:30},
+  {label:'白银',timeZh:'一季',  emoji:'⚪',color:'#9ca3af',bg:'#f9fafb',days:90},
+  {label:'黄金',timeZh:'一年',  emoji:'🟡',color:'#f59e0b',bg:'#fffbeb',days:365},
+  {label:'铂金',timeZh:'三年',  emoji:'💠',color:'#06b6d4',bg:'#ecfeff',days:1095},
+  {label:'彩钻',timeZh:'十年',  emoji:'💎',color:'#8b5cf6',bg:'#f5f3ff',days:3650},
+  {label:'红月',timeZh:'廿年',  emoji:'☽', color:'#ef4444',bg:'#fef2f2',days:7300},
+  {label:'火星',timeZh:'卅年',  emoji:'🪐',color:'#f97316',bg:'#fff7ed',days:10950},
+];
+function _levelBadgeHtml(createdAt){
+  if(!createdAt)return '';
+  const days=Math.floor((Date.now()-new Date(createdAt).getTime())/86400000);
+  let lv=_SHOP_LVLS[0]; for(const l of _SHOP_LVLS){if(days>=l.days)lv=l;}
+  return `<span title="用户价值成长等级: ${lv.label} ${lv.emoji}｜注册${lv.timeZh}以上" style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${lv.bg};color:${lv.color};cursor:help;">${lv.emoji} ${lv.label}</span>`;
+}
+
 let user=null, token=null, whId=null;
 let curStore=null, curProd=null, curRefCode=null;
 let prodsMap={}, editProdId=null, shareUrl='';
@@ -802,8 +834,14 @@ async function _checkUserShop(){
   if(!user||!whId)return;
   try{
     const{data}=await sb.from('shops').select('id').eq('owner_warehouse_id',whId).maybeSingle();
-    const btn=document.getElementById('hdr-shop-btn');
-    if(btn)btn.style.display=data?'':'none';
+    const hasShop=!!data;
+    const hdrBtn=document.getElementById('hdr-shop-btn');
+    if(hdrBtn)hdrBtn.style.display=hasShop?'':'none';
+    // seller admin section (non-platform-admin only)
+    const selAdm=document.getElementById('seller-admin-section');
+    if(selAdm)selAdm.style.display=(hasShop&&user.email!==ADMIN_EMAIL)?'':'none';
+    // hide seller admin if no shop
+    if(!hasShop&&selAdm)selAdm.style.display='none';
   }catch(e){}
 }
 async function loadWallet(){
@@ -842,20 +880,25 @@ async function goSettings(){
   if(!user){openAuth(goSettings);return;}
   document.getElementById('set-email').textContent=user.email||'—';
   bc('');showView('settings');loadWallet();
-  // Load profile info from profiles table
+  // Load profile info from profiles table (shared with zehem.ai)
   try{
-    const{data:prof}=await sb.from('profiles').select('user_number,username,avatar_url').eq('id',user.id).maybeSingle();
+    const{data:prof}=await sb.from('profiles').select('user_number,username,avatar_url,created_at').eq('id',user.id).maybeSingle();
     if(prof){
       const row=document.getElementById('set-profile-row');
       const unRow=document.getElementById('set-change-uname-row');
       if(row)row.style.display='';
       if(unRow)unRow.style.display='';
+      // Nickname at top (replaces email)
+      const nickEl=document.getElementById('set-nickname');
+      if(nickEl)nickEl.textContent=prof.username||'未设置';
+      // User number + email in detail row
       const numEl=document.getElementById('set-user-num');
-      const unEl=document.getElementById('set-username');
       const beEl=document.getElementById('set-backup-email');
       if(numEl)numEl.textContent=prof.user_number?String(prof.user_number).padStart(10,'0'):'未分配';
-      if(unEl)unEl.textContent=prof.username||'未设置';
       if(beEl)beEl.textContent=user.email||'—';
+      // Level badge
+      const lvEl=document.getElementById('set-level-badge');
+      if(lvEl)lvEl.innerHTML=_levelBadgeHtml(prof.created_at);
       // Avatar from profiles
       const avImg=document.getElementById('set-avatar-img');
       const avPh=document.getElementById('set-avatar-ph');
