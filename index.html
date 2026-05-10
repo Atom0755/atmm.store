@@ -976,6 +976,9 @@
   /* close button inside glass card */
   .auth-close-btn { position:absolute; top:8px; right:10px; background:none; border:none; color:rgba(255,255,255,0.65); font-size:17px; cursor:pointer; line-height:1; padding:4px 6px; }
   .auth-close-btn:hover { color:#fff; }
+  .auth-terms-row { display:flex; align-items:flex-start; gap:7px; font-size:10.5px; font-weight:600; color:rgba(255,255,255,.78); cursor:pointer; user-select:none; -webkit-user-select:none; line-height:1.4; }
+  .auth-terms-row input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:#6c47ff; flex-shrink:0; margin-top:1px; }
+  .auth-terms-row a { color:rgba(255,255,255,.95); text-decoration:underline; }
   /* Registration / Login email row */
   .reg-email-row { display:flex; gap:4px; }
   .reg-email-row input { flex:1; min-width:0; }
@@ -1065,6 +1068,10 @@
     <label class="auth-remember-row">
       <input type="checkbox" id="auth-remember" checked> 记住账号密码
     </label>
+    <label class="auth-terms-row" id="login-terms-row">
+      <input type="checkbox" id="login-terms" checked>
+      <span>我已阅读并同意 <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">隐私政策与用户协议</a> / I agree to <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">Privacy &amp; Terms</a></span>
+    </label>
     <button class="auth-btn-primary" onclick="_doLogin()">登录 Sign In</button>
     <div class="auth-divider">— 或 or —</div>
     <button class="auth-btn-secondary" onclick="_showAuth('register')">注册 · 免费试用30天</button>
@@ -1091,6 +1098,10 @@
     <input type="email" id="reg-email-full" placeholder="完整邮箱地址 Full Email" autocomplete="email" style="display:none">
     <input type="password" id="reg-password" placeholder="密码（至少8位含大小写字母和数字）" autocomplete="new-password">
     <input type="text"     id="reg-wh-name"  placeholder="仓库名称 (如: 北仓A区)" autocomplete="off">
+    <label class="auth-terms-row" id="reg-terms-row">
+      <input type="checkbox" id="reg-terms" checked>
+      <span>我已阅读并同意 <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">隐私政策与用户协议</a> / I agree to <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">Privacy &amp; Terms</a></span>
+    </label>
     <button class="auth-btn-primary" onclick="_doRegister()">注册并开始 →</button>
     <button class="auth-link" onclick="_showAuth('login')">已有账号? 登录</button>
   </div>
@@ -1116,6 +1127,31 @@
     <button class="auth-btn-primary" onclick="_doCreateWarehouse()">创建仓库并开始 →</button>
   </div>
 </div>
+
+<!-- ATMM.store 隐私政策弹窗 -->
+<div id="atmm-privacy-ov" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.55);align-items:flex-start;justify-content:center;padding-top:60px;" onclick="if(event.target===this)document.getElementById('atmm-privacy-ov').style.display='none'">
+  <div style="background:#fff;border-radius:16px;width:calc(100% - 24px);max-width:440px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #eee;flex-shrink:0;">
+      <div style="font-weight:800;font-size:15px;">🔐 隐私政策与用户协议</div>
+      <button onclick="document.getElementById('atmm-privacy-ov').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#999;padding:4px;">✕</button>
+    </div>
+    <div style="font-size:10px;color:#aaa;padding:8px 18px 0;flex-shrink:0;">ATMM.store 仓库管理系统 · 最后更新 Last Updated: 2026-05-10</div>
+    <div style="flex:1;overflow-y:auto;padding:12px 18px 4px;font-size:12px;line-height:1.9;color:#444;">
+      <p style="margin-bottom:9px;"><b>一、服务说明 / Service Description</b><br>ATMM.store 是一款面向仓储管理的 SaaS 平台，提供库存盘点、进销存追踪、多区域货架管理、条码扫描等功能。使用即接受本协议全部条款。<br><small style="color:#aaa;">ATMM.store is a warehouse management SaaS providing inventory tracking, barcode scanning, and multi-zone shelf management. Use implies acceptance of all terms.</small></p>
+      <p style="margin-bottom:9px;"><b>二、数据归属与隐私 / Data Ownership & Privacy</b><br>用户录入的所有库存、商品、型号数据归用户所有，平台不会未经授权共享或出售给第三方。数据存储于美国服务器（Supabase），使用即同意跨境传输。账号注销后数据在30天内清除。<br><small style="color:#aaa;">Your warehouse data belongs to you. Not shared or sold. Stored in the US (Supabase); usage implies consent to cross-border transfer. Data deleted within 30 days of account closure.</small></p>
+      <p style="margin-bottom:9px;"><b>三、账号与权限 / Account & Permissions</b><br>老板账号拥有仓库完整控制权；经理和操作员由老板分配，权限受限。团队成员离职后须由老板及时撤销权限，因未及时处理导致的数据安全问题由老板自行承担。<br><small style="color:#aaa;">Boss accounts have full control. Managers and operators have limited access. Bosses are responsible for timely permission revocation upon team member departure.</small></p>
+      <p style="margin-bottom:9px;"><b>四、订阅与计费 / Subscription & Billing</b><br>新用户享30天免费试用，到期需续订；订阅期间可随时取消，取消后至当期结束仍可继续使用；订阅费用一经支付不退款；平台保留调整价格权利，提前30天通知。<br><small style="color:#aaa;">30-day free trial for new users. Cancel anytime; access continues until period end. No refunds. 30-day notice before price changes.</small></p>
+      <p style="margin-bottom:9px;"><b>五、数据安全 / Data Security</b><br>数据通过 HTTPS/TLS 加密传输；密码以 bcrypt 哈希存储，绝不明文保存；建议用户定期自行导出重要数据作为额外备份。<br><small style="color:#aaa;">Data encrypted in transit via HTTPS/TLS. Passwords hashed — never stored in plaintext. Users should export critical data regularly as backup.</small></p>
+      <p style="margin-bottom:9px;"><b>六、物流免责 / Logistics Disclaimer</b><br>本平台仅提供仓库信息管理功能，不提供实际货运服务，亦不直接对接 UPS、FedEx、USPS、DHL、EMS 等承运商。货物实际运输、丢失或损坏等纠纷须由用户直接与承运商协商，平台不承担任何连带责任。<br><small style="color:#aaa;">ATMM.store provides inventory management only. We are not a carrier and have no affiliation with UPS, FedEx, USPS, DHL, or EMS. Freight disputes must be resolved directly with carriers.</small></p>
+      <p style="margin-bottom:9px;"><b>七、使用限制 / Acceptable Use</b><br>禁止将本平台用于：管理违禁品库存、伪造进出库记录、洗钱或其他非法活动。违者立即封号并保留追究法律责任的权利。<br><small style="color:#aaa;">Prohibited: managing illegal goods, falsifying inventory records, money laundering, or any illegal activity. Violators will be banned immediately.</small></p>
+      <p><b>八、联系我们 / Contact</b><br>如有问题请发邮件至 Email: atom22628@zehem.ai</p>
+    </div>
+    <div style="padding:14px 18px;border-top:1px solid #eee;flex-shrink:0;">
+      <button onclick="_agreeAtmmTerms()" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(90deg,#6c47ff,#a855f7);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">✅ 我已阅读并同意 / I Agree & Accept</button>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="main-app">
   <header>
     <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
@@ -6683,6 +6719,7 @@ async function _doLogin() {
   const email = _getLoginEmail();
   const pwd   = document.getElementById('auth-password').value;
   _authErr('err-login', '');
+  if (!document.getElementById('login-terms')?.checked) { _authErr('err-login', '请先同意隐私政策与用户协议'); return; }
   if (!email || !email.includes('@')) { _authErr('err-login', '请填写正确的邮箱地址'); return; }
   const remember = document.getElementById('auth-remember')?.checked;
   if (remember) {
@@ -6724,6 +6761,7 @@ async function _doRegister() {
   const pwd    = document.getElementById('reg-password').value;
   const whName = document.getElementById('reg-wh-name').value.trim() || '我的仓库';
   _authErr('err-register', '');
+  if (!document.getElementById('reg-terms')?.checked) { _authErr('err-register', '请先同意隐私政策与用户协议'); return; }
   if (!email || !pwd) { _authErr('err-register', '请填写邮箱和密码'); return; }
   if (!email.includes('@')) { _authErr('err-register', '请输入有效的邮箱地址'); return; }
   if (!_isStrongPwd(pwd)) { _authErr('err-register', '密码至少8位，须含大小写字母和数字'); return; }
@@ -6761,6 +6799,19 @@ async function _doCreateWarehouse() {
 }
 
 // ── Forgot password ──
+function _showAtmmPrivacy() {
+  const el = document.getElementById('atmm-privacy-ov');
+  if (el) el.style.display = 'flex';
+}
+function _agreeAtmmTerms() {
+  const lT = document.getElementById('login-terms');
+  const rT = document.getElementById('reg-terms');
+  if (lT) lT.checked = true;
+  if (rT) rT.checked = true;
+  const el = document.getElementById('atmm-privacy-ov');
+  if (el) el.style.display = 'none';
+}
+
 async function _doForgot() {
   const email = _getLoginEmail();
   if (!email || !email.includes('@')) { _authErr('err-login', '请先输入邮箱'); return; }

@@ -426,7 +426,7 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
     <div id="auth-terms-sec">
       <label class="auth-check-row">
         <input type="checkbox" id="a2-terms" checked>
-        我已阅读并同意 <a href="javascript:void(0)" onclick="showPrivacyModal()">隐私政策与用户协议</a> / I agree to the <a href="javascript:void(0)" onclick="showPrivacyModal()">Privacy Policy &amp; Terms</a>
+        <span>我已阅读并同意 <a href="javascript:void(0)" onclick="showPrivacyModal()">隐私政策与用户协议</a> / I agree to the <a href="javascript:void(0)" onclick="showPrivacyModal()">Privacy Policy &amp; Terms</a></span>
       </label>
     </div>
 
@@ -438,7 +438,7 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
     <!-- Bottom row -->
     <div class="auth-bot-row" id="auth-bot-row">
       <button class="auth-signup-btn" id="auth-mode-btn" onclick="toggleAuthMode()">Sign up / 注册</button>
-      <span style="font-size:10px;color:#ccc;font-weight:700;flex-shrink:0;">or/或</span>
+      <span id="auth-or-sep" style="font-size:10px;color:#ccc;font-weight:700;flex-shrink:0;">or/或</span>
       <button class="auth-forgot-btn" id="auth-forgot-toggle" onclick="enterForgot()">Forgot Password? 忘记密码</button>
     </div>
 
@@ -532,17 +532,18 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
     <div class="handle"></div>
     <button class="mcls" onclick="closeOv('privacy-modal')">✕</button>
     <h3>🔐 隐私政策与用户协议</h3>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:12px;">ZEHEM.AI / ATMM.store · 最后更新：2026-04-07</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:12px;">ATMM 网店广场 Marketplace · 最后更新 Last Updated: 2026-05-10</div>
     <div style="font-size:12px;line-height:1.9;color:#444;max-height:52vh;overflow-y:auto;">
-      <p style="margin-bottom:9px;"><b>一、总则</b><br>使用本平台即表示您接受本协议全部条款。By using the Platform, you accept all terms herein.</p>
-      <p style="margin-bottom:9px;"><b>二、信息收集</b><br>我们收集注册信息（邮箱、可选用户名）、使用数据及设备信息，不用于广告追踪。数据存储于美国服务器（Supabase），使用即同意跨境传输。</p>
-      <p style="margin-bottom:9px;"><b>三、账号安全</b><br>密码经哈希处理，不以明文存储。账号注销后个人数据在30天内删除。</p>
-      <p style="margin-bottom:9px;"><b>四、虚拟货币</b><br>平台内虚拟货币（Credits/钱包余额）不可直接兑换现金，不构成金融资产，平台保留调整规则权利。</p>
-      <p style="margin-bottom:9px;"><b>五、交易规则</b><br>每笔成交平台抽取15%服务费，推荐佣金由卖家设置，实时自动结算至钱包。</p>
-      <p style="margin-bottom:9px;"><b>六、禁止行为</b><br>禁止发布违法/欺诈/侵权内容，禁止攻击平台安全，违者封号处理。</p>
-      <p><b>七、联系我们</b><br>如需帮助请发邮件至 atom22628@zehem.ai</p>
+      <p style="margin-bottom:9px;"><b>一、平台角色 / Platform Role</b><br>ATMM 网店广场是连接买家与卖家的电商市集，平台仅提供交易撮合服务，不直接参与商品生产、存储或物流配送。使用即接受本协议全部条款。<br><small style="color:#aaa;">ATMM Marketplace connects buyers and sellers. We provide a platform only and are not responsible for goods production, storage, or shipping.</small></p>
+      <p style="margin-bottom:9px;"><b>二、卖家条款 / Seller Terms</b><br>卖家须保证所有商品/服务描述真实合法，禁止上架违禁品、仿冒侵权商品及虚假标注商品；卖家对商品质量、真实性及履约负全责；平台保留随时下架不合规商品、封禁违规店铺的权利。<br><small style="color:#aaa;">Sellers are solely responsible for product accuracy, legality, and fulfillment. Platform may remove listings or ban stores at any time for violations.</small></p>
+      <p style="margin-bottom:9px;"><b>三、买家条款 / Buyer Terms</b><br>购买须使用平台钱包余额支付；购买前请仔细核实商品信息；因卖家原因导致的纠纷，平台将协调处理但不承担直接赔偿责任；如遭遇欺诈请立即联系平台客服。<br><small style="color:#aaa;">Payment via wallet balance only. Platform coordinates disputes but does not assume direct liability for seller-caused issues.</small></p>
+      <p style="margin-bottom:9px;"><b>四、佣金与费用 / Fees & Commissions</b><br>每笔成交平台抽取 <b>15%</b> 服务费；卖家可自行设置一级/二级推荐佣金，由卖家收入中扣除；推荐佣金实时自动结算至推广人钱包；平台保留调整费率权利，提前15天通知。<br><small style="color:#aaa;">Platform takes 15% per transaction. Referral commissions are set by sellers and auto-settled in real time.</small></p>
+      <p style="margin-bottom:9px;"><b>五、禁止行为 / Prohibited Conduct</b><br>禁止上架：违禁药品、武器弹药、色情/赌博相关内容、仿冒侵权商品；禁止：刷单、虚假评价、价格欺诈、洗钱行为。违者立即封号并保留追究法律责任的权利。<br><small style="color:#aaa;">Prohibited: illegal goods, weapons, adult content, counterfeit items, fake reviews, money laundering. Violators will be banned immediately.</small></p>
+      <p style="margin-bottom:9px;"><b>六、数据隐私 / Data Privacy</b><br>平台记录交易数据（买卖双方、金额、时间）用于对账和纠纷处理；买家个人信息不会提供给无关第三方；数据存储于美国服务器（Supabase），使用即同意数据跨境传输至美国。<br><small style="color:#aaa;">Transaction records are kept for accounting and disputes. Data stored in the US (Supabase); usage implies consent to cross-border transfer.</small></p>
+      <p style="margin-bottom:9px;"><b>七、争议处理 / Dispute Resolution</b><br>买卖纠纷优先由双方协商解决；如无法协商，可联系平台仲裁，平台决定具有终局效力；本协议受美国加利福尼亚州法律管辖。<br><small style="color:#aaa;">Disputes should first be resolved between parties. Platform arbitration is final. Governed by California law.</small></p>
+      <p><b>八、联系我们 / Contact</b><br>客服邮箱 Email: atom22628@zehem.ai</p>
     </div>
-    <button class="btn btn-r" style="margin-top:14px;" onclick="agreePrivacy()">✅ 我已阅读并同意 / I Agree</button>
+    <button class="btn btn-r" style="margin-top:14px;" onclick="agreePrivacy()">✅ 我已阅读并同意 / I Agree & Accept</button>
   </div>
 </div>
 
@@ -642,14 +643,17 @@ function setAuthMode(m){
   document.getElementById('auth-forgot-send').style.display=isForgot?'':'none';
   const mBtn=document.getElementById('auth-mode-btn');
   const fBtn=document.getElementById('auth-forgot-toggle');
+  const orSep=document.getElementById('auth-or-sep');
   if(isForgot||isReg){
     mBtn.textContent='← Back to Login 返回登录';
     mBtn.onclick=()=>setAuthMode('login');
     fBtn.style.display='none';
+    if(orSep)orSep.style.display='none';
   }else{
     mBtn.textContent='Sign up / 注册';
     mBtn.onclick=toggleAuthMode;
     fBtn.style.display='';
+    if(orSep)orSep.style.display='';
   }
   document.getElementById('auth-err2').textContent='';
 }
