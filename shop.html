@@ -13,13 +13,15 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
 
 /* ── Header ─────────────────────────────────────────── */
-#hdr{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--line);padding:0 14px;height:50px;display:flex;align-items:center;justify-content:space-between;}
-.hdr-logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:15px;cursor:pointer;color:var(--ink);}
+#hdr{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--line);padding:0 14px;height:50px;display:flex;align-items:center;gap:8px;}
+.hdr-logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:15px;cursor:pointer;color:var(--ink);flex-shrink:0;}
 .hdr-logo span{color:var(--accent);}
-.hdr-right{display:flex;align-items:center;gap:8px;}
+#hdr-center{display:flex;align-items:center;gap:5px;flex:1;justify-content:center;}
+.hdr-mid-btn{background:rgba(108,71,255,.08);color:#6c47ff;border:1px solid rgba(108,71,255,.22);border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;padding:4px 9px;white-space:nowrap;}
+.hdr-mid-btn:active{opacity:.7;}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 #wallet-badge{font-size:12px;color:var(--muted);font-weight:600;}
-#settings-btn{background:rgba(108,71,255,.1);color:#6c47ff;border:1px solid rgba(108,71,255,.25);border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;display:none;padding:4px 11px;}
-#settings-btn:active{opacity:.8;}
+#settings-btn{display:none;}
 #auth-btn{background:var(--accent);color:#fff;border:none;padding:5px 13px;border-radius:18px;font-size:12px;font-weight:700;cursor:pointer;}
 
 /* ── Main & Views ───────────────────────────────────── */
@@ -213,6 +215,10 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
 <!-- Header -->
 <div id="hdr">
   <div class="hdr-logo" onclick="goMarket()">🏪 <span>ATMM</span> 网店广场</div>
+  <div id="hdr-center">
+    <button id="hdr-wh-btn" class="hdr-mid-btn" style="display:none;" onclick="window.open('https://atmm.store','_blank')">🏭 我的仓库</button>
+    <button id="hdr-shop-btn" class="hdr-mid-btn" style="display:none;" onclick="goSeller()">🏪 我的店铺</button>
+  </div>
   <div class="hdr-right">
     <span id="wallet-badge"></span>
     <button id="settings-btn" onclick="goSettings()" title="账号设置">设置</button>
@@ -255,6 +261,7 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
         <div class="fg"><label>二级转发佣金 %</label><input type="number" id="ns-l2" value="2" min="0" max="20"></div>
       </div>
       <button class="btn btn-r" onclick="createStore()">🏪 创建店铺</button>
+      <button class="btn" style="margin-top:10px;background:var(--bg);color:var(--muted);border:1.5px solid var(--line);font-size:13px;" onclick="goSettings()">先逛逛 →</button>
     </div>
     <div id="has-store" style="display:none;">
       <div class="tabbar">
@@ -297,14 +304,14 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
           <div class="sr-label" id="set-email">—</div>
           <div class="sr-sub">ZEHEM.AI / ATMM.store 通用账号</div>
         </div>
-        <div class="set-avatar" id="set-avatar">👤</div>
+        <div class="set-avatar" id="set-avatar" style="overflow:hidden;"><img id="set-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover;" src="" alt=""><span id="set-avatar-ph">👤</span></div>
       </div>
       <div class="set-row set-row-nc" id="set-profile-row" style="display:none;">
         <div class="sr-left">
           <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">数字编号</div><div style="font-size:13px;font-weight:700;" id="set-user-num">—</div></div>
+            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">数字编号</div><div style="font-size:13px;font-weight:700;font-family:monospace;" id="set-user-num">—</div></div>
             <div><div style="font-size:10px;color:var(--muted);font-weight:600;">用户名</div><div style="font-size:13px;font-weight:700;" id="set-username">—</div></div>
-            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">备用邮箱</div><div style="font-size:13px;font-weight:700;" id="set-backup-email">未设置</div></div>
+            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">注册邮箱（只读）</div><div style="font-size:12px;font-weight:600;color:var(--muted);" id="set-backup-email">—</div></div>
           </div>
         </div>
       </div>
@@ -777,14 +784,27 @@ function showPrivacyModal(){openOv('privacy-modal');}
 function agreePrivacy(){document.getElementById('a2-terms').checked=true;closeOv('privacy-modal');}
 function updAuthUI(){
   const btn=document.getElementById('auth-btn');
-  const sBtn=document.getElementById('settings-btn');
+  const whBtn=document.getElementById('hdr-wh-btn');
+  const shopBtn=document.getElementById('hdr-shop-btn');
   if(user){
-    btn.textContent='已登录';sBtn.style.display='';
+    btn.textContent='设置';
+    if(whBtn)whBtn.style.display=whId?'':'none';
     if(whId)loadWallet();
     if(user.email===ADMIN_EMAIL)document.getElementById('admin-section').style.display='';
+    _checkUserShop();
   }else{
-    btn.textContent='登录';sBtn.style.display='none';
+    btn.textContent='登录';
+    if(whBtn)whBtn.style.display='none';
+    if(shopBtn)shopBtn.style.display='none';
   }
+}
+async function _checkUserShop(){
+  if(!user||!whId)return;
+  try{
+    const{data}=await sb.from('shops').select('id').eq('owner_warehouse_id',whId).maybeSingle();
+    const btn=document.getElementById('hdr-shop-btn');
+    if(btn)btn.style.display=data?'':'none';
+  }catch(e){}
 }
 async function loadWallet(){
   if(!whId||!token)return;
@@ -824,7 +844,7 @@ async function goSettings(){
   bc('');showView('settings');loadWallet();
   // Load profile info from profiles table
   try{
-    const{data:prof}=await sb.from('profiles').select('user_number,username,email_contact').eq('id',user.id).maybeSingle();
+    const{data:prof}=await sb.from('profiles').select('user_number,username,avatar_url').eq('id',user.id).maybeSingle();
     if(prof){
       const row=document.getElementById('set-profile-row');
       const unRow=document.getElementById('set-change-uname-row');
@@ -833,9 +853,14 @@ async function goSettings(){
       const numEl=document.getElementById('set-user-num');
       const unEl=document.getElementById('set-username');
       const beEl=document.getElementById('set-backup-email');
-      if(numEl)numEl.textContent=prof.user_number?`#${prof.user_number}`:'未分配';
+      if(numEl)numEl.textContent=prof.user_number?String(prof.user_number).padStart(10,'0'):'未分配';
       if(unEl)unEl.textContent=prof.username||'未设置';
-      if(beEl)beEl.textContent=prof.email_contact||'未设置';
+      if(beEl)beEl.textContent=user.email||'—';
+      // Avatar from profiles
+      const avImg=document.getElementById('set-avatar-img');
+      const avPh=document.getElementById('set-avatar-ph');
+      if(prof.avatar_url&&avImg){avImg.src=prof.avatar_url;avImg.style.display='';if(avPh)avPh.style.display='none';}
+      else{if(avImg)avImg.style.display='none';if(avPh)avPh.style.display='';}
     }
   }catch(e){}
 }

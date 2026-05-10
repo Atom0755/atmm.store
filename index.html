@@ -1728,11 +1728,14 @@
             <div id="set-username-idx" style="font-size:13px; font-weight:800;">—</div>
           </div>
           <div>
-            <div style="font-size:10px; color:var(--muted); font-weight:600; margin-bottom:2px;">备用邮箱</div>
-            <div id="set-backup-email-idx" style="font-size:12px; font-weight:600; color:var(--muted);">未设置</div>
+            <div style="font-size:10px; color:var(--muted); font-weight:600; margin-bottom:2px;">注册邮箱（只读）</div>
+            <div id="set-backup-email-idx" style="font-size:11px; font-weight:600; color:var(--muted);">—</div>
           </div>
         </div>
-        <button onclick="_openChangeUsernameIdx()" style="width:100%; padding:8px; border:1.5px solid var(--line); border-radius:8px; background:var(--paper); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink);">✏️ 修改用户名 Change Username</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="_openChangeUsernameIdx()" style="flex:1; min-width:140px; padding:8px; border:1.5px solid var(--line); border-radius:8px; background:var(--paper); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink);">✏️ 修改用户名</button>
+          <button id="idx-myshop-btn" style="display:none;flex:1;min-width:120px;padding:8px;border:1.5px solid var(--accent);border-radius:8px;background:#fff5f5;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--red);" onclick="_goMyShop()">🏪 我的店铺</button>
+        </div>
       </div>
 
       <!-- PAYMENT section -->
@@ -6910,6 +6913,11 @@ function _openChangeUsernameIdx() {
   if (err) { err.textContent = ''; err.style.display = 'none'; }
   showSheet('uname-idx-sheet');
 }
+function _goMyShop() {
+  const wh = _warehouse?.id;
+  const url = wh ? `https://atmm.store/shop?mode=seller&wh=${wh}` : 'https://atmm.store/shop?mode=seller';
+  window.open(url, '_blank');
+}
 async function _saveUsernameIdx() {
   const val   = (document.getElementById('uname-idx-inp')?.value || '').trim();
   const errEl = document.getElementById('uname-idx-err');
@@ -7304,20 +7312,32 @@ async function _openSettings() {
   // Load wallet & credits balances
   _loadWalletCredits();
 
-  // Fetch profile info (user_number, username, email_contact) from profiles table
+  // Fetch profile info from profiles table (shared with zehem.ai)
   try {
-    const { data: prof } = await sb.from('profiles').select('user_number,username,email_contact').eq('id', _user.id).maybeSingle();
+    const { data: prof } = await sb.from('profiles').select('user_number,username,avatar_url').eq('id', _user.id).maybeSingle();
     const profInfoEl = document.getElementById('settings-profile-info');
     if (profInfoEl && prof) {
       const numEl   = document.getElementById('set-user-num-idx');
       const nameEl2 = document.getElementById('set-username-idx');
       const emailEl2= document.getElementById('set-backup-email-idx');
-      if (numEl)    numEl.textContent    = prof.user_number ? `#${prof.user_number}` : '—';
+      if (numEl)    numEl.textContent    = prof.user_number ? String(prof.user_number).padStart(10,'0') : '—';
       if (nameEl2)  nameEl2.textContent  = prof.username || '未设置';
-      if (emailEl2) emailEl2.textContent = prof.email_contact || '未设置';
+      if (emailEl2) emailEl2.textContent = _user.email || '—';
       profInfoEl.style.display = '';
+      // Load avatar from profiles (auto-synced with zehem.ai)
+      const avImg = document.getElementById('avatar-img');
+      const avPh  = document.getElementById('avatar-placeholder');
+      if (prof.avatar_url && avImg) { avImg.src = prof.avatar_url; avImg.style.display = ''; if (avPh) avPh.style.display = 'none'; }
     }
   } catch(e) {}
+
+  // Check if user has a shop → show "我的店铺" button
+  const myShopBtn = document.getElementById('idx-myshop-btn');
+  if (myShopBtn && _warehouse?.id) {
+    sb.from('shops').select('id').eq('owner_warehouse_id', _warehouse.id).maybeSingle().then(({ data }) => {
+      myShopBtn.style.display = data ? '' : 'none';
+    }).catch(() => {});
+  }
 
   // Team members (boss only)
   if (_role === 'boss') {
