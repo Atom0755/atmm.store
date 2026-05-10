@@ -1116,7 +1116,7 @@
 </div>
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1969,7 +1969,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.3</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.4</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>主型号拖到有主型号的格 → 自动降为该格附加型号（原格位清空）</li>
+            <li>总览视图附加型号同样支持独立拖拽移动</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.3</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-09</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2827,7 +2838,10 @@ function renderGridView() {
           if (slot.subModels && slot.subModels.length > 0) {
             slot.subModels.forEach((sm, smi) => {
               const smm = sm.modelId ? getModel(sm.modelId) : null;
-              subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:''}</div></div>`;
+              const smGModel = sm.modelId
+                ? `<div class="gmodel gsubmodel" draggable="true" data-mid="${sm.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}" data-table="${currentTable}">${escapeHtml(smm?.name||'附加型号')}</div>`
+                : `<div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div>`;
+              subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span>${smGModel}<div class="gcolor" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:''}</div></div>`;
             });
           }
           gs.innerHTML = `<div class="gslot-main"><div class="gloc" data-loc="${escapeHtml(locCode)}" title="库位编号 — 点击查看二维码">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}</div>${subHtml}`;
@@ -2876,7 +2890,10 @@ function renderGridView() {
         if (slot.subModels && slot.subModels.length > 0) {
           slot.subModels.forEach((sm, smi) => {
             const smm = sm.modelId ? getModel(sm.modelId) : null;
-            subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span><div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div><div class="gcolor" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:''}</div></div>`;
+            const smGModel = sm.modelId
+              ? `<div class="gmodel gsubmodel" draggable="true" data-mid="${sm.modelId}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}" data-table="${currentTable}">${escapeHtml(smm?.name||'附加型号')}</div>`
+              : `<div class="gmodel">${escapeHtml(smm ? smm.name : '附加型号')}</div>`;
+            subHtml += `<div class="gslot-sub"><span class="gsub-plus">+</span>${smGModel}<div class="gcolor" data-color="${sm.color||''}" data-ai="${ai}" data-ci="${ci}" data-si="${si}" data-smi="${smi}">${sm.qty>0?sm.qty:''}</div></div>`;
           });
         }
         gs.innerHTML = `<div class="gslot-main"><div class="gloc" data-loc="${escapeHtml(locCode)}" title="复制库位编号">${escapeHtml(locCode)}</div>${modelHtml}${colorHtml}</div>${subHtml}`;
@@ -3229,11 +3246,16 @@ function attachModelDoubleTap(el) {
   }, { passive: false });
 }
 function attachGridHandlers(root) {
-  root.querySelectorAll('.gmodel[draggable="true"]').forEach(el => {
+  root.querySelectorAll('.gmodel[draggable="true"]:not(.gsubmodel)').forEach(el => {
     el.addEventListener('dragstart', onDragStart);
     el.addEventListener('dragend', onDragEnd);
     addTouchDrag(el);
     attachModelDoubleTap(el);
+  });
+  root.querySelectorAll('.gsubmodel[draggable="true"]').forEach(el => {
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragend', onDragEnd);
+    addTouchDrag(el);
   });
   root.querySelectorAll('.grid-slot').forEach(el => {
     el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
@@ -3804,9 +3826,17 @@ function onDropSlot(e) {
 function performMove(src, tgt) {
   if (src.ai === tgt.ai && src.ci === tgt.ci && src.si === tgt.si) return;
   const sSlot = getSlot(src.ai, src.ci, src.si), tSlot = getSlot(tgt.ai, tgt.ci, tgt.si);
-  const tmp = { modelId: tSlot.modelId, color: tSlot.color, qty: tSlot.qty, unit: tSlot.unit };
-  tSlot.modelId = sSlot.modelId; tSlot.color = sSlot.color; tSlot.qty = sSlot.qty; tSlot.unit = sSlot.unit;
-  sSlot.modelId = tmp.modelId; sSlot.color = tmp.color; sSlot.qty = tmp.qty; sSlot.unit = tmp.unit;
+  if (!tSlot.modelId) {
+    // 目标空格：直接移过去，源位置清空
+    tSlot.modelId = sSlot.modelId; tSlot.color = sSlot.color; tSlot.qty = sSlot.qty; tSlot.unit = sSlot.unit;
+    sSlot.modelId = null; sSlot.color = null; sSlot.qty = 0; sSlot.unit = null;
+  } else {
+    // 目标已有主型号：源主型号降为附加型号加入目标，源位置清空
+    if (!tSlot.subModels) tSlot.subModels = [];
+    if (tSlot.subModels.length >= 3) { toast('⚠️ 目标库位已有3个附加型号'); return; }
+    tSlot.subModels.push({ modelId: sSlot.modelId, color: sSlot.color, qty: sSlot.qty, unit: sSlot.unit, restock: 0 });
+    sSlot.modelId = null; sSlot.color = null; sSlot.qty = 0; sSlot.unit = null;
+  }
   render();
 }
 function performSubModelMove(src, tgt) {
