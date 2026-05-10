@@ -979,6 +979,9 @@
   .auth-terms-row { display:flex; align-items:flex-start; gap:7px; font-size:10.5px; font-weight:600; color:rgba(255,255,255,.78); cursor:pointer; user-select:none; -webkit-user-select:none; line-height:1.4; }
   .auth-terms-row input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:#6c47ff; flex-shrink:0; margin-top:1px; }
   .auth-terms-row a { color:rgba(255,255,255,.95); text-decoration:underline; }
+  .auth-type-tabs2 { display:flex; gap:4px; }
+  .att2 { flex:1; padding:6px 4px; border-radius:8px; border:none; font-size:10px; font-weight:800; cursor:pointer; transition:.15s; color:rgba(255,255,255,.7); background:rgba(255,255,255,.12); }
+  .att2.on { background:rgba(108,71,255,.7); color:#fff; }
   /* Registration / Login email row */
   .reg-email-row { display:flex; gap:4px; }
   .reg-email-row input { flex:1; min-width:0; }
@@ -1052,25 +1055,37 @@
     <h2>ATMM.AI&amp;ZEHEM.AI Store</h2>
     <p class="auth-sub">快速盘库补货进销存系统</p>
     <div class="auth-err" id="err-login"></div>
-    <div class="reg-email-row" id="login-email-row">
-      <input type="text" id="login-username" placeholder="用户名" autocomplete="username">
-      <select id="login-domain" class="reg-domain-sel" onchange="_onLoginDomainChange()">
-        <option value="@gmail.com">@gmail.com</option>
-        <option value="@zehem.com">@zehem.com</option>
-        <option value="@qq.com">@qq.com</option>
-        <option value="@163.com">@163.com</option>
-        <option value="@icloud.com">@icloud.com</option>
-        <option value="other">Other Mailbox</option>
-      </select>
+    <!-- Login type tabs -->
+    <div class="auth-type-tabs2">
+      <button class="att2 on" id="latt-email" onclick="_setLoginType('email')">📧 邮箱</button>
+      <button class="att2" id="latt-id" onclick="_setLoginType('id')">👤 用户名/编号</button>
     </div>
-    <input type="email" id="login-email-full" placeholder="完整邮箱地址 Full Email" autocomplete="email" style="display:none">
+    <!-- Email section -->
+    <div id="login-email-sec">
+      <div class="reg-email-row" id="login-email-row">
+        <input type="text" id="login-username" placeholder="用户名" autocomplete="username">
+        <select id="login-domain" class="reg-domain-sel" onchange="_onLoginDomainChange()">
+          <option value="@gmail.com">@gmail.com</option>
+          <option value="@zehem.com">@zehem.com</option>
+          <option value="@qq.com">@qq.com</option>
+          <option value="@163.com">@163.com</option>
+          <option value="@icloud.com">@icloud.com</option>
+          <option value="other">Other Mailbox</option>
+        </select>
+      </div>
+      <input type="email" id="login-email-full" placeholder="完整邮箱地址 Full Email" autocomplete="email" style="display:none">
+    </div>
+    <!-- Identifier section -->
+    <div id="login-id-sec" style="display:none;">
+      <input type="text" id="login-identifier" placeholder="输入用户名 或 数字编号 (如 10001)" autocomplete="off">
+    </div>
     <input type="password" id="auth-password" placeholder="密码 Password" autocomplete="current-password">
     <label class="auth-remember-row">
       <input type="checkbox" id="auth-remember" checked> 记住账号密码
     </label>
     <label class="auth-terms-row" id="login-terms-row">
       <input type="checkbox" id="login-terms" checked>
-      <span>我已阅读并同意 <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">隐私政策与用户协议</a> / I agree to <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">Privacy &amp; Terms</a></span>
+      <span>我已阅读并同意 <a href="#" onclick="event.preventDefault();event.stopPropagation();_showAtmmPrivacy()">隐私政策与用户协议</a> / I agree to <a href="#" onclick="event.preventDefault();event.stopPropagation();_showAtmmPrivacy()">Privacy &amp; Terms</a></span>
     </label>
     <button class="auth-btn-primary" onclick="_doLogin()">登录 Sign In</button>
     <div class="auth-divider">— 或 or —</div>
@@ -1100,7 +1115,7 @@
     <input type="text"     id="reg-wh-name"  placeholder="仓库名称 (如: 北仓A区)" autocomplete="off">
     <label class="auth-terms-row" id="reg-terms-row">
       <input type="checkbox" id="reg-terms" checked>
-      <span>我已阅读并同意 <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">隐私政策与用户协议</a> / I agree to <a href="javascript:void(0)" onclick="_showAtmmPrivacy()">Privacy &amp; Terms</a></span>
+      <span>我已阅读并同意 <a href="#" onclick="event.preventDefault();event.stopPropagation();_showAtmmPrivacy()">隐私政策与用户协议</a> / I agree to <a href="#" onclick="event.preventDefault();event.stopPropagation();_showAtmmPrivacy()">Privacy &amp; Terms</a></span>
     </label>
     <button class="auth-btn-primary" onclick="_doRegister()">注册并开始 →</button>
     <button class="auth-link" onclick="_showAuth('login')">已有账号? 登录</button>
@@ -1152,9 +1167,25 @@
   </div>
 </div>
 
+<!-- 修改用户名弹窗 (index.html) -->
+<div class="sheet-backdrop modal-top" id="uname-idx-sheet" style="z-index:10002;">
+  <div class="sheet">
+    <div class="sheet-body">
+      <h3>✏️ 修改用户名 Change Username</h3>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;">用户名至少3个字符，不能是纯数字，全平台唯一（同时影响 zehem.ai 账号）</div>
+      <input id="uname-idx-inp" type="text" placeholder="输入新用户名..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--bg);font-family:inherit;outline:none;color:var(--ink);margin-bottom:8px;">
+      <div id="uname-idx-err" style="font-size:12px;color:var(--red);display:none;margin-bottom:4px;padding:6px 10px;background:#fff0f0;border-radius:8px;"></div>
+    </div>
+    <div class="sheet-footer" style="display:flex;gap:8px;">
+      <button class="sheet-cancel" data-close style="flex:1;">取消</button>
+      <button onclick="_saveUsernameIdx()" style="flex:1;padding:12px;background:var(--red);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1684,6 +1715,26 @@
         </div>
       </div>
 
+      <!-- Account profile info (user_number, username, email_contact) -->
+      <div id="settings-profile-info" style="display:none; background:var(--bg); border-radius:10px; padding:10px 12px; margin-bottom:14px; border:1.5px solid var(--line);">
+        <div style="font-size:10px; font-weight:700; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px;">账号详情 Account</div>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px;">
+          <div>
+            <div style="font-size:10px; color:var(--muted); font-weight:600; margin-bottom:2px;">数字编号</div>
+            <div id="set-user-num-idx" style="font-size:13px; font-weight:800; font-family:'JetBrains Mono',monospace;">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px; color:var(--muted); font-weight:600; margin-bottom:2px;">用户名</div>
+            <div id="set-username-idx" style="font-size:13px; font-weight:800;">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px; color:var(--muted); font-weight:600; margin-bottom:2px;">备用邮箱</div>
+            <div id="set-backup-email-idx" style="font-size:12px; font-weight:600; color:var(--muted);">未设置</div>
+          </div>
+        </div>
+        <button onclick="_openChangeUsernameIdx()" style="width:100%; padding:8px; border:1.5px solid var(--line); border-radius:8px; background:var(--paper); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink);">✏️ 修改用户名 Change Username</button>
+      </div>
+
       <!-- PAYMENT section -->
       <div style="margin-bottom:18px;">
         <div class="settings-sec-lbl">PAYMENT 支付</div>
@@ -2032,7 +2083,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.7</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-10</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>登录页新增「用户名/编号」标签，可用用户名或数字编号配合密码直接登录</li>
+            <li>设置页账号详情区块：显示数字编号、用户名、备用邮箱，并支持修改用户名</li>
+            <li>用户名改名验证：≥3字符、不可纯数字、全平台唯一</li>
+            <li>隐私政策弹窗改为顶部居中显示，登录/注册均默认勾选同意</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.7</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-10</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -6716,11 +6780,25 @@ function _loadSavedCredentials() {
 
 // ── Login ──
 async function _doLogin() {
-  const email = _getLoginEmail();
-  const pwd   = document.getElementById('auth-password').value;
+  const pwd = document.getElementById('auth-password').value;
   _authErr('err-login', '');
   if (!document.getElementById('login-terms')?.checked) { _authErr('err-login', '请先同意隐私政策与用户协议'); return; }
-  if (!email || !email.includes('@')) { _authErr('err-login', '请填写正确的邮箱地址'); return; }
+
+  let email = '';
+  if (_loginType === 'id') {
+    const identifier = (document.getElementById('login-identifier')?.value || '').trim();
+    if (!identifier) { _authErr('err-login', '请输入用户名或数字编号'); return; }
+    const isNum = /^\d+$/.test(identifier);
+    const { data: prof } = isNum
+      ? await sb.from('profiles').select('email_contact').eq('user_number', parseInt(identifier, 10)).maybeSingle()
+      : await sb.from('profiles').select('email_contact').eq('username', identifier).maybeSingle();
+    if (!prof?.email_contact) { _authErr('err-login', '找不到该用户，请检查用户名或编号'); return; }
+    email = prof.email_contact;
+  } else {
+    email = _getLoginEmail();
+    if (!email || !email.includes('@')) { _authErr('err-login', '请填写正确的邮箱地址'); return; }
+  }
+
   const remember = document.getElementById('auth-remember')?.checked;
   if (remember) {
     _saveLoginCredentials(
@@ -6810,6 +6888,43 @@ function _agreeAtmmTerms() {
   if (rT) rT.checked = true;
   const el = document.getElementById('atmm-privacy-ov');
   if (el) el.style.display = 'none';
+}
+
+// ── Login type tab (email / username·number) ──
+let _loginType = 'email';
+function _setLoginType(t) {
+  _loginType = t;
+  document.getElementById('latt-email')?.classList.toggle('on', t === 'email');
+  document.getElementById('latt-id')?.classList.toggle('on', t === 'id');
+  const emailSec = document.getElementById('login-email-sec');
+  const idSec    = document.getElementById('login-id-sec');
+  if (emailSec) emailSec.style.display = t === 'email' ? '' : 'none';
+  if (idSec)    idSec.style.display    = t === 'id'    ? '' : 'none';
+}
+
+// ── Username change (index.html settings) ──
+function _openChangeUsernameIdx() {
+  const inp = document.getElementById('uname-idx-inp');
+  const err = document.getElementById('uname-idx-err');
+  if (inp) inp.value = '';
+  if (err) { err.textContent = ''; err.style.display = 'none'; }
+  showSheet('uname-idx-sheet');
+}
+async function _saveUsernameIdx() {
+  const val   = (document.getElementById('uname-idx-inp')?.value || '').trim();
+  const errEl = document.getElementById('uname-idx-err');
+  const showErr = m => { if (errEl) { errEl.textContent = m; errEl.style.display = 'block'; } };
+  if (val.length < 3)          return showErr('用户名至少3个字符');
+  if (/^\d+$/.test(val))       return showErr('用户名不能是纯数字');
+  if (!/^[a-zA-Z0-9_一-鿿]+$/.test(val)) return showErr('只能包含字母、数字、下划线或中文');
+  const { data: ex } = await sb.from('profiles').select('id').eq('username', val).neq('id', _user.id).maybeSingle();
+  if (ex) return showErr('该用户名已被使用，请换一个');
+  const { error } = await sb.from('profiles').update({ username: val }).eq('id', _user.id);
+  if (error) return showErr(error.message);
+  const el = document.getElementById('set-username-idx');
+  if (el) el.textContent = val;
+  hideSheets();
+  toast('✅ 用户名已更新');
 }
 
 async function _doForgot() {
@@ -7188,6 +7303,21 @@ async function _openSettings() {
 
   // Load wallet & credits balances
   _loadWalletCredits();
+
+  // Fetch profile info (user_number, username, email_contact) from profiles table
+  try {
+    const { data: prof } = await sb.from('profiles').select('user_number,username,email_contact').eq('id', _user.id).maybeSingle();
+    const profInfoEl = document.getElementById('settings-profile-info');
+    if (profInfoEl && prof) {
+      const numEl   = document.getElementById('set-user-num-idx');
+      const nameEl2 = document.getElementById('set-username-idx');
+      const emailEl2= document.getElementById('set-backup-email-idx');
+      if (numEl)    numEl.textContent    = prof.user_number ? `#${prof.user_number}` : '—';
+      if (nameEl2)  nameEl2.textContent  = prof.username || '未设置';
+      if (emailEl2) emailEl2.textContent = prof.email_contact || '未设置';
+      profInfoEl.style.display = '';
+    }
+  } catch(e) {}
 
   // Team members (boss only)
   if (_role === 'boss') {

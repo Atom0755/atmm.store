@@ -18,7 +18,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .hdr-logo span{color:var(--accent);}
 .hdr-right{display:flex;align-items:center;gap:8px;}
 #wallet-badge{font-size:12px;color:var(--muted);font-weight:600;}
-#settings-btn{background:none;border:none;font-size:18px;cursor:pointer;display:none;padding:4px;}
+#settings-btn{background:rgba(108,71,255,.1);color:#6c47ff;border:1px solid rgba(108,71,255,.25);border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;display:none;padding:4px 11px;}
+#settings-btn:active{opacity:.8;}
 #auth-btn{background:var(--accent);color:#fff;border:none;padding:5px 13px;border-radius:18px;font-size:12px;font-weight:700;cursor:pointer;}
 
 /* ── Main & Views ───────────────────────────────────── */
@@ -53,7 +54,9 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
 /* ── Modals (bottom sheet) ───────────────────────────── */
 .ov{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);}
 .ov.on{display:flex;align-items:flex-end;justify-content:center;}
+.ov.on.ov-top{align-items:flex-start;padding-top:60px;}
 .mbox{background:var(--paper);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:18px;}
+.ov-top .mbox{border-radius:16px;max-width:480px;max-height:82vh;}
 .handle{width:40px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px;}
 .mbox h3{font-size:16px;font-weight:800;margin-bottom:12px;}
 .mcls{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);margin-top:-4px;}
@@ -212,7 +215,7 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
   <div class="hdr-logo" onclick="goMarket()">🏪 <span>ATMM</span> 网店广场</div>
   <div class="hdr-right">
     <span id="wallet-badge"></span>
-    <button id="settings-btn" onclick="goSettings()" title="账号设置">⚙️</button>
+    <button id="settings-btn" onclick="goSettings()" title="账号设置">设置</button>
     <button id="auth-btn" onclick="authClick()">登录</button>
   </div>
 </div>
@@ -295,6 +298,19 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
           <div class="sr-sub">ZEHEM.AI / ATMM.store 通用账号</div>
         </div>
         <div class="set-avatar" id="set-avatar">👤</div>
+      </div>
+      <div class="set-row set-row-nc" id="set-profile-row" style="display:none;">
+        <div class="sr-left">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">数字编号</div><div style="font-size:13px;font-weight:700;" id="set-user-num">—</div></div>
+            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">用户名</div><div style="font-size:13px;font-weight:700;" id="set-username">—</div></div>
+            <div><div style="font-size:10px;color:var(--muted);font-weight:600;">备用邮箱</div><div style="font-size:13px;font-weight:700;" id="set-backup-email">未设置</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="set-row" id="set-change-uname-row" style="display:none;" onclick="openChangeUsername()">
+        <div class="sr-left"><div class="sr-label">✏️ 修改用户名</div><div class="sr-sub">3位以上，不能为纯数字，全平台唯一</div></div>
+        <div class="sr-right"><span class="arrow">›</span></div>
       </div>
     </div>
 
@@ -426,7 +442,7 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
     <div id="auth-terms-sec">
       <label class="auth-check-row">
         <input type="checkbox" id="a2-terms" checked>
-        <span>我已阅读并同意 <a href="javascript:void(0)" onclick="showPrivacyModal()">隐私政策与用户协议</a> / I agree to the <a href="javascript:void(0)" onclick="showPrivacyModal()">Privacy Policy &amp; Terms</a></span>
+        <span>我已阅读并同意 <a href="#" onclick="event.preventDefault();event.stopPropagation();showPrivacyModal()">隐私政策与用户协议</a> / I agree to the <a href="#" onclick="event.preventDefault();event.stopPropagation();showPrivacyModal()">Privacy Policy &amp; Terms</a></span>
       </label>
     </div>
 
@@ -444,7 +460,7 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
 
     <div class="auth-note">
       注册后可同时登录 <a href="https://zehem.ai" target="_blank">ZEHEM.AI</a> &amp; ATMM.store<br>
-      账号数据互通，钱包积分统一管理
+      账号通用 · 各平台钱包积分独立
     </div>
   </div>
 </div>
@@ -526,8 +542,24 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
   </div>
 </div>
 
+<!-- Change Username Modal -->
+<div class="ov ov-top" id="uname-modal">
+  <div class="mbox">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('uname-modal')">✕</button>
+    <h3>✏️ 修改用户名</h3>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7;">
+      规则：3位以上 · 不能为纯数字 · 全平台唯一（zehem.ai / atmm.store 共用）<br>
+      用户名修改后不影响登录邮箱
+    </div>
+    <div class="fg"><label>新用户名</label><input id="new-uname-inp" placeholder="输入新用户名（至少3位）" maxlength="30"></div>
+    <div id="uname-err" style="font-size:12px;color:var(--accent);min-height:14px;margin-bottom:8px;"></div>
+    <button class="btn btn-r" onclick="saveUsername()">保存用户名</button>
+  </div>
+</div>
+
 <!-- Privacy Policy Modal -->
-<div class="ov" id="privacy-modal">
+<div class="ov ov-top" id="privacy-modal">
   <div class="mbox">
     <div class="handle"></div>
     <button class="mcls" onclick="closeOv('privacy-modal')">✕</button>
@@ -786,10 +818,49 @@ function goSeller(){
   if(!user){openAuth(goSeller);return;}
   bc(`<a onclick="goMarket()">广场</a> › 我的店铺`);showView('seller');loadSeller();
 }
-function goSettings(){
+async function goSettings(){
   if(!user){openAuth(goSettings);return;}
   document.getElementById('set-email').textContent=user.email||'—';
   bc('');showView('settings');loadWallet();
+  // Load profile info from profiles table
+  try{
+    const{data:prof}=await sb.from('profiles').select('user_number,username,email_contact').eq('id',user.id).maybeSingle();
+    if(prof){
+      const row=document.getElementById('set-profile-row');
+      const unRow=document.getElementById('set-change-uname-row');
+      if(row)row.style.display='';
+      if(unRow)unRow.style.display='';
+      const numEl=document.getElementById('set-user-num');
+      const unEl=document.getElementById('set-username');
+      const beEl=document.getElementById('set-backup-email');
+      if(numEl)numEl.textContent=prof.user_number?`#${prof.user_number}`:'未分配';
+      if(unEl)unEl.textContent=prof.username||'未设置';
+      if(beEl)beEl.textContent=prof.email_contact||'未设置';
+    }
+  }catch(e){}
+}
+function openChangeUsername(){
+  const cur=document.getElementById('set-username')?.textContent||'';
+  const inp=document.getElementById('new-uname-inp');
+  if(inp)inp.value=(cur==='未设置')?'':cur;
+  document.getElementById('uname-err').textContent='';
+  openOv('uname-modal');
+}
+async function saveUsername(){
+  const val=(document.getElementById('new-uname-inp')?.value||'').trim();
+  const errEl=document.getElementById('uname-err');
+  errEl.textContent='';
+  if(val.length<3){errEl.textContent='用户名至少3位';return;}
+  if(/^\d+$/.test(val)){errEl.textContent='用户名不能为纯数字';return;}
+  if(!/^[a-zA-Z0-9_\-一-龥]+$/.test(val)){errEl.textContent='只允许字母、数字、下划线、中文';return;}
+  // Check uniqueness
+  const{data:ex}=await sb.from('profiles').select('id').eq('username',val).neq('id',user.id).maybeSingle();
+  if(ex){errEl.textContent='该用户名已被使用，请换一个';return;}
+  const{error}=await sb.from('profiles').update({username:val}).eq('id',user.id);
+  if(error){errEl.textContent='保存失败：'+error.message;return;}
+  closeOv('uname-modal');
+  toast('✅ 用户名已更新');
+  await goSettings();
 }
 function viewMyShop(){if(curStore)goStore(curStore.id);}
 function showHelp(){openOv('help-modal');}

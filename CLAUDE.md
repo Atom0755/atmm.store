@@ -35,3 +35,11 @@ state = {
 }
 ```
 库位编号格式：`①A-1-01`（区域前缀·通道字母·列号·格位）
+
+## UI 规则
+
+### 弹窗/对话框定位
+**所有弹窗（modal / dialog / sheet）必须显示在屏幕中上方，不得从底部滑出，也不得居正中。**
+- 使用 `modal-top` 定位（index.html 已有 `.sheet-backdrop.modal-top` 类）
+- shop.html 使用 `.ov` 覆盖层时，须设 `align-items:flex-start; padding-top:60px`，而不是 `align-items:flex-end`
+- 此规则适用于 atmm.store、atmm.store/shop、zehem.ai 三站所有弹窗
