@@ -341,9 +341,9 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       <!-- Card panel -->
       <div id="sh-panel-card" style="display:none;padding:12px;background:var(--bg);border-bottom:1px solid var(--line);">
         <div style="font-size:13px;font-weight:700;margin-bottom:10px;" id="sh-card-detail">—</div>
-        <button id="sh-manage-card-btn" onclick="shopManageCards()" style="display:none;width:100%;padding:10px;background:#f0fdf4;border:1.5px solid #16a34a;border-radius:8px;color:#16a34a;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">🔄 管理银行卡 Manage Cards</button>
-        <button id="sh-add-card-btn" onclick="window.open('https://atmm.store','_blank')" style="width:100%;padding:10px;background:#e8f0fe;border:1.5px solid #1a73e8;border-radius:8px;color:#1a73e8;font-weight:700;cursor:pointer;font-family:inherit;">➕ 前往 ATMM.store 添加银行卡</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">银行卡在 ATMM.store 主应用添加/删除，此处管理已有卡片及充值</div>
+        <button id="sh-add-new-card-btn" onclick="shopAddCard()" style="width:100%;padding:10px;background:#e8f0fe;border:1.5px solid #1a73e8;border-radius:8px;color:#1a73e8;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">➕ 添加新卡（直接输入）</button>
+        <button id="sh-manage-card-btn" onclick="shopManageCards()" style="display:none;width:100%;padding:10px;background:#f0fdf4;border:1.5px solid #16a34a;border-radius:8px;color:#16a34a;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">🔄 管理/删除已有卡 Manage Cards</button>
+        <button id="sh-add-card-btn" onclick="shopAddCard()" style="width:100%;padding:10px;background:#e8f0fe;border:1.5px solid #1a73e8;border-radius:8px;color:#1a73e8;font-weight:700;cursor:pointer;font-family:inherit;display:none;">➕ 添加银行卡</button>
       </div>
       <!-- 充值 Top-up row -->
       <div class="set-row" onclick="shopTogglePay('wallet')">
@@ -630,6 +630,28 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       </div>
     </div>
     <button class="btn btn-r" style="margin-top:7px;" onclick="saveProd()">保存商品</button>
+  </div>
+</div>
+
+<!-- Add New Card Modal (Stripe Elements — bypasses Stripe Link) -->
+<div class="ov ov-top" id="sh-newcard-modal">
+  <div class="mbox" style="max-width:420px;">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('sh-newcard-modal')">✕</button>
+    <h3 style="margin-bottom:6px;">💳 添加新银行卡</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">直接输入新卡信息，或在手机上使用<b>相机扫卡</b>自动填写（iOS 支持）</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;">持卡人姓名 / Cardholder Name</label>
+      <input id="sh-card-name-inp" type="text" placeholder="Cardholder Name" autocomplete="cc-name" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;background:var(--paper);font-family:inherit;outline:none;color:var(--ink);box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:6px;">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;">卡号 / 到期日 / 安全码</label>
+      <div id="sh-stripe-card-el" style="padding:12px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);min-height:44px;"></div>
+      <div id="sh-stripe-card-err" style="color:var(--accent);font-size:12px;margin-top:6px;display:none;"></div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px;text-align:center;line-height:1.6;">📱 iPhone Safari 用户：点击卡号框后键盘右下角会出现扫描图标，可拍实体卡自动填写（仅限 Safari，Chrome 不支持）</p>
+    <button id="sh-card-submit-btn" class="btn btn-r" onclick="shopSubmitNewCard()" style="width:100%;margin-bottom:10px;">➕ 添加此卡</button>
+    <button class="btn" onclick="closeOv('sh-newcard-modal')" style="width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);">取消</button>
   </div>
 </div>
 
@@ -1028,6 +1050,7 @@ async function shopLoadCard(){
     const subEl=document.getElementById('sh-card-sub');
     const detailEl=document.getElementById('sh-card-detail');
     const manageBtn=document.getElementById('sh-manage-card-btn');
+    const addNewBtn=document.getElementById('sh-add-new-card-btn');
     const addBtn=document.getElementById('sh-add-card-btn');
     if(_shopSavedCard){
       const brand=_shopSavedCard.brand.charAt(0).toUpperCase()+_shopSavedCard.brand.slice(1);
@@ -1035,14 +1058,61 @@ async function shopLoadCard(){
       if(subEl)subEl.textContent=label;
       if(detailEl)detailEl.textContent=label;
       if(manageBtn)manageBtn.style.display='';
+      if(addNewBtn)addNewBtn.style.display='';
       if(addBtn)addBtn.style.display='none';
     }else{
       if(subEl)subEl.textContent='未绑定支付方式';
       if(detailEl)detailEl.textContent='未绑定';
       if(manageBtn)manageBtn.style.display='none';
+      if(addNewBtn)addNewBtn.style.display='none';
       if(addBtn)addBtn.style.display='';
     }
   }catch(e){}
+}
+let _shopStripe=null,_shopCardEl=null;
+async function shopAddCard(){
+  toast('⏳ 加载支付模块...');
+  // Load Stripe.js on demand
+  if(!window.Stripe){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');s.src='https://js.stripe.com/v3/';
+      s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    });
+  }
+  _shopStripe=Stripe('pk_live_51TSuQ7ENKr86wLvljocknGlM61UKMevnbuKUTOL9iA0RB5a8zr5MCkqvWwoHWRwV4XhtDPEckGD1agFaE48pYlEs0050bMbWLD');
+  const elements=_shopStripe.elements();
+  const style={base:{fontSize:'15px',color:'#1a1a1a',fontFamily:'system-ui,sans-serif','::placeholder':{color:'#aaa'}},invalid:{color:'#d63340'}};
+  _shopCardEl=elements.create('card',{style,hidePostalCode:true});
+  document.getElementById('sh-stripe-card-el').innerHTML='';
+  _shopCardEl.mount('#sh-stripe-card-el');
+  _shopCardEl.on('change',e=>{
+    const err=document.getElementById('sh-stripe-card-err');
+    if(e.error){err.textContent=e.error.message;err.style.display='block';}
+    else err.style.display='none';
+  });
+  openOv('sh-newcard-modal');
+}
+async function shopSubmitNewCard(){
+  if(!_shopStripe||!_shopCardEl)return;
+  const btn=document.getElementById('sh-card-submit-btn');
+  btn.textContent='⏳ 处理中...';btn.disabled=true;
+  try{
+    const d=await api('/api/create-setup-intent',{method:'POST',body:JSON.stringify({warehouseId:whId})});
+    if(!d.clientSecret){toast('❌ '+(d.error||'服务器错误'));return;}
+    const name=(document.getElementById('sh-card-name-inp')?.value||'').trim();
+    const{error}=await _shopStripe.confirmCardSetup(d.clientSecret,{
+      payment_method:{card:_shopCardEl,billing_details:{name:name||undefined}},
+    });
+    if(error){
+      const err=document.getElementById('sh-stripe-card-err');
+      err.textContent=error.message;err.style.display='block';
+    }else{
+      closeOv('sh-newcard-modal');
+      toast('✅ 银行卡已添加！');
+      setTimeout(()=>shopLoadCard(),1200);
+    }
+  }catch(e){toast('❌ '+e.message);}
+  finally{btn.textContent='➕ 添加此卡';btn.disabled=false;}
 }
 async function shopManageCards(){
   toast('⏳ 打开银行卡管理...');
