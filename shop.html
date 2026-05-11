@@ -344,7 +344,17 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
           <span style="font-size:22px;font-weight:800;" id="sh-wallet-big">$0.00</span>
           <span style="font-size:11px;color:var(--muted);">可用余额</span>
         </div>
-        <button onclick="window.open('https://atmm.store','_blank')" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">🔗 前往 ATMM.store 信用卡充值</button>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">充值金额</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+          <button onclick="shopDoTopup(20)" style="flex:1;min-width:52px;padding:9px 4px;background:var(--paper);border:1.5px solid var(--line);border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">$20</button>
+          <button onclick="shopDoTopup(50)" style="flex:1;min-width:52px;padding:9px 4px;background:var(--paper);border:1.5px solid var(--line);border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">$50</button>
+          <button onclick="shopDoTopup(100)" style="flex:1;min-width:52px;padding:9px 4px;background:var(--paper);border:1.5px solid var(--line);border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">$100</button>
+          <button onclick="shopDoTopup(200)" style="flex:1;min-width:52px;padding:9px 4px;background:var(--paper);border:1.5px solid var(--line);border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">$200</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input id="sh-topup-custom" type="number" min="1" placeholder="自定义金额 $" style="flex:1;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper);outline:none;color:var(--ink);font-family:inherit;">
+          <button onclick="shopTopupCustom()" style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">充值</button>
+        </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">积分兑换为钱包余额（12 Credits = $1）</div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
           <input id="sh-c2w-inp" type="number" min="12" step="12" placeholder="积分数（最少12）" style="flex:1;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper);outline:none;color:var(--ink);font-family:inherit;">
@@ -955,6 +965,22 @@ async function loadWallet(){
     }
   }catch(e){}
 }
+async function shopDoTopup(amountUsd){
+  if(!whId){toast('⚠️ 请先登录并关联仓库');return;}
+  const btn=event?.currentTarget;if(btn){btn.textContent='⏳...';btn.disabled=true;}
+  try{
+    const d=await api('/api/create-topup',{method:'POST',body:JSON.stringify({warehouseId:whId,amountUsd,returnPath:'/shop'})});
+    if(d.success){toast('✅ '+(d.message||`充值 $${amountUsd} 成功！`));loadWallet();}
+    else if(d.url){window.location.href=d.url;}
+    else toast('❌ '+(d.error||'充值失败'));
+  }catch(e){toast('❌ '+e.message);}
+  finally{if(btn){btn.textContent='$'+amountUsd;btn.disabled=false;}}
+}
+function shopTopupCustom(){
+  const v=parseFloat(document.getElementById('sh-topup-custom')?.value||'0');
+  if(!v||v<1){toast('⚠️ 请输入有效金额');return;}
+  shopDoTopup(Math.floor(v));
+}
 function shopTogglePay(type){
   ['wallet','credits'].forEach(t=>{
     const p=document.getElementById('sh-panel-'+t);
@@ -1314,6 +1340,10 @@ async function init(){
   const mode=p.get('mode');
   whId=p.get('wh')||localStorage.getItem('atmm_shop_wh')||null;
   if(whId)localStorage.setItem('atmm_shop_wh',whId);
+
+  // Stripe topup redirect callback
+  if(p.get('topup')==='success'){toast('✅ 充值成功！余额已更新');history.replaceState({},'','/shop');}
+  else if(p.get('topup')==='canceled'){toast('充值已取消');history.replaceState({},'','/shop');}
 
   const{data:{session}}=await sb.auth.getSession();
   if(session){user=session.user;token=session.access_token;}

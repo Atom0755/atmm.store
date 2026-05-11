@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
   const { data: { user }, error: authErr } = await sb.auth.getUser(token);
   if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { warehouseId, amountUsd } = req.body || {};
+  const { warehouseId, amountUsd, returnPath } = req.body || {};
   if (!warehouseId || !amountUsd) return res.status(400).json({ error: 'Missing fields' });
 
   const amountNum = Number(amountUsd);
@@ -95,6 +95,7 @@ module.exports = async function handler(req, res) {
   }
 
   const origin = req.headers.origin || 'https://atmm.store';
+  const rp = (returnPath || '').replace(/[^a-zA-Z0-9/_-]/g, ''); // sanitize
 
   if (defaultPmId) {
     try {
@@ -107,7 +108,7 @@ module.exports = async function handler(req, res) {
         confirm: true,
         description: `ATMM 钱包充值 $${amountUsd}`,
         metadata: { warehouse_id: warehouseId, topup_cents: amountCents.toString(), type: 'wallet_topup' },
-        return_url: `${origin}/?topup=success`,
+        return_url: `${origin}${rp}?topup=success`,
       });
 
       if (pi.status === 'succeeded') {
@@ -140,8 +141,8 @@ module.exports = async function handler(req, res) {
       },
       quantity: 1,
     }],
-    success_url: `${origin}/?topup=success`,
-    cancel_url:  `${origin}/?topup=canceled`,
+    success_url: `${origin}${rp}?topup=success`,
+    cancel_url:  `${origin}${rp}?topup=canceled`,
     metadata: { warehouse_id: warehouseId, topup_cents: amountCents.toString(), type: 'wallet_topup' },
   });
 
