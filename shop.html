@@ -327,9 +327,24 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       </div>
     </div>
 
-    <!-- Payment section (matches index.html PAYMENT 支付) -->
+    <!-- Payment section -->
     <div class="sec-title">PAYMENT 支付</div>
     <div class="set-section">
+      <!-- 银行卡 Credit Card row -->
+      <div class="set-row" onclick="shopTogglePay('card')">
+        <div class="sr-left">
+          <div class="sr-label">💳 银行卡 Credit Card</div>
+          <div class="sr-sub" id="sh-card-sub">加载中…</div>
+        </div>
+        <div class="sr-right"><span class="arrow" id="sh-arr-card">›</span></div>
+      </div>
+      <!-- Card panel -->
+      <div id="sh-panel-card" style="display:none;padding:12px;background:var(--bg);border-bottom:1px solid var(--line);">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;" id="sh-card-detail">—</div>
+        <button id="sh-manage-card-btn" onclick="shopManageCards()" style="display:none;width:100%;padding:10px;background:#f0fdf4;border:1.5px solid #16a34a;border-radius:8px;color:#16a34a;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">🔄 管理银行卡 Manage Cards</button>
+        <button id="sh-add-card-btn" onclick="window.open('https://atmm.store','_blank')" style="width:100%;padding:10px;background:#e8f0fe;border:1.5px solid #1a73e8;border-radius:8px;color:#1a73e8;font-weight:700;cursor:pointer;font-family:inherit;">➕ 前往 ATMM.store 添加银行卡</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">银行卡在 ATMM.store 主应用添加/删除，此处管理已有卡片及充值</div>
+      </div>
       <!-- 充值 Top-up row -->
       <div class="set-row" onclick="shopTogglePay('wallet')">
         <div class="sr-left">
@@ -615,6 +630,17 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       </div>
     </div>
     <button class="btn btn-r" style="margin-top:7px;" onclick="saveProd()">保存商品</button>
+  </div>
+</div>
+
+<!-- Topup Confirm Modal -->
+<div class="ov ov-top" id="sh-topup-confirm-modal">
+  <div class="mbox" style="max-width:340px;text-align:center;">
+    <div class="handle"></div>
+    <h3 style="margin-bottom:10px;">确认充值</h3>
+    <div id="sh-topup-confirm-desc" style="font-size:14px;color:var(--muted);margin-bottom:18px;line-height:1.7;"></div>
+    <button id="sh-topup-do-btn" class="btn btn-r" onclick="shopConfirmTopup()" style="width:100%;margin-bottom:10px;">确认充值</button>
+    <button class="btn" onclick="closeOv('sh-topup-confirm-modal')" style="width:100%;background:var(--bg);color:var(--muted);border:1.5px solid var(--line);">取消</button>
   </div>
 </div>
 
@@ -965,27 +991,72 @@ async function loadWallet(){
     }
   }catch(e){}
 }
-async function shopDoTopup(amountUsd){
+let _shopSavedCard=null,_shopPendingTopup=null;
+function shopDoTopup(amountUsd){
   if(!whId){toast('⚠️ 请先登录并关联仓库');return;}
-  const btn=event?.currentTarget;if(btn){btn.textContent='⏳...';btn.disabled=true;}
+  _shopPendingTopup=amountUsd;
+  const cardLabel=_shopSavedCard
+    ?`${_shopSavedCard.brand.charAt(0).toUpperCase()+_shopSavedCard.brand.slice(1)} •••• ${_shopSavedCard.last4}`
+    :'已保存银行卡';
+  const desc=document.getElementById('sh-topup-confirm-desc');
+  if(desc)desc.innerHTML=`将使用 <b>${cardLabel}</b><br>充值 <b style="font-size:18px;color:var(--accent);">$${amountUsd}</b>`;
+  openOv('sh-topup-confirm-modal');
+}
+async function shopConfirmTopup(){
+  const amountUsd=_shopPendingTopup;if(!amountUsd)return;
+  closeOv('sh-topup-confirm-modal');
+  const btn=document.getElementById('sh-topup-do-btn');
+  if(btn){btn.textContent='⏳ 处理中...';btn.disabled=true;}
   try{
     const d=await api('/api/create-topup',{method:'POST',body:JSON.stringify({warehouseId:whId,amountUsd,returnPath:'/shop'})});
     if(d.success){toast('✅ '+(d.message||`充值 $${amountUsd} 成功！`));loadWallet();}
     else if(d.url){window.location.href=d.url;}
     else toast('❌ '+(d.error||'充值失败'));
   }catch(e){toast('❌ '+e.message);}
-  finally{if(btn){btn.textContent='$'+amountUsd;btn.disabled=false;}}
+  finally{if(btn){btn.textContent='确认充值';btn.disabled=false;}_shopPendingTopup=null;}
 }
 function shopTopupCustom(){
   const v=parseFloat(document.getElementById('sh-topup-custom')?.value||'0');
   if(!v||v<1){toast('⚠️ 请输入有效金额');return;}
   shopDoTopup(Math.floor(v));
 }
+async function shopLoadCard(){
+  if(!whId||!token)return;
+  try{
+    const d=await api(`/api/get-payment-method?warehouse_id=${whId}`);
+    _shopSavedCard=d.card||null;
+    const subEl=document.getElementById('sh-card-sub');
+    const detailEl=document.getElementById('sh-card-detail');
+    const manageBtn=document.getElementById('sh-manage-card-btn');
+    const addBtn=document.getElementById('sh-add-card-btn');
+    if(_shopSavedCard){
+      const brand=_shopSavedCard.brand.charAt(0).toUpperCase()+_shopSavedCard.brand.slice(1);
+      const label=`${brand} •••• ${_shopSavedCard.last4}`;
+      if(subEl)subEl.textContent=label;
+      if(detailEl)detailEl.textContent=label;
+      if(manageBtn)manageBtn.style.display='';
+      if(addBtn)addBtn.style.display='none';
+    }else{
+      if(subEl)subEl.textContent='未绑定支付方式';
+      if(detailEl)detailEl.textContent='未绑定';
+      if(manageBtn)manageBtn.style.display='none';
+      if(addBtn)addBtn.style.display='';
+    }
+  }catch(e){}
+}
+async function shopManageCards(){
+  toast('⏳ 打开银行卡管理...');
+  try{
+    const d=await api('/api/customer-portal',{method:'POST',body:JSON.stringify({warehouseId:whId})});
+    if(d.url)window.location.href=d.url;
+    else toast('❌ '+(d.error||'无法打开'));
+  }catch(e){toast('❌ '+e.message);}
+}
 function shopTogglePay(type){
-  ['wallet','credits'].forEach(t=>{
+  ['card','wallet','credits'].forEach(t=>{
     const p=document.getElementById('sh-panel-'+t);
     const a=document.getElementById('sh-arr-'+t);
-    if(t===type){const open=p.style.display!=='none';p.style.display=open?'none':'';if(a)a.textContent=open?'›':'˅';}
+    if(t===type){const open=p?.style.display!=='none';if(p)p.style.display=open?'none':'';if(a)a.textContent=open?'›':'˅';}
     else{if(p)p.style.display='none';if(a)a.textContent='›';}
   });
 }
@@ -1032,7 +1103,7 @@ function goSeller(){
 }
 async function goSettings(){
   if(!user){openAuth(goSettings);return;}
-  bc('');showView('settings');loadWallet();
+  bc('');showView('settings');loadWallet();shopLoadCard();
   // Load profile info from profiles table (shared with zehem.ai)
   try{
     const{data:prof}=await sb.from('profiles').select('user_number,username,avatar_url,created_at').eq('id',user.id).maybeSingle();
