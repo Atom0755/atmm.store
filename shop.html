@@ -327,16 +327,53 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
       </div>
     </div>
 
-    <!-- Wallet & Credits -->
-    <div class="sec-title">钱包 & 积分</div>
+    <!-- Payment section (matches index.html PAYMENT 支付) -->
+    <div class="sec-title">PAYMENT 支付</div>
     <div class="set-section">
-      <div class="set-row set-row-nc">
-        <div class="sr-left"><div class="sr-label">钱包余额</div><div class="sr-sub">可用于购买商品</div></div>
-        <div class="sr-right"><span id="set-wallet">—</span></div>
+      <!-- 充值 Top-up row -->
+      <div class="set-row" onclick="shopTogglePay('wallet')">
+        <div class="sr-left">
+          <div class="sr-label">💰 充值 Top-up</div>
+          <div class="sr-sub" id="sh-wallet-sub">余额 $0.00</div>
+        </div>
+        <div class="sr-right"><span class="arrow" id="sh-arr-wallet">›</span></div>
       </div>
-      <div class="set-row set-row-nc">
-        <div class="sr-left"><div class="sr-label">积分余额</div><div class="sr-sub">12 Credits = $1</div></div>
-        <div class="sr-right"><span id="set-credits">—</span></div>
+      <!-- Wallet expandable panel -->
+      <div id="sh-panel-wallet" style="display:none;padding:12px;background:var(--bg);border-bottom:1px solid var(--line);">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">
+          <span style="font-size:22px;font-weight:800;" id="sh-wallet-big">$0.00</span>
+          <span style="font-size:11px;color:var(--muted);">可用余额</span>
+        </div>
+        <button onclick="window.open('https://atmm.store','_blank')" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">🔗 前往 ATMM.store 信用卡充值</button>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">积分兑换为钱包余额（12 Credits = $1）</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+          <input id="sh-c2w-inp" type="number" min="12" step="12" placeholder="积分数（最少12）" style="flex:1;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper);outline:none;color:var(--ink);font-family:inherit;">
+          <button onclick="shopCreditsToWallet()" style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">兑换</button>
+        </div>
+        <div id="sh-wallet-tx" style="font-size:11px;color:var(--muted);"></div>
+      </div>
+      <!-- Credits 积分 row -->
+      <div class="set-row" onclick="shopTogglePay('credits')">
+        <div class="sr-left">
+          <div class="sr-label">⭐ Credits 积分</div>
+          <div class="sr-sub" id="sh-credits-sub">0 Credits</div>
+        </div>
+        <div class="sr-right"><span class="arrow" id="sh-arr-credits">›</span></div>
+      </div>
+      <!-- Credits expandable panel -->
+      <div id="sh-panel-credits" style="display:none;padding:12px;background:var(--bg);border-bottom:1px solid var(--line);">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+          <span style="font-size:22px;font-weight:800;" id="sh-credits-big">0</span>
+          <span style="font-size:11px;color:var(--muted);">Credits</span>
+          <span style="font-size:11px;color:var(--muted);" id="sh-credits-dollar"></span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6;">汇率：12 Credits = $1 · 余额长期有效不过期</div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">钱包余额兑换为积分（$1 = 12 Credits）</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+          <input id="sh-w2c-inp" type="number" min="1" placeholder="金额 $" style="flex:1;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper);outline:none;color:var(--ink);font-family:inherit;">
+          <button onclick="shopWalletToCredits()" style="padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">兑换</button>
+        </div>
+        <div id="sh-credits-tx" style="font-size:11px;color:var(--muted);"></div>
       </div>
     </div>
 
@@ -354,8 +391,17 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
     </div>
 
     <!-- Social -->
-    <div class="sec-title">团队</div>
+    <div class="sec-title">消息 & 团队</div>
     <div class="set-section">
+      <!-- 消息通知 -->
+      <div class="set-row" onclick="shopToggleNotif()">
+        <div class="sr-left"><div class="sr-label">📬 消息通知</div><div class="sr-sub" id="sh-notif-sub">暂无消息</div></div>
+        <div class="sr-right"><span class="arrow" id="sh-notif-arr">›</span></div>
+      </div>
+      <div id="sh-notif-panel" style="display:none;padding:12px;background:var(--bg);border-bottom:1px solid var(--line);">
+        <div id="sh-notif-list" style="font-size:12px;color:var(--ink);line-height:1.7;">暂无消息</div>
+      </div>
+      <!-- 分享推广 -->
       <div class="set-row">
         <div class="sr-left"><div class="sr-label">📤 分享推广</div><div class="sr-sub">邀请好友购物，赚取佣金</div></div>
         <div class="sr-right"><span class="arrow">›</span></div>
@@ -877,12 +923,65 @@ async function loadWallet(){
   if(!whId||!token)return;
   try{
     const d=await api(`/api/get-wallet-credits?warehouse_id=${whId}`);
-    if(d.wallet_cents!=null){
-      document.getElementById('wallet-badge').textContent=`💰 $${(d.wallet_cents/100).toFixed(2)}`;
-      document.getElementById('set-wallet').textContent=`$${(d.wallet_cents/100).toFixed(2)}`;
-      document.getElementById('set-credits').textContent=`${d.credits||0} Cr`;
+    const wDol=((d.wallet_cents||0)/100).toFixed(2);
+    const cr=d.credits||0;
+    // Header badge
+    document.getElementById('wallet-badge').textContent=`💰 $${wDol}`;
+    // Payment rows
+    const el=(id)=>document.getElementById(id);
+    if(el('sh-wallet-sub'))el('sh-wallet-sub').textContent=`余额 $${wDol}`;
+    if(el('sh-wallet-big'))el('sh-wallet-big').textContent=`$${wDol}`;
+    if(el('sh-credits-sub'))el('sh-credits-sub').textContent=`${cr} Credits`;
+    if(el('sh-credits-big'))el('sh-credits-big').textContent=cr;
+    if(el('sh-credits-dollar'))el('sh-credits-dollar').textContent=cr>0?`≈ $${(cr/12).toFixed(2)}`:'';
+    // Transaction history
+    const txFmt=(tx)=>{
+      const sign=(tx.amount_cents!=null?tx.amount_cents:tx.amount)>0?'+':'';
+      const amt=tx.amount_cents!=null?`$${(Math.abs(tx.amount_cents)/100).toFixed(2)}`:`${Math.abs(tx.amount)} Cr`;
+      const date=new Date(tx.created_at).toLocaleDateString('zh-CN');
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);"><span>${esc(tx.description||tx.type)}</span><span style="font-weight:700;color:${sign==='+'?'var(--accent)':'var(--ink)'}">${sign}${amt}</span></div>`;
+    };
+    if(el('sh-wallet-tx'))el('sh-wallet-tx').innerHTML=(d.wallet_transactions||[]).length?(d.wallet_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无记录</div>';
+    if(el('sh-credits-tx'))el('sh-credits-tx').innerHTML=(d.credit_transactions||[]).length?(d.credit_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无积分记录</div>';
+    // Notifications
+    const notifs=d.notifications||[];
+    const newCnt=d.new_notifications||0;
+    if(el('sh-notif-sub'))el('sh-notif-sub').textContent=newCnt>0?`${newCnt} 条新消息`:notifs.length?'查看历史消息':'暂无消息';
+    if(el('sh-notif-list')){
+      el('sh-notif-list').innerHTML=notifs.length?notifs.map(n=>{
+        const date=new Date(n.created_at).toLocaleDateString('zh-CN');
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--line);"><div style="font-weight:700;margin-bottom:2px;">${esc(n.title)}</div><div style="font-size:11px;color:var(--muted);line-height:1.6;">${esc(n.body)}</div><div style="font-size:10px;color:var(--muted);margin-top:4px;">${date}</div></div>`;
+      }).join(''):'<div style="color:var(--muted);font-size:11px;">暂无消息</div>';
     }
   }catch(e){}
+}
+function shopTogglePay(type){
+  ['wallet','credits'].forEach(t=>{
+    const p=document.getElementById('sh-panel-'+t);
+    const a=document.getElementById('sh-arr-'+t);
+    if(t===type){const open=p.style.display!=='none';p.style.display=open?'none':'';if(a)a.textContent=open?'›':'˅';}
+    else{if(p)p.style.display='none';if(a)a.textContent='›';}
+  });
+}
+function shopToggleNotif(){
+  const p=document.getElementById('sh-notif-panel'),a=document.getElementById('sh-notif-arr');
+  if(!p)return;const open=p.style.display!=='none';p.style.display=open?'none':'';if(a)a.textContent=open?'›':'˅';
+}
+async function shopCreditsToWallet(){
+  const inp=document.getElementById('sh-c2w-inp');
+  const cr=parseInt(inp?.value||'0',10);
+  if(!cr||cr<12){toast('⚠️ 最少兑换 12 Credits');return;}
+  const d=await api('/api/get-wallet-credits',{method:'POST',body:JSON.stringify({action:'credits_to_wallet',warehouseId:whId,creditsAmount:cr})});
+  if(d.ok){toast(`✅ ${cr} Credits → $${Math.floor(cr/12).toFixed(2)}`);if(inp)inp.value='';loadWallet();}
+  else toast('❌ '+(d.error||'兑换失败'));
+}
+async function shopWalletToCredits(){
+  const inp=document.getElementById('sh-w2c-inp');
+  const amt=parseFloat(inp?.value||'0');
+  if(!amt||amt<1){toast('⚠️ 请输入至少 $1');return;}
+  const d=await api('/api/get-wallet-credits',{method:'POST',body:JSON.stringify({action:'wallet_to_credits',warehouseId:whId,amountUsd:amt})});
+  if(d.ok){toast(`✅ $${amt} → ${Math.round(amt*12)} Credits`);if(inp)inp.value='';loadWallet();}
+  else toast('❌ '+(d.error||'兑换失败'));
 }
 async function doLogout(){
   if(!confirm('确认退出登录？'))return;
