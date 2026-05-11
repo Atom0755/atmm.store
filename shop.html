@@ -562,6 +562,17 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
   </div>
 </div>
 
+<!-- Level Chart Modal -->
+<div class="ov ov-top" id="level-chart-modal">
+  <div class="mbox" style="max-width:380px;">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('level-chart-modal')">✕</button>
+    <h3 style="margin-bottom:14px;">🏆 用户价值等级</h3>
+    <div id="level-chart-list"></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center;">等级由注册时长自动决定，无需任何操作</p>
+  </div>
+</div>
+
 <!-- Change Username Modal -->
 <div class="ov ov-top" id="uname-modal">
   <div class="mbox">
@@ -638,6 +649,7 @@ const ADMIN_EMAIL = 'atom22628@gmail.com';
 const sb = window.supabase.createClient(SB_URL, SB_ANON);
 
 // ── User value level system ──
+let _profileCreatedAt = null;
 const _SHOP_LVLS=[
   {label:'绿苗',timeZh:'新注册',emoji:'🌿',color:'#22c55e',bg:'#f0fdf4',days:0},
   {label:'灰石',timeZh:'一周',  emoji:'🪨',color:'#6b7280',bg:'#f9fafb',days:7},
@@ -651,9 +663,26 @@ const _SHOP_LVLS=[
 ];
 function _levelBadgeHtml(createdAt){
   if(!createdAt)return '';
+  _profileCreatedAt=createdAt;
   const days=Math.floor((Date.now()-new Date(createdAt).getTime())/86400000);
   let lv=_SHOP_LVLS[0]; for(const l of _SHOP_LVLS){if(days>=l.days)lv=l;}
-  return `<span title="用户价值成长等级: ${lv.label} ${lv.emoji}｜注册${lv.timeZh}以上" style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${lv.bg};color:${lv.color};cursor:help;">${lv.emoji} ${lv.label}</span>`;
+  return `<span onclick="showLevelChart()" style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${lv.bg};color:${lv.color};cursor:pointer;">${lv.emoji} ${lv.label}</span>`;
+}
+function showLevelChart(){
+  const days=_profileCreatedAt?Math.floor((Date.now()-new Date(_profileCreatedAt).getTime())/86400000):-1;
+  let cur=_SHOP_LVLS[0]; for(const l of _SHOP_LVLS){if(days>=l.days)cur=l;}
+  document.getElementById('level-chart-list').innerHTML=_SHOP_LVLS.map(l=>{
+    const active=l.label===cur.label;
+    const timeLabel=l.days===0?'新注册即获得':`注册满${l.timeZh}`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;background:${active?l.bg:'transparent'};border:1.5px solid ${active?l.color:'transparent'};">
+      <span style="font-size:20px;width:26px;text-align:center;">${l.emoji}</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:13px;color:${active?l.color:'var(--text)'};">${l.label}${active?'<span style="font-size:10px;font-weight:400;margin-left:4px;">← 当前</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted);">${timeLabel}</div>
+      </div>
+    </div>`;
+  }).join('');
+  openOv('level-chart-modal');
 }
 
 let user=null, token=null, whId=null;
@@ -878,7 +907,6 @@ function goSeller(){
 }
 async function goSettings(){
   if(!user){openAuth(goSettings);return;}
-  document.getElementById('set-email').textContent=user.email||'—';
   bc('');showView('settings');loadWallet();
   // Load profile info from profiles table (shared with zehem.ai)
   try{

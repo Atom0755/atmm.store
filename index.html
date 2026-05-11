@@ -1167,6 +1167,20 @@
   </div>
 </div>
 
+<!-- Level Chart Sheet (index.html) -->
+<div class="sheet-backdrop modal-top" id="level-chart-sheet" style="z-index:10002;">
+  <div class="sheet" style="max-width:400px;">
+    <div class="sheet-body">
+      <h3 style="margin-bottom:14px;">🏆 用户价值等级</h3>
+      <div id="level-chart-list-idx"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center;">等级由注册时长自动决定，无需任何操作</p>
+    </div>
+    <div class="sheet-footer">
+      <button onclick="document.getElementById('level-chart-sheet').classList.remove('show')" style="width:100%;padding:11px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;font-size:14px;cursor:pointer;">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- 修改用户名弹窗 (index.html) -->
 <div class="sheet-backdrop modal-top" id="uname-idx-sheet" style="z-index:10002;">
   <div class="sheet">
@@ -1185,7 +1199,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2085,7 +2099,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.8</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-10</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>用户等级徽章可点击，弹出全等级图表，当前等级高亮显示</li>
+            <li>atmm.store/shop「先逛逛」和「设置」按钮修复（登录后可正常跳转）</li>
+            <li>atmm.store/shop 等级徽章同步支持点击弹窗</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.8</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-10</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -6893,6 +6919,7 @@ function _agreeAtmmTerms() {
 }
 
 // ── User value level system (ported from zehem.ai/src/lib/userLevel.js) ──
+let _profileCreatedAt = null;
 const _LEVELS = [
   {label:'绿苗',timeZh:'新注册',emoji:'🌿',color:'#22c55e',bg:'#f0fdf4',days:0},
   {label:'灰石',timeZh:'一周',  emoji:'🪨',color:'#6b7280',bg:'#f9fafb',days:7},
@@ -6912,8 +6939,24 @@ function _getUserLevel(createdAt) {
   return lv;
 }
 function _levelBadgeHtml(createdAt) {
+  _profileCreatedAt = createdAt;
   const lv = _getUserLevel(createdAt);
-  return `<span title="用户价值成长等级: ${lv.label} ${lv.emoji}｜注册${lv.timeZh}以上" style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${lv.bg};color:${lv.color};cursor:help;">${lv.emoji} ${lv.label}</span>`;
+  return `<span onclick="_showLevelChart()" style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${lv.bg};color:${lv.color};cursor:pointer;">${lv.emoji} ${lv.label}</span>`;
+}
+function _showLevelChart() {
+  const cur = _getUserLevel(_profileCreatedAt);
+  document.getElementById('level-chart-list-idx').innerHTML = _LEVELS.map(l => {
+    const active = l.label === cur.label;
+    const timeLabel = l.days === 0 ? '新注册即获得' : `注册满${l.timeZh}`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;background:${active ? l.bg : 'transparent'};border:1.5px solid ${active ? l.color : 'transparent'};">
+      <span style="font-size:20px;width:26px;text-align:center;">${l.emoji}</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:13px;color:${active ? l.color : 'var(--text)'};">${l.label}${active ? '<span style="font-size:10px;font-weight:400;margin-left:4px;">← 当前</span>' : ''}</div>
+        <div style="font-size:11px;color:var(--muted);">${timeLabel}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('level-chart-sheet').classList.add('show');
 }
 
 // ── Login type tab (email / username·number) ──
