@@ -1217,7 +1217,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2146,7 +2146,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.3</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.4</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>型号选择框底部「换算单位」从文字改为可点击按钮，弹出单位选择</li>
+            <li>默认换算单位为「套」，可改为个/对/件/箱/包/片或自定义</li>
+            <li>换算单位随型号保存并在型号库列表中显示</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.3</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2647,7 +2659,7 @@
         <span style="font-size:18px;">📦</span>
         <span style="font-weight:600; color:var(--ink);">1 箱 =</span>
         <input type="number" id="model-ratio-input" min="1" step="1" value="40" style="width:60px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; text-align:center; font-family:'JetBrains Mono', monospace; font-weight:700; font-size:14px;">
-        <span style="font-weight:600; color:var(--ink);">套</span>
+        <button id="ratio-unit-btn" style="font-weight:700; font-size:13px; padding:5px 10px; border:1.5px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; color:var(--ink);">套</button>
         <span style="font-size:10px; color:var(--muted); margin-left:auto;">补货换算用</span>
       </div>
     </div>
@@ -2758,7 +2770,7 @@ function loadState() {
 }
 
 function migrateState() {
-  state.models?.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; });
+  state.models?.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; if (!m.boxToSetUnit) m.boxToSetUnit = '套'; });
   (state.zones||[]).forEach(z => {
     if (z.type === 'shelf') {
       for (const a of (z.aisles||[])) for (const c of (a.shelves||[])) for (const s of (c.slots||[])) { if (s.restock===undefined) s.restock=0; if (s.unit===undefined) s.unit=null; }
@@ -4618,9 +4630,28 @@ function openUnitEditor(ai, ci, si, smi) {
   document.getElementById('unit-input').value = s.unit || '';
   showSheet('unit-sheet');
 }
+let _ratioUnitMode = false;
+
+// Open unit picker for the ratio-unit button in model picker
+document.getElementById('ratio-unit-btn').addEventListener('click', () => {
+  _ratioUnitMode = true;
+  document.getElementById('unit-title').textContent = '换算单位';
+  document.getElementById('unit-input').value = '';
+  showSheet('unit-sheet');
+});
+
+function _applyRatioUnit(u) {
+  _ratioUnitMode = false;
+  const btn = document.getElementById('ratio-unit-btn');
+  if (btn) btn.textContent = u || '套';
+  // Return to camera-sheet (unit-sheet sits on top)
+  document.getElementById('unit-sheet').classList.remove('show');
+}
+
 document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
   btn.addEventListener('click', () => {
     const u = btn.dataset.unit;
+    if (_ratioUnitMode) { _applyRatioUnit(u || '套'); return; }
     if (!pendingSlot) return;
     const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
     if (s) { s.unit = u || null; }
@@ -4629,6 +4660,7 @@ document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
 });
 document.getElementById('unit-confirm').addEventListener('click', () => {
   const u = document.getElementById('unit-input').value.trim();
+  if (_ratioUnitMode) { _applyRatioUnit(u || '套'); return; }
   if (!pendingSlot) return;
   const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
   if (s) { s.unit = u || null; }
@@ -4696,20 +4728,23 @@ function openModelPicker(ai, ci, si, withCamera, callback) {
   if (prevResult) prevResult.style.display = 'none';
   const prevStatus = document.getElementById('barcode-status');
   if (prevStatus) prevStatus.style.display = 'none';
-  // Pre-fill ratio if there's already a model in this slot
+  // Pre-fill ratio and unit if there's already a model in this slot
   const ratioInp = document.getElementById('model-ratio-input');
+  const ratioUnitBtn = document.getElementById('ratio-unit-btn');
   if (ratioInp) {
-    let preRatio = 40;
+    let preRatio = 40, preUnit = '套';
     if (ai !== null && ci !== null && si !== null) {
       try {
         const slot = getSlot(ai, ci, si);
         if (slot.modelId) {
           const m = getModel(slot.modelId);
           if (m && m.boxToSetRatio) preRatio = m.boxToSetRatio;
+          if (m && m.boxToSetUnit)  preUnit  = m.boxToSetUnit;
         }
       } catch(e) {}
     }
     ratioInp.value = preRatio;
+    if (ratioUnitBtn) ratioUnitBtn.textContent = preUnit;
   }
   renderSuggestions('');
   showSheet('camera-sheet');
@@ -5483,12 +5518,14 @@ function commitModelChoice() {
   } else {
     toast('✅ 已选择: ' + model.name);
   }
-  // Save the box-to-set ratio
+  // Save the box-to-set ratio and unit
   const ratioInp = document.getElementById('model-ratio-input');
   if (ratioInp) {
     const r = Math.max(1, parseInt(ratioInp.value) || 1);
     model.boxToSetRatio = r;
   }
+  const ratioUnitBtn = document.getElementById('ratio-unit-btn');
+  if (ratioUnitBtn) model.boxToSetUnit = ratioUnitBtn.textContent.trim() || '套';
   if (modelPickerCallback) {
     try { modelPickerCallback(model); } catch(e) { console.error(e); }
     modelPickerCallback = null;
@@ -5971,6 +6008,12 @@ function hideSheets() {
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
+  // Cancel inside unit picker while in ratio-unit mode: just close unit-sheet, stay on camera-sheet
+  if (b.closest('#unit-sheet') && _ratioUnitMode) {
+    _ratioUnitMode = false;
+    document.getElementById('unit-sheet').classList.remove('show');
+    return;
+  }
   // Cancel inside model picker or qty editor stops the wizard
   if (b.closest('#camera-sheet') || b.closest('#qty-sheet')) {
     _wizardState = null;
@@ -6073,7 +6116,7 @@ function refreshLibList(filter) {
   // Sort alphabetically for easier scanning
   matches.sort((a,b) => a.name.localeCompare(b.name));
   listEl.innerHTML = matches.map((m,i) => `<div style="padding:6px 10px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-    <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}${m.boxToSetRatio && m.boxToSetRatio !== 1 ? ` <span style="color:var(--muted); font-size:10px;">(1箱=${m.boxToSetRatio}套)</span>` : ''}</span>
+    <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}${m.boxToSetRatio && m.boxToSetRatio !== 1 ? ` <span style="color:var(--muted); font-size:10px;">(1箱=${m.boxToSetRatio}${m.boxToSetUnit||`套`})</span>` : ''}</span>
     <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted);">#${i+1}</span>
   </div>`).join('');
 }
@@ -7540,7 +7583,7 @@ async function _cloudLoad() {
         meta: data.meta || {}
       });
     }
-    state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; });
+    state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; if (!m.boxToSetUnit) m.boxToSetUnit = '套'; });
     return true;
   } catch(e) { return false; }
 }
