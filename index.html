@@ -146,6 +146,8 @@
     letter-spacing: 0.02em;
   }
   .meta-save-btn:active { transform: scale(0.94); background: #b8232f; }
+  .meta-fill-btn { flex-shrink:0; background:#1a73e8; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:0.02em; white-space:nowrap; }
+  .meta-fill-btn:active { transform:scale(0.94); background:#1558b0; }
 
   /* Search bar — top of every list view */
   .search-bar {
@@ -1199,13 +1201,14 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
     <button class="icon-btn" id="addr-check-btn" title="📍 地址核查 — 从Amazon/eBay导入订单检查收件地址" aria-label="地址核查" onclick="window.open('shipping.html?tab=address','_blank')">📍</button>
     <button class="icon-btn" id="label-print-btn" title="📦 打单发货 — 选择UPS/FedEx/USPS/DHL打印快递单" aria-label="打单发货" onclick="window.open('shipping.html?tab=labels','_blank')">📦</button>
     <button class="icon-btn" id="save-btn" title="导出/分享">💾</button>
+    <span id="autosave-dot" style="font-size:10px;color:#2e7d32;font-weight:700;opacity:0;transition:opacity 0.4s;pointer-events:none;">✓</span>
   </header>
 
   <div class="table-tabs" id="table-tabs-bar">
@@ -1340,8 +1343,14 @@
       <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 8px; letter-spacing: 0.05em;">📥 添加方式 / IMPORT MODE</div>
       <div class="actions-list">
         <button class="action-row" data-act="upload-append-only" style="background: #e8f5e8; border-color: var(--green);"><span class="ico">📚</span><div style="flex:1;"><div style="font-weight:700;">仅扩充型号库 (推荐)</div><div style="font-size:11px; color:var(--muted);">不动货架,只加到型号库以备拍照匹配</div></div></button>
-        <button class="action-row" data-act="upload-append"><span class="ico">➕</span><div style="flex:1;"><div style="font-weight:700;">追加到货架</div><div style="font-size:11px; color:var(--muted);">填进零散货架的空位</div></div></button>
+        <button class="action-row" data-act="upload-append-pallet" style="background: #fff8e1; border-color: #f59e0b;"><span class="ico">📦</span><div style="flex:1;"><div style="font-weight:700;">追加到整箱堆货区</div><div style="font-size:11px; color:var(--muted);">按顺序填入整箱区空格位（入库首选）</div></div></button>
+        <button class="action-row" data-act="upload-append"><span class="ico">🗂️</span><div style="flex:1;"><div style="font-weight:700;">追加到零散货架区</div><div style="font-size:11px; color:var(--muted);">填进零散货架的空位</div></div></button>
         <button class="action-row" data-act="upload-replace" style="background: #ffe5e5; border-color: var(--red);"><span class="ico">🔄</span><div style="flex:1;"><div style="font-weight:700;">替换全部 (危险)</div><div style="font-size:11px; color:var(--muted);">清空两表重建</div></div></button>
+      </div>
+
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 8px; letter-spacing: 0.05em;">📄 空白模板 / TEMPLATE</div>
+      <div class="actions-list">
+        <button class="action-row" data-act="download-template"><span class="ico">⬇️</span><div style="flex:1;"><div style="font-weight:700;">下载空白模板表格</div><div style="font-size:11px; color:var(--muted);">含8列表头，填好后再上传即可自动导入</div></div></button>
       </div>
     </div>
     <div class="sheet-footer">
@@ -2106,7 +2115,23 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.0</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.1</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>「填型号」向导按钮：依格位顺序连续引导填写型号+数量</li>
+            <li>切换拍照/扫码/语音 tab 时自动打开摄像头/麦克风</li>
+            <li>数量输入框默认显示1（空格位），弹出后键盘自动获焦</li>
+            <li>1整箱数量默认值改为40套；新型号创建时同步生效</li>
+            <li>补货移走后整箱格位自动清空，腾出空位</li>
+            <li>型号库管理：新增「下载空白模板」和「追加到整箱堆货区」</li>
+            <li>header 自动保存绿色闪烁指示器（每次改动后显示✓）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2566,7 +2591,7 @@
       <div style="margin-top:8px; padding:10px; background:var(--bg); border:1px dashed var(--line); border-radius:8px; font-size:12px; display:flex; align-items:center; gap:8px;">
         <span style="font-size:18px;">📦</span>
         <span style="font-weight:600; color:var(--ink);">1 箱 =</span>
-        <input type="number" id="model-ratio-input" min="1" step="1" value="1" style="width:60px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; text-align:center; font-family:'JetBrains Mono', monospace; font-weight:700; font-size:14px;">
+        <input type="number" id="model-ratio-input" min="1" step="1" value="40" style="width:60px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; text-align:center; font-family:'JetBrains Mono', monospace; font-weight:700; font-size:14px;">
         <span style="font-weight:600; color:var(--ink);">套</span>
         <span style="font-size:10px; color:var(--muted); margin-left:auto;">补货换算用</span>
       </div>
@@ -2677,7 +2702,7 @@ function loadState() {
 }
 
 function migrateState() {
-  state.models?.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
+  state.models?.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; });
   (state.zones||[]).forEach(z => {
     if (z.type === 'shelf') {
       for (const a of (z.aisles||[])) for (const c of (a.shelves||[])) for (const s of (c.slots||[])) { if (s.restock===undefined) s.restock=0; if (s.unit===undefined) s.unit=null; }
@@ -2687,11 +2712,19 @@ function migrateState() {
   });
 }
 
+let _autosaveDotTimer = null;
 function saveState() {
   try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {}
   if (typeof _warehouse !== 'undefined' && _warehouse) {
     clearTimeout(_supabaseSaveTimer);
     _supabaseSaveTimer = setTimeout(_cloudSave, 2000);
+  }
+  // Flash the auto-save indicator
+  const dot = document.getElementById('autosave-dot');
+  if (dot) {
+    dot.style.opacity = '1';
+    clearTimeout(_autosaveDotTimer);
+    _autosaveDotTimer = setTimeout(() => { dot.style.opacity = '0'; }, 1500);
   }
 }
 // Belt-and-suspenders: save before unload and every 15 s
@@ -2801,6 +2834,8 @@ document.getElementById('main-panes').addEventListener('input', e => {
   if (zone) { zone[inp.dataset.meta] = inp.value; saveState(); }
 });
 document.getElementById('main-panes').addEventListener('click', e => {
+  const fillBtn = e.target.closest('[data-fill-wizard]');
+  if (fillBtn) { e.preventDefault(); e.stopPropagation(); _startFillWizard(fillBtn.dataset.fillWizard); return; }
   const btn = e.target.closest('[data-meta-save]');
   if (!btn) return;
   e.preventDefault(); e.stopPropagation();
@@ -4224,9 +4259,9 @@ function openQtyEditor(ai, ci, si) {
   const s = getSlot(ai, ci, si);
   const m = s.modelId ? getModel(s.modelId) : null;
   document.getElementById('qty-title').textContent = m ? `${m.name} · 数量` : '数量';
-  const inp = document.getElementById('qty-input'); inp.value = s.qty || 0;
+  const inp = document.getElementById('qty-input'); inp.value = s.qty > 0 ? s.qty : 1;
   showSheet('qty-sheet');
-  setTimeout(() => { inp.focus(); inp.select(); }, 100);
+  setTimeout(() => { inp.focus(); inp.select(); }, 300);
 }
 
 // NEW: Universal multi-input number editor — handles both 'qty' and 'restock' fields
@@ -4244,13 +4279,14 @@ function openQtyMultiInput(ai, ci, si, field, smi) {
     titleEl.textContent = m ? `${m.name} · 数量` : '数量';
   }
   const inp = document.getElementById('qty-input');
-  inp.value = (field === 'restock' ? (s.restock || 0) : (s.qty || 0));
+  const rawVal = (field === 'restock' ? (s.restock || 0) : (s.qty || 0));
+  inp.value = rawVal > 0 ? rawVal : 1;
   // Reset method status
   const status = document.getElementById('qty-method-status');
   if (status) { status.style.display = 'none'; status.textContent = ''; }
   document.querySelectorAll('[data-qty-method]').forEach(b => b.classList.remove('active'));
   showSheet('qty-sheet');
-  setTimeout(() => { inp.focus(); inp.select(); }, 100);
+  setTimeout(() => { inp.focus(); inp.select(); }, 300);
 }
 
 document.getElementById('qty-minus').addEventListener('click', () => { const inp = document.getElementById('qty-input'); inp.value = Math.max(0, (parseInt(inp.value)||0)-1); });
@@ -4273,6 +4309,11 @@ function commitQtyValue() {
   } else {
     s.qty = v;
     hideSheets(); render();
+    // Wizard: advance to next slot after qty is committed
+    if (_wizardState) {
+      _wizardState.idx++;
+      setTimeout(_fillNextWizardSlot, 500);
+    }
   }
 }
 document.getElementById('qty-confirm').addEventListener('click', commitQtyValue);
@@ -4502,6 +4543,8 @@ function confirmRestock(zoneId) {
   palletSlot.qty = Math.max(0, (palletSlot.qty || 0) - boxes);
   palletSlot.restock = 0;
   if (!palletSlot.unit) palletSlot.unit = '箱';
+  // 整箱移走后若库存归零，自动清空格位（腾出位置）
+  if (palletSlot.qty <= 0) { palletSlot.modelId = null; palletSlot.color = null; palletSlot.unit = null; palletSlot.qty = 0; }
 
   const zoneName = tgtZone?.name || zoneId;
   toast(`✅ 整箱 -${boxes}箱 → ${zoneName} ${tgt.location} +${sets}套`);
@@ -4600,7 +4643,7 @@ function openModelPicker(ai, ci, si, withCamera, callback) {
   // Pre-fill ratio if there's already a model in this slot
   const ratioInp = document.getElementById('model-ratio-input');
   if (ratioInp) {
-    let preRatio = 1;
+    let preRatio = 40;
     if (ai !== null && ci !== null && si !== null) {
       try {
         const slot = getSlot(ai, ci, si);
@@ -4635,6 +4678,10 @@ function switchInputMethod(method) {
   if (method !== 'voice') stopVoice();
   if (method !== 'barcode') stopBarcodeScanner();
   if (method === 'handwrite') initHandwrite();
+  // Auto-start the selected input device (reduce manual steps)
+  if (method === 'camera') setTimeout(startCameraNow, 250);
+  if (method === 'barcode') setTimeout(startBarcodeScanner, 250);
+  if (method === 'voice') setTimeout(startVoice, 250);
 }
 
 document.querySelectorAll('.input-method-btn').forEach(btn => {
@@ -5374,7 +5421,7 @@ function commitModelChoice() {
   }
   let model = state.models.find(m => m.name === txt);
   if (!model) {
-    model = { id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name: txt, boxToSetRatio: 1 };
+    model = { id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name: txt, boxToSetRatio: 40 };
     state.models.push(model);
     toast('✅ 已新建型号: ' + txt);
   } else {
@@ -5418,6 +5465,40 @@ function commitModelChoice() {
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
   hideSheets();
   render();
+  // If wizard is active, open qty editor for this slot right after
+  if (_wizardState && _wizardState.awaitingModel) {
+    _wizardState.awaitingModel = false;
+    const { ai, ci, si } = _wizardState.slots[_wizardState.idx];
+    setTimeout(() => openQtyMultiInput(ai, ci, si, 'qty'), 400);
+  }
+}
+
+// ===== 连续填型号向导 =====
+let _wizardState = null;
+function _startFillWizard(zoneId) {
+  if (!_user) { _pulseLoginBtn(); return; }
+  const zone = state.zones.find(z => z.id === zoneId);
+  if (!zone) return;
+  const slots = [];
+  if (zone.type === 'shelf') {
+    zone.aisles.forEach((a,ai) => a.shelves.forEach((s,ci) => s.slots.forEach((_,si) => slots.push({ai,ci,si}))));
+  } else if (zone.type === 'pallet') {
+    zone.aisles.forEach((a,ai) => a.pallets.forEach((p,ci) => p.layers.forEach((_,si) => slots.push({ai,ci,si}))));
+  }
+  if (!slots.length) { toast('⚠️ 此区域没有格位'); return; }
+  _wizardState = { zoneId, slots, idx: 0, awaitingModel: false };
+  toast(`📝 填型号向导：共 ${slots.length} 格 — 点"关闭"可随时停止`);
+  setTimeout(_fillNextWizardSlot, 300);
+}
+function _fillNextWizardSlot() {
+  if (!_wizardState) return;
+  const { slots, idx } = _wizardState;
+  if (idx >= slots.length) { _wizardState = null; toast('✅ 全部格位已填写完！'); return; }
+  const { ai, ci, si } = slots[idx];
+  const total = slots.length, cur = idx + 1;
+  document.getElementById('camera-title').textContent = `填型号 ${cur}/${total} — 点取消停止`;
+  _wizardState.awaitingModel = true;
+  openModelPicker(ai, ci, si, false, null);
 }
 
 const _modelConfirmBtn = document.getElementById('model-confirm');
@@ -5800,7 +5881,11 @@ function hideSheets() {
   stopVoice();
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
 }
-document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideSheets));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
+  // Cancel inside model picker or qty editor stops the wizard
+  if (b.closest('#camera-sheet') || b.closest('#qty-sheet')) _wizardState = null;
+  hideSheets();
+}));
 
 // === Product image upload handlers ===
 function setProductImage(dataUrl) {
@@ -6104,14 +6189,14 @@ function applyImportMode(mode) {
     let added = 0;
     for (const name of lines) {
       if (!existing.has(name.toLowerCase())) {
-        state.models.push({ id: 'm_'+Date.now()+'_'+added, name, boxToSetRatio: 1 });
+        state.models.push({ id: 'm_'+Date.now()+'_'+added, name, boxToSetRatio: 40 });
         existing.add(name.toLowerCase());
         added++;
       }
     }
     toast(`✅ 已扩充型号库: 新增 ${added} 个 (跳过 ${lines.length-added} 个重复)`);
   } else if (mode === 'append') {
-    const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 1 }));
+    const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 40 }));
     state.models.push(...newModels);
     for (const zone of state.zones.filter(z => z.type === 'shelf')) {
       let mi = 0;
@@ -6127,9 +6212,22 @@ function applyImportMode(mode) {
       }
     }
     toast(`✅ 已追加 ${lines.length} 个型号到货架`);
+  } else if (mode === 'append-pallet') {
+    const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 40 }));
+    state.models.push(...newModels);
+    const palletZone = state.zones.find(z => z.type === 'pallet');
+    let palletFilled = 0;
+    if (palletZone) {
+      let mi = 0;
+      outer2: for (const a of palletZone.aisles) for (const p of a.pallets) for (const layer of p.layers) {
+        if (!layer.modelId) { layer.modelId = newModels[mi].id; layer.unit = '箱'; mi++; palletFilled++; if (mi >= newModels.length) break outer2; }
+      }
+      if (mi < newModels.length) toast(`⚠️ 整箱区空位不够，还差 ${newModels.length-mi} 个型号未放入`);
+    } else { toast('⚠️ 找不到整箱堆货区'); }
+    toast(`✅ 已追加 ${palletFilled} 个型号到整箱堆货区`);
   } else if (mode === 'replace') {
     if (!confirm('⚠️ 确认清空所有数据并用此清单重建?\nThis will erase ALL data.')) return;
-    state.models = lines.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n, boxToSetRatio: 1 }));
+    state.models = lines.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n, boxToSetRatio: 40 }));
     for (const zone of state.zones.filter(z => z.type === 'shelf')) {
       zone.aisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
       let mi = 0;
@@ -6204,10 +6302,19 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
       alert('从微信/邮件分享型号清单文本到本网页:\n\n1. 在微信/邮件里长按文本 → 拷贝\n2. 回到本网页 → 点"手动粘贴清单"\n\n或者: 把 .txt 文件存到 iCloud/Drive → 点"从本地选文件" → 选 iCloud Drive');
     } else if (act === 'upload-append-only') {
       applyImportMode('append-only');
+    } else if (act === 'upload-append-pallet') {
+      applyImportMode('append-pallet');
     } else if (act === 'upload-append') {
       applyImportMode('append');
     } else if (act === 'upload-replace') {
       applyImportMode('replace');
+    } else if (act === 'download-template') {
+      const csv = '﻿商品型号,英文名称,中文名称,尺寸,重量(kg),数量,单位,整箱数量\n' + Array(10).fill(',,,,,,,').join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'ATMM-型号导入模板.csv'; a.click();
+      URL.revokeObjectURL(url);
+      toast('✅ 模板已下载，填好后点「从本地选文件」上传');
     }
   });
 });
@@ -6683,6 +6790,7 @@ function renderPanes() {
         <div class="meta-bar">
           <div class="meta-title editable" data-meta-title="${z.id}">${escapeHtml(z.name)}</div>
           <div class="meta-fields">
+            <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 填型号</button>
             <label>填表人 <input type="text" data-meta="filler" data-table-meta="${z.id}" placeholder="姓名"></label>
             <label>日期 <input type="date" data-meta="date" data-table-meta="${z.id}"></label>
             <button class="meta-save-btn" data-meta-save>💾 保存</button>
@@ -7268,7 +7376,7 @@ async function _cloudLoad() {
         meta: data.meta || {}
       });
     }
-    state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 1; });
+    state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; });
     return true;
   } catch(e) { return false; }
 }
