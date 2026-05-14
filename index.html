@@ -1199,13 +1199,13 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v2.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
     <button class="icon-btn" id="addr-check-btn" title="📍 地址核查 — 从Amazon/eBay导入订单检查收件地址" aria-label="地址核查" onclick="window.open('shipping.html?tab=address','_blank')">📍</button>
     <button class="icon-btn" id="label-print-btn" title="📦 打单发货 — 选择UPS/FedEx/USPS/DHL打印快递单" aria-label="打单发货" onclick="window.open('shipping.html?tab=labels','_blank')">📦</button>
-    <button class="icon-btn" id="save-btn" title="保存">💾</button>
+    <button class="icon-btn" id="save-btn" title="导出/分享">💾</button>
   </header>
 
   <div class="table-tabs" id="table-tabs-bar">
@@ -1295,7 +1295,10 @@
 <div class="sheet-backdrop" id="save-sheet">
   <div class="sheet">
     <div class="sheet-body">
-      <h3>保存与分享</h3>
+      <h3>导出与分享</h3>
+      <div style="font-size:12px;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:9px 12px;margin-bottom:12px;line-height:1.6;">
+        ✅ 数据已<b>自动保存</b>到本设备，关闭窗口不会丢失。以下选项用于导出/备份到其他地方。
+      </div>
       <div class="actions-list">
         <button class="action-row" data-act="share-wechat"><span class="ico">💬</span>分享到微信 / Messages</button>
         <button class="action-row" data-act="share-drive"><span class="ico">☁️</span>保存到 Google Drive / iCloud</button>
@@ -1303,9 +1306,6 @@
         <button class="action-row" data-act="download-csv"><span class="ico">📊</span>导出 CSV 表格</button>
         <button class="action-row" data-act="download-json"><span class="ico">📁</span>下载 JSON 备份</button>
         <button class="action-row" data-act="load-json"><span class="ico">📂</span>从本地导入 JSON</button>
-      </div>
-      <div style="font-size:11px; color:var(--muted); padding: 8px 4px; line-height:1.6;">
-        💡 数据已自动保存到本浏览器,以上选项是导出 / 备份到其他地方。
       </div>
     </div>
     <div class="sheet-footer">
@@ -2005,14 +2005,14 @@
                 · <b>长按</b>○颜色圆框 → 输入数量<br>
                 · <b>双击</b>型号格 → 5种输入：打字/拍照/扫码/手写/语音<br>
                 · <b>单击</b>单位框 → 选单位（套/个/对…）<br>
-                · <b>双击</b>表标题/通道名/层名 → 重命名<br>
+                · <b>双击</b>表标题/货架/排/列 → 重命名<br>
                 · <b>长按拖动</b>型号 → 移到其他格位<br>
                 · <b>长按列名</b>（整行）→ 整列拖到别处<br>
                 · 列<b>底部 +</b> → 复制整列插到下方<br>
                 · 整箱区<b>拖到底部</b> → 删除该层<br>
                 · 区域标签按住 <b>⠿</b> 拖动 → 调整顺序<br>
                 · 工具栏"<b>总览</b>" → 网格预览模式<br>
-                · 顶部 <b>💾</b> → 导出/分享
+                · 顶部"<b>保存</b>" → 保存/导出/分享
               </div>
             </div>
           </div>
@@ -2106,7 +2106,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v2.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.0</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>拍照/扫码开启时手电筒默认打开（用户关闭后记住偏好）</li>
+            <li>自动保存增强：关闭页面前自动触发、每15秒静默保存</li>
+            <li>导出页面改为绿色横幅明确显示"已自动保存"</li>
+            <li>图例说明文字更新（双击/保存操作描述）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v2.9</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-10</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2453,14 +2466,14 @@
           · <b>长按</b>○颜色圆框 → 输入数量（整数）<br>
           · <b>双击</b>型号格 → 5 种输入：打字 / 拍照 / 扫码 / 手写 / 语音<br>
           · <b>单击</b>单位框 → 选单位（套/个/对…）<br>
-          · <b>双击</b>表标题 / 通道名 / 货架层名 → 重命名<br>
+          · <b>双击</b>表标题 / 货架 / 排 / 列 → 重命名<br>
           · <b>长按拖动</b>型号 → 移到其他格位<br>
           · <b>长按列名</b>（整行）→ 整列拖到别处（序号自动重排）<br>
           · 每列<b>底部 +</b> → 复制此整列（含型号/颜色/数量）插到下方<br>
           · 整箱区 <b>拖到底部</b> → 删除该层（整箱搬走）<br>
           · 区域标签栏按住 <b>⠿</b> 拖动 → 调整区域顺序<br>
           · 顶部工具栏"<b>总览</b>" → 切换网格预览模式<br>
-          · 顶部 <b>💾</b> 或表内 Save → 导出/分享到微信/Drive/邮箱
+          · 顶部或表内"<b>保存</b>" → 保存/导出/分享到微信/Drive/邮箱
         </div>
       </div>
     </div>
@@ -2681,6 +2694,9 @@ function saveState() {
     _supabaseSaveTimer = setTimeout(_cloudSave, 2000);
   }
 }
+// Belt-and-suspenders: save before unload and every 15 s
+window.addEventListener('beforeunload', () => { try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {} });
+setInterval(() => { try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {} }, 15000);
 
 function buildInitial() {
   const models = INITIAL_MODELS.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n }));
@@ -4651,10 +4667,10 @@ async function startCameraNow() {
     btn.textContent = '📸 拍下';
     btn.dataset.mode = 'capture';
     video.addEventListener('click', tryFocus);
-    // Torch: show button, auto-apply saved preference
+    // Torch: show button; default ON unless user explicitly saved OFF
     const torchBtn = document.getElementById('camera-torch');
     if (torchBtn) torchBtn.style.display = '';
-    if (localStorage.getItem('atmm_torch') === '1') {
+    if (localStorage.getItem('atmm_torch') !== '0') {
       cameraTorchOn = true;
       const ok = await applyTorch(cameraStream, true);
       if (ok) updateTorchBtn('camera-torch', true);
@@ -5000,10 +5016,10 @@ async function startBarcodeScanner() {
     startBtn.style.display = 'none';
     stopBtn.style.display = '';
     if (status) status.textContent = '🔍 扫描中... 请将条码/二维码对准框内';
-    // Torch: show button, auto-apply saved preference
+    // Torch: show button; default ON unless user explicitly saved OFF
     const torchBtn = document.getElementById('barcode-torch');
     if (torchBtn) torchBtn.style.display = '';
-    if (localStorage.getItem('atmm_torch') === '1') {
+    if (localStorage.getItem('atmm_torch') !== '0') {
       barcodeTorchOn = true;
       const ok = await applyTorch(barcodeStream, true);
       if (ok) updateTorchBtn('barcode-torch', true);

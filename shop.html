@@ -655,6 +655,17 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
   </div>
 </div>
 
+<!-- In-app Card Management Modal -->
+<div class="ov ov-top" id="sh-cardmgr-modal">
+  <div class="mbox" style="max-width:420px;">
+    <div class="handle"></div>
+    <button class="mcls" onclick="closeOv('sh-cardmgr-modal')">✕</button>
+    <h3 style="margin-bottom:14px;">💳 银行卡管理</h3>
+    <div id="sh-cardmgr-list"><div style="text-align:center;color:var(--muted);padding:20px;">⏳ 加载中…</div></div>
+    <button onclick="closeOv('sh-cardmgr-modal');setTimeout(shopAddCard,150);" class="btn btn-r" style="margin-top:14px;">➕ 添加新卡（直接输入）</button>
+  </div>
+</div>
+
 <!-- Topup Confirm Modal -->
 <div class="ov ov-top" id="sh-topup-confirm-modal">
   <div class="mbox" style="max-width:340px;text-align:center;">
@@ -1115,12 +1126,41 @@ async function shopSubmitNewCard(){
   finally{btn.textContent='➕ 添加此卡';btn.disabled=false;}
 }
 async function shopManageCards(){
-  toast('⏳ 打开银行卡管理...');
+  openOv('sh-cardmgr-modal');
+  await _renderCardMgrList();
+}
+async function _renderCardMgrList(){
+  const listEl=document.getElementById('sh-cardmgr-list');
+  if(!listEl)return;
+  listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">⏳ 加载中…</div>';
   try{
-    const d=await api('/api/customer-portal',{method:'POST',body:JSON.stringify({warehouseId:whId})});
-    if(d.url)window.location.href=d.url;
-    else toast('❌ '+(d.error||'无法打开'));
-  }catch(e){toast('❌ '+e.message);}
+    const d=await api('/api/customer-portal',{method:'POST',body:JSON.stringify({action:'list',warehouseId:whId})});
+    if(!d.cards||d.cards.length===0){listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">暂无已绑定银行卡</div>';return;}
+    listEl.innerHTML=d.cards.map(c=>{
+      const brand=c.brand.charAt(0).toUpperCase()+c.brand.slice(1);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">${brand} ···· ${c.last4}${c.is_default?' ⭐':''}</div>
+          <div style="font-size:11px;color:var(--muted);">到期 ${c.exp_month}/${String(c.exp_year).slice(-2)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${!c.is_default?`<button onclick="shopSetDefaultCard('${c.id}')" style="font-size:11px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--paper);font-family:inherit;">设默认</button>`:''}
+          <button onclick="shopDeleteCard('${c.id}')" style="font-size:11px;padding:6px 10px;border:1px solid #dc2626;border-radius:6px;cursor:pointer;background:#fef2f2;color:#dc2626;font-family:inherit;">删除</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){listEl.innerHTML=`<div style="color:var(--accent);padding:12px;">❌ ${e.message}</div>`;}
+}
+async function shopSetDefaultCard(pmId){
+  const d=await api('/api/customer-portal',{method:'POST',body:JSON.stringify({action:'set_default',warehouseId:whId,paymentMethodId:pmId})});
+  if(d.ok){toast('✅ 已设为默认卡');_renderCardMgrList();shopLoadCard();}
+  else toast('❌ '+(d.error||'操作失败'));
+}
+async function shopDeleteCard(pmId){
+  if(!confirm('确定删除此银行卡？'))return;
+  const d=await api('/api/customer-portal',{method:'POST',body:JSON.stringify({action:'delete',warehouseId:whId,paymentMethodId:pmId})});
+  if(d.ok){toast('✅ 已删除');_renderCardMgrList();shopLoadCard();}
+  else toast('❌ '+(d.error||'至少保留一张，无法删除'));
 }
 function shopTogglePay(type){
   ['card','wallet','credits'].forEach(t=>{
