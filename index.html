@@ -77,11 +77,16 @@
     border-bottom: 1px solid var(--line);
     padding: 10px 14px;
   }
+  .meta-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
   .meta-title {
     font-size: 16px;
     font-weight: 800;
     color: var(--red);
-    margin-bottom: 8px;
     letter-spacing: -0.01em;
     cursor: pointer;
     display: inline-block;
@@ -148,6 +153,13 @@
   .meta-save-btn:active { transform: scale(0.94); background: #b8232f; }
   .meta-fill-btn { flex-shrink:0; background:#1a73e8; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:0.02em; white-space:nowrap; }
   .meta-fill-btn:active { transform:scale(0.94); background:#1558b0; }
+
+  /* Import mode checkboxes */
+  .import-mode-list { display:flex; flex-direction:column; gap:6px; }
+  .import-mode-opt { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; cursor:pointer; }
+  .import-mode-opt input[type="checkbox"] { width:17px; height:17px; flex-shrink:0; cursor:pointer; accent-color:#2e7d52; }
+  .import-confirm-btn { background:#1a73e8; border-color:#1558b0; color:#fff; }
+  .import-confirm-btn .ico { font-size:18px; }
 
   /* Search bar — top of every list view */
   .search-bar {
@@ -1201,7 +1213,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1340,11 +1352,26 @@
         <button class="action-row" data-act="upload-share"><span class="ico">📤</span><div style="flex:1;"><div style="font-weight:700;">从分享菜单接收</div><div style="font-size:11px; color:var(--muted);">微信/邮件里 → 分享 → "在 Safari 中打开"</div></div></button>
       </div>
 
-      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 8px; letter-spacing: 0.05em;">📥 添加方式 / IMPORT MODE</div>
-      <div class="actions-list">
-        <button class="action-row" data-act="upload-append-only" style="background: #e8f5e8; border-color: var(--green);"><span class="ico">📚</span><div style="flex:1;"><div style="font-weight:700;">仅扩充型号库 (推荐)</div><div style="font-size:11px; color:var(--muted);">不动货架,只加到型号库以备拍照匹配</div></div></button>
-        <button class="action-row" data-act="upload-append-pallet" style="background: #fff8e1; border-color: #f59e0b;"><span class="ico">📦</span><div style="flex:1;"><div style="font-weight:700;">追加到整箱堆货区</div><div style="font-size:11px; color:var(--muted);">按顺序填入整箱区空格位（入库首选）</div></div></button>
-        <button class="action-row" data-act="upload-append"><span class="ico">🗂️</span><div style="flex:1;"><div style="font-weight:700;">追加到零散货架区</div><div style="font-size:11px; color:var(--muted);">填进零散货架的空位</div></div></button>
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 8px; letter-spacing: 0.05em;">📥 添加方式 / IMPORT MODE <span style="font-weight:400; font-size:11px;">（可多选）</span></div>
+      <div class="import-mode-list">
+        <label class="import-mode-opt" style="background:#e8f5e8; border-color:var(--green);">
+          <input type="checkbox" id="im-append-only" checked>
+          <span class="ico">📚</span>
+          <div style="flex:1;"><div style="font-weight:700;">扩充型号库</div><div style="font-size:11px; color:var(--muted);">不动货架,只加到型号库以备拍照匹配</div></div>
+        </label>
+        <label class="import-mode-opt" style="background:#fff8e1; border-color:#f59e0b;">
+          <input type="checkbox" id="im-append-pallet">
+          <span class="ico">📦</span>
+          <div style="flex:1;"><div style="font-weight:700;">追加到整箱堆货区</div><div style="font-size:11px; color:var(--muted);">按顺序填入整箱区空格位（入库首选）</div></div>
+        </label>
+        <label class="import-mode-opt">
+          <input type="checkbox" id="im-append">
+          <span class="ico">🗂️</span>
+          <div style="flex:1;"><div style="font-weight:700;">追加到零散货架区</div><div style="font-size:11px; color:var(--muted);">填进零散货架的空位</div></div>
+        </label>
+      </div>
+      <div class="actions-list" style="margin-top:8px;">
+        <button class="action-row import-confirm-btn" data-act="import-confirm"><span class="ico">✅</span><div style="flex:1;"><div style="font-weight:700;">确定导入</div><div style="font-size:11px; opacity:0.8;">按已勾选方式批量导入</div></div></button>
         <button class="action-row" data-act="upload-replace" style="background: #ffe5e5; border-color: var(--red);"><span class="ico">🔄</span><div style="flex:1;"><div style="font-weight:700;">替换全部 (危险)</div><div style="font-size:11px; color:var(--muted);">清空两表重建</div></div></button>
       </div>
 
@@ -2115,7 +2142,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.1</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.2</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>「批量填型号」按钮移至区域标题行右侧，始终可见</li>
+            <li>添加方式改为多选勾选框，可同时追加到堆货区+货架区</li>
+            <li>下载模板支持浏览器文件另存对话框（选保存路径）</li>
+            <li>管理后台「注册用户列表」按钮布局优化，移动端不再溢出</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.1</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -6253,6 +6293,58 @@ function applyImportMode(mode) {
   render();
 }
 
+function applyImportModes(modes) {
+  const lines = pendingImportLines;
+  if (!lines || !lines.length) { toast('请先选择来源并提供清单'); return; }
+
+  // Step 1: add all to model library (deduped, once)
+  const existing = new Set(state.models.map(m => m.name.toLowerCase()));
+  const newModels = [];
+  for (const name of lines) {
+    if (!existing.has(name.toLowerCase())) {
+      const m = { id: 'm_' + Date.now() + '_' + newModels.length, name, boxToSetRatio: 40 };
+      state.models.push(m);
+      newModels.push(m);
+      existing.add(name.toLowerCase());
+    }
+  }
+  const msgs = [`型号库+${newModels.length}`];
+  const toPlace = newModels.length ? newModels :
+    lines.map(n => state.models.find(m => m.name.toLowerCase() === n.toLowerCase())).filter(Boolean);
+
+  // Step 2: fill pallet zone if requested
+  if (modes.includes('append-pallet')) {
+    const palletZone = state.zones.find(z => z.type === 'pallet');
+    let filled = 0;
+    if (palletZone) {
+      let mi = 0;
+      outer2: for (const a of palletZone.aisles) for (const p of a.pallets) for (const layer of p.layers) {
+        if (!layer.modelId && mi < toPlace.length) { layer.modelId = toPlace[mi].id; layer.unit = '箱'; mi++; filled++; }
+        if (mi >= toPlace.length) break outer2;
+      }
+    }
+    msgs.push(`堆货区+${filled}`);
+  }
+
+  // Step 3: fill shelf zones if requested
+  if (modes.includes('append')) {
+    let filled = 0;
+    for (const zone of state.zones.filter(z => z.type === 'shelf')) {
+      let mi = 0;
+      outer: for (const a of zone.aisles) for (const s of a.shelves) for (let i = 0; i < s.slots.length; i++) {
+        if (!s.slots[i].modelId && mi < toPlace.length) { s.slots[i].modelId = toPlace[mi].id; mi++; filled++; }
+        if (mi >= toPlace.length) break outer;
+      }
+    }
+    msgs.push(`货架+${filled}`);
+  }
+
+  toast('✅ ' + msgs.join(' | '));
+  pendingImportLines = null;
+  hideSheets();
+  render();
+}
+
 document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
   b.addEventListener('click', () => {
     const act = b.dataset.act;
@@ -6300,21 +6392,37 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
     } else if (act === 'upload-share') {
       // Inform user how to use share-to-Safari workflow
       alert('从微信/邮件分享型号清单文本到本网页:\n\n1. 在微信/邮件里长按文本 → 拷贝\n2. 回到本网页 → 点"手动粘贴清单"\n\n或者: 把 .txt 文件存到 iCloud/Drive → 点"从本地选文件" → 选 iCloud Drive');
-    } else if (act === 'upload-append-only') {
-      applyImportMode('append-only');
-    } else if (act === 'upload-append-pallet') {
-      applyImportMode('append-pallet');
-    } else if (act === 'upload-append') {
-      applyImportMode('append');
+    } else if (act === 'import-confirm') {
+      const modes = [];
+      if (document.getElementById('im-append-only')?.checked)  modes.push('append-only');
+      if (document.getElementById('im-append-pallet')?.checked) modes.push('append-pallet');
+      if (document.getElementById('im-append')?.checked)        modes.push('append');
+      if (!modes.length) { toast('⚠️ 请先勾选至少一种添加方式'); return; }
+      applyImportModes(modes);
     } else if (act === 'upload-replace') {
       applyImportMode('replace');
     } else if (act === 'download-template') {
       const csv = '﻿商品型号,英文名称,中文名称,尺寸,重量(kg),数量,单位,整箱数量\n' + Array(10).fill(',,,,,,,').join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'ATMM-型号导入模板.csv'; a.click();
-      URL.revokeObjectURL(url);
-      toast('✅ 模板已下载，填好后点「从本地选文件」上传');
+      (async () => {
+        if (typeof window.showSaveFilePicker === 'function') {
+          try {
+            const fh = await window.showSaveFilePicker({
+              suggestedName: 'ATMM-型号导入模板.csv',
+              types: [{ description: 'CSV 表格', accept: { 'text/csv': ['.csv'] } }]
+            });
+            const ws = await fh.createWritable();
+            await ws.write(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            await ws.close();
+            toast('✅ 模板已保存，填好后点「从本地选文件」上传');
+            return;
+          } catch(e) { if (e.name === 'AbortError') return; }
+        }
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'ATMM-型号导入模板.csv'; a.click();
+        URL.revokeObjectURL(url);
+        toast('✅ 模板已下载，填好后点「从本地选文件」上传');
+      })();
     }
   });
 });
@@ -6788,9 +6896,11 @@ function renderPanes() {
       pane.setAttribute('data-table-pane', z.id);
       pane.innerHTML = `
         <div class="meta-bar">
-          <div class="meta-title editable" data-meta-title="${z.id}">${escapeHtml(z.name)}</div>
+          <div class="meta-title-row">
+            <div class="meta-title editable" data-meta-title="${z.id}">${escapeHtml(z.name)}</div>
+            <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 批量填型号</button>
+          </div>
           <div class="meta-fields">
-            <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 填型号</button>
             <label>填表人 <input type="text" data-meta="filler" data-table-meta="${z.id}" placeholder="姓名"></label>
             <label>日期 <input type="date" data-meta="date" data-table-meta="${z.id}"></label>
             <button class="meta-save-btn" data-meta-save>💾 保存</button>

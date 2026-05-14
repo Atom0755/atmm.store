@@ -87,11 +87,13 @@
   #user-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000; align-items:center; justify-content:center; padding:24px; }
   #user-modal-overlay.open { display:flex; }
   #user-modal { background:var(--paper); border-radius:16px; width:100%; max-width:700px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.25); }
-  .um-header { padding:20px 24px 12px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
-  .um-header h2 { font-size:16px; font-weight:800; flex:1; }
-  .um-search { padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; width:200px; }
+  .um-header { padding:16px 24px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+  .um-header-top { display:flex; align-items:center; gap:8px; }
+  .um-header-top h2 { font-size:16px; font-weight:800; flex:1; }
+  .um-header-bottom { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .um-search { flex:1; min-width:140px; padding:7px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; outline:none; }
   .um-search:focus { border-color:var(--ink); }
-  .um-close { background:none; border:1.5px solid var(--line); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; font-family:inherit; }
+  .um-close { background:none; border:1.5px solid var(--line); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; font-family:inherit; white-space:nowrap; }
   .um-close:hover { border-color:var(--red); color:var(--red); }
   .um-body { overflow-y:auto; flex:1; }
   .um-count { padding:8px 24px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--line); }
@@ -231,13 +233,17 @@
 <div id="user-modal-overlay" onclick="if(event.target===this)closeUserModal()">
   <div id="user-modal">
     <div class="um-header">
-      <h2>👤 注册用户列表</h2>
-      <input class="um-search" id="um-search" oninput="renderUserModal()" placeholder="搜索邮箱/用户名…">
-      <label style="font-size:12px; color:var(--muted); white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:4px;">
-        <input type="checkbox" id="um-hide-anon" onchange="renderUserModal()"> 隐藏匿名
-      </label>
-      <button id="del-anon-btn" onclick="deleteAnonUsers()" style="background:none; border:1.5px solid var(--red); color:var(--red); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; font-family:inherit; white-space:nowrap;">🗑 删除匿名用户</button>
-      <button class="um-close" onclick="closeUserModal()">关闭</button>
+      <div class="um-header-top">
+        <h2>👤 注册用户列表</h2>
+        <button class="um-close" onclick="closeUserModal()">关闭</button>
+      </div>
+      <div class="um-header-bottom">
+        <input class="um-search" id="um-search" oninput="renderUserModal()" placeholder="搜索邮箱/用户名…">
+        <label style="font-size:12px; color:var(--muted); white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:4px;">
+          <input type="checkbox" id="um-hide-anon" onchange="renderUserModal()"> 隐藏匿名
+        </label>
+        <button id="del-anon-btn" onclick="deleteAnonUsers()" style="background:none; border:1.5px solid var(--red); color:var(--red); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; font-family:inherit; white-space:nowrap;">🗑 删除匿名用户</button>
+      </div>
     </div>
     <div class="um-count" id="um-count"></div>
     <div class="um-body">
