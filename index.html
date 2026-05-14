@@ -161,6 +161,10 @@
   .import-confirm-btn { background:#1a73e8; border-color:#1558b0; color:#fff; }
   .import-confirm-btn .ico { font-size:18px; }
 
+  /* Wizard slot highlight */
+  @keyframes wizPulse { 0%,100% { box-shadow:0 0 0 0 rgba(245,158,11,0.85); } 55% { box-shadow:0 0 0 7px rgba(245,158,11,0); } }
+  .wizard-highlight { outline:2.5px solid #f59e0b !important; border-radius:4px; animation:wizPulse 1.1s ease infinite; }
+
   /* Search bar — top of every list view */
   .search-bar {
     display: flex;
@@ -1213,7 +1217,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2142,7 +2146,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.2</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.3</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>批量填型号向导：当前格位橙色脉冲高亮 + 自动滚入视图</li>
+            <li>向导标题显示格位坐标（列名-格序），下方加「⏭ 跳过」按钮</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.2</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2638,6 +2653,7 @@
     </div>
     <div class="sheet-footer">
       <button class="sheet-confirm" id="model-confirm">确定</button>
+      <button id="wizard-skip-btn" class="sheet-cancel" style="display:none; background:#fff8e1; border-color:#f59e0b; color:#92400e; flex:0 0 auto;">⏭ 跳过</button>
       <button class="sheet-cancel" data-close>取消</button>
     </div>
   </div>
@@ -5532,14 +5548,47 @@ function _startFillWizard(zoneId) {
 }
 function _fillNextWizardSlot() {
   if (!_wizardState) return;
-  const { slots, idx } = _wizardState;
-  if (idx >= slots.length) { _wizardState = null; toast('✅ 全部格位已填写完！'); return; }
+  const { slots, idx, zoneId } = _wizardState;
+  if (idx >= slots.length) {
+    _wizardState = null;
+    const skipBtn = document.getElementById('wizard-skip-btn');
+    if (skipBtn) skipBtn.style.display = 'none';
+    toast('✅ 全部格位已填写完！');
+    return;
+  }
   const { ai, ci, si } = slots[idx];
   const total = slots.length, cur = idx + 1;
-  document.getElementById('camera-title').textContent = `填型号 ${cur}/${total} — 点取消停止`;
+
+  // Highlight the target slot
+  document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
+  const zone = state.zones.find(z => z.id === zoneId);
+  const colName = zone?.type === 'pallet'
+    ? (zone.aisles[ai]?.pallets[ci]?.name || `列${ci+1}`)
+    : (zone?.aisles[ai]?.shelves[ci]?.name || `列${ci+1}`);
+  const slotEl = document.querySelector(`[data-table-pane="${zoneId}"] .model-cell[data-ai="${ai}"][data-ci="${ci}"][data-si="${si}"]:not(.sub-model-cell)`);
+  if (slotEl) {
+    slotEl.classList.add('wizard-highlight');
+    slotEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Show skip button, update title with coordinates
+  const skipBtn = document.getElementById('wizard-skip-btn');
+  if (skipBtn) skipBtn.style.display = '';
+  document.getElementById('camera-title').textContent = `填型号 ${cur}/${total}｜${colName}-格${si+1}`;
+
   _wizardState.awaitingModel = true;
-  openModelPicker(ai, ci, si, false, null);
+  setTimeout(() => openModelPicker(ai, ci, si, false, null), 200);
 }
+
+// Wizard skip button
+document.getElementById('wizard-skip-btn').addEventListener('click', () => {
+  if (!_wizardState) return;
+  document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
+  _wizardState.awaitingModel = false;
+  _wizardState.idx++;
+  hideSheets();
+  setTimeout(_fillNextWizardSlot, 300);
+});
 
 const _modelConfirmBtn = document.getElementById('model-confirm');
 _modelConfirmBtn.addEventListener('click', (e) => { e.preventDefault(); commitModelChoice(); });
@@ -5923,7 +5972,12 @@ function hideSheets() {
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
   // Cancel inside model picker or qty editor stops the wizard
-  if (b.closest('#camera-sheet') || b.closest('#qty-sheet')) _wizardState = null;
+  if (b.closest('#camera-sheet') || b.closest('#qty-sheet')) {
+    _wizardState = null;
+    document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
+    const skipBtn = document.getElementById('wizard-skip-btn');
+    if (skipBtn) skipBtn.style.display = 'none';
+  }
   hideSheets();
 }));
 
