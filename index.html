@@ -1217,7 +1217,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2146,7 +2146,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.4</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.5</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复：换算单位按钮点击弹出单位选择器（z-index遮挡问题）</li>
+            <li>修复：旧型号换算数量默认值1自动升级为40套</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.4</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2770,7 +2781,7 @@ function loadState() {
 }
 
 function migrateState() {
-  state.models?.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; if (!m.boxToSetUnit) m.boxToSetUnit = '套'; });
+  state.models?.forEach(m => { if (!m.boxToSetRatio || m.boxToSetRatio === 1) m.boxToSetRatio = 40; if (!m.boxToSetUnit) m.boxToSetUnit = '套'; });
   (state.zones||[]).forEach(z => {
     if (z.type === 'shelf') {
       for (const a of (z.aisles||[])) for (const c of (a.shelves||[])) for (const s of (c.slots||[])) { if (s.restock===undefined) s.restock=0; if (s.unit===undefined) s.unit=null; }
@@ -4637,6 +4648,9 @@ document.getElementById('ratio-unit-btn').addEventListener('click', () => {
   _ratioUnitMode = true;
   document.getElementById('unit-title').textContent = '换算单位';
   document.getElementById('unit-input').value = '';
+  // unit-sheet is earlier in DOM than camera-sheet so it would be hidden behind.
+  // Temporarily hide camera-sheet so unit-sheet is on top.
+  document.getElementById('camera-sheet').classList.remove('show');
   showSheet('unit-sheet');
 });
 
@@ -4644,8 +4658,8 @@ function _applyRatioUnit(u) {
   _ratioUnitMode = false;
   const btn = document.getElementById('ratio-unit-btn');
   if (btn) btn.textContent = u || '套';
-  // Return to camera-sheet (unit-sheet sits on top)
   document.getElementById('unit-sheet').classList.remove('show');
+  document.getElementById('camera-sheet').classList.add('show');
 }
 
 document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
@@ -4738,7 +4752,7 @@ function openModelPicker(ai, ci, si, withCamera, callback) {
         const slot = getSlot(ai, ci, si);
         if (slot.modelId) {
           const m = getModel(slot.modelId);
-          if (m && m.boxToSetRatio) preRatio = m.boxToSetRatio;
+          if (m && m.boxToSetRatio && m.boxToSetRatio > 1) preRatio = m.boxToSetRatio;
           if (m && m.boxToSetUnit)  preUnit  = m.boxToSetUnit;
         }
       } catch(e) {}
@@ -6008,10 +6022,11 @@ function hideSheets() {
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
-  // Cancel inside unit picker while in ratio-unit mode: just close unit-sheet, stay on camera-sheet
+  // Cancel inside unit picker while in ratio-unit mode: close unit-sheet, restore camera-sheet
   if (b.closest('#unit-sheet') && _ratioUnitMode) {
     _ratioUnitMode = false;
     document.getElementById('unit-sheet').classList.remove('show');
+    document.getElementById('camera-sheet').classList.add('show');
     return;
   }
   // Cancel inside model picker or qty editor stops the wizard
@@ -7583,7 +7598,7 @@ async function _cloudLoad() {
         meta: data.meta || {}
       });
     }
-    state.models.forEach(m => { if (!m.boxToSetRatio) m.boxToSetRatio = 40; if (!m.boxToSetUnit) m.boxToSetUnit = '套'; });
+    state.models.forEach(m => { if (!m.boxToSetRatio || m.boxToSetRatio === 1) m.boxToSetRatio = 40; if (!m.boxToSetUnit) m.boxToSetUnit = '套'; });
     return true;
   } catch(e) { return false; }
 }
