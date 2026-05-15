@@ -1217,7 +1217,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1306,6 +1306,44 @@
     <div class="sheet-footer">
       <button class="sheet-confirm" id="unit-confirm">确定</button>
       <button class="sheet-cancel" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Model barcode/QR code sheet -->
+<div class="sheet-backdrop modal-top" id="model-code-sheet">
+  <div class="sheet" style="max-height:90vh;">
+    <div class="sheet-body">
+      <h3 id="model-code-title">商品码</h3>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:12px; line-height:1.5;">供应商印在包装箱上，方便扫码录入型号。内容可自定义（如英文型号、SKU编号等）。</p>
+      <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em;">编码内容（可自定义）</label>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <input id="model-code-text" type="text" style="flex:1; padding:8px 10px; border:1.5px solid var(--ink); border-radius:8px; font-size:14px; font-weight:600; background:#fff8d6; font-family:inherit;">
+        <button onclick="_saveModelCodeText()" style="flex-shrink:0; padding:8px 12px; background:var(--ink); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">保存</button>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+        <div style="flex:1; min-width:140px; text-align:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">二维码 QR Code</div>
+          <div id="model-qr-container" style="display:inline-flex; padding:10px; background:#fff; border:1px solid var(--line); border-radius:8px; min-height:80px; align-items:center; justify-content:center;">
+            <span style="font-size:11px; color:var(--muted);">生成中…</span>
+          </div>
+          <div><button onclick="_downloadModelCode('qr')" style="margin-top:6px; padding:5px 12px; font-size:11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); cursor:pointer; font-family:inherit;">⬇ 下载 PNG</button></div>
+        </div>
+        <div style="flex:2; min-width:200px; text-align:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">条形码 Barcode (Code 128)</div>
+          <div style="background:#fff; padding:10px 8px; border:1px solid var(--line); border-radius:8px; overflow-x:auto;">
+            <svg id="model-barcode-svg" style="display:block; margin:0 auto;"></svg>
+          </div>
+          <div><button onclick="_downloadModelCode('bar')" style="margin-top:6px; padding:5px 12px; font-size:11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); cursor:pointer; font-family:inherit;">⬇ 下载 PNG</button></div>
+        </div>
+      </div>
+      <button onclick="_printAllModelCodes()" class="action-row" style="background:#f0f4ff; border-color:#2563eb;">
+        <span class="ico">🖨️</span>
+        <div style="flex:1;"><div style="font-weight:700;">批量打印全部型号码</div><div style="font-size:11px; color:var(--muted);">在新窗口生成全部型号的打印页，可选纸张/标签纸</div></div>
+      </button>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
 </div>
@@ -1899,34 +1937,34 @@
           <div id="plan-upgrade-section">
             <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">选择方案</div>
             <div class="plan-btn" id="plan-basic-m">
-              <div class="plan-btn-top" onclick="_startCheckout('basic_monthly')"><span class="plan-btn-name">基础版 Basic</span><span class="plan-price"><span class="plan-orig">$31/月</span>$19/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$19/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-top" onclick="_startCheckout('basic_monthly')"><span class="plan-btn-name">基础版 Basic</span><span class="plan-price"><span class="plan-orig">$99/月</span>$29/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$29/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('basic_monthly')">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</div>
             </div>
             <div class="plan-btn" id="plan-basic-y">
-              <div class="plan-btn-top" onclick="_startCheckout('basic_annual')"><span class="plan-btn-name">基础版 年付</span><span class="plan-price"><span class="plan-orig">$372/年</span>$365/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$365/年')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-top" onclick="_startCheckout('basic_annual')"><span class="plan-btn-name">基础版 年付</span><span class="plan-price"><span class="plan-orig">$1,188/年</span>$128/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$128/年')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('basic_annual')">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</div>
             </div>
             <div class="plan-btn" id="plan-standard-m">
-              <div class="plan-btn-top" onclick="_startCheckout('standard_monthly')"><span class="plan-btn-name">标准版 Standard</span><span class="plan-price"><span class="plan-orig">$88/月</span>$68/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_monthly','标准版 Standard','$68/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-top" onclick="_startCheckout('standard_monthly')"><span class="plan-btn-name">标准版 Standard</span><span class="plan-price"><span class="plan-orig">$168/月</span>$128/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_monthly','标准版 Standard','$128/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('standard_monthly')">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</div>
             </div>
             <div class="plan-btn" id="plan-standard-y">
-              <div class="plan-btn-top" onclick="_startCheckout('standard_annual')"><span class="plan-btn-name">标准版 年付</span><span class="plan-price"><span class="plan-orig">$1,056/年</span>$888/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$888/年')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-top" onclick="_startCheckout('standard_annual')"><span class="plan-btn-name">标准版 年付</span><span class="plan-price"><span class="plan-orig">$2,016/年</span>$1,536/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$1,536/年')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_startCheckout('standard_annual')">2账户（老板＋经理或操作员）· 省16% · 小团队协作 · 订阅即送1个月免费期</div>
+              <div class="plan-desc" onclick="_startCheckout('standard_annual')">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1个月免费期</div>
             </div>
             <div class="plan-btn" id="plan-premium-m">
-              <div class="plan-btn-top" onclick="_startCheckout('premium_monthly')"><span class="plan-btn-name">高级版 Premium</span><span class="plan-price"><span class="plan-orig">$228/月</span>$188/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_monthly','高级版 Premium','$188/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-top" onclick="_startCheckout('premium_monthly')"><span class="plan-btn-name">高级版 Premium</span><span class="plan-price"><span class="plan-orig">$328/月</span>$288/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_monthly','高级版 Premium','$288/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('premium_monthly')">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</div>
             </div>
             <div class="plan-btn" id="plan-premium-y">
-              <div class="plan-btn-top" onclick="_startCheckout('premium_annual')"><span class="plan-btn-name">高级版 年付</span><span class="plan-price"><span class="plan-orig">$2,736/年</span>$1,888/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$1,888/年')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-top" onclick="_startCheckout('premium_annual')"><span class="plan-btn-name">高级版 年付</span><span class="plan-price"><span class="plan-orig">$3,936/年</span>$3,456/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$3,456/年')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_startCheckout('premium_annual')">3账户（老板＋经理＋操作员）· 省31% · 全团队配置 · 订阅即送1个月免费期</div>
+              <div class="plan-desc" onclick="_startCheckout('premium_annual')">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1个月免费期</div>
             </div>
             <div style="margin:4px 0 8px; padding:10px 12px; background:#fff8e6; border:1.5px solid #f5c542; border-radius:10px; font-size:12px; color:#7a5c00; line-height:1.6;">
               🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$188/月</b>，年付另加 <b>$1,888/年</b>。<br>
@@ -2146,7 +2184,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.5</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-15</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>型号库新增「🔲」按钮，自动生成商品条形码与二维码</li>
+            <li>支持自定义编码内容、单独下载PNG图片、批量打印全部型号码</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.5</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-14</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -6130,9 +6179,10 @@ function refreshLibList(filter) {
   }
   // Sort alphabetically for easier scanning
   matches.sort((a,b) => a.name.localeCompare(b.name));
-  listEl.innerHTML = matches.map((m,i) => `<div style="padding:6px 10px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+  listEl.innerHTML = matches.map((m,i) => `<div style="padding:5px 8px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; align-items:center; gap:6px;">
     <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}${m.boxToSetRatio && m.boxToSetRatio !== 1 ? ` <span style="color:var(--muted); font-size:10px;">(1箱=${m.boxToSetRatio}${m.boxToSetUnit||`套`})</span>` : ''}</span>
-    <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted);">#${i+1}</span>
+    <button onclick="openModelCodeSheet('${m.id}')" style="flex-shrink:0; background:none; border:1px solid var(--line); border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:var(--muted);" title="生成条形码/二维码">🔲</button>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); flex-shrink:0;">#${i+1}</span>
   </div>`).join('');
 }
 
@@ -6278,6 +6328,131 @@ document.getElementById('translate-stop').addEventListener('click', () => {
 
 const _libSearchEl = document.getElementById('lib-search');
 if (_libSearchEl) _libSearchEl.addEventListener('input', e => refreshLibList(e.target.value));
+
+// ===== 商品条形码 / 二维码 =====
+let _codeLibsLoaded = false;
+async function _loadCodeLibs() {
+  if (_codeLibsLoaded) return;
+  await Promise.all([
+    new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); }),
+    new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); })
+  ]);
+  _codeLibsLoaded = true;
+}
+
+let _codeSheetMid = null;
+async function openModelCodeSheet(mid) {
+  _codeSheetMid = mid;
+  const m = state.models.find(x => x.id === mid);
+  if (!m) return;
+  document.getElementById('model-code-title').textContent = m.name + ' · 商品码';
+  document.getElementById('model-code-text').value = m.codeText || m.name;
+  document.getElementById('model-qr-container').innerHTML = '<span style="font-size:11px;color:var(--muted);">生成中…</span>';
+  document.getElementById('model-barcode-svg').innerHTML = '';
+  showSheet('model-code-sheet');
+  await _renderModelCode();
+}
+
+async function _renderModelCode() {
+  const txt = document.getElementById('model-code-text').value.trim();
+  if (!txt) return;
+  try {
+    await _loadCodeLibs();
+    const qrContainer = document.getElementById('model-qr-container');
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, { text: txt, width: 180, height: 180, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    try {
+      JsBarcode('#model-barcode-svg', txt, { format: 'CODE128', lineColor: '#1a1a1a', width: 2, height: 65, fontSize: 12, margin: 8, displayValue: true });
+    } catch(e) { document.getElementById('model-barcode-svg').innerHTML = `<text x="4" y="20" font-size="11" fill="#d94f3b">条形码暂不支持此内容（含特殊字符）</text>`; }
+  } catch(e) { toast('⚠️ 码生成失败: ' + e.message); }
+}
+
+let _codeRenderTimer;
+document.getElementById('model-code-text').addEventListener('input', () => {
+  clearTimeout(_codeRenderTimer);
+  _codeRenderTimer = setTimeout(_renderModelCode, 600);
+});
+
+function _saveModelCodeText() {
+  const m = _codeSheetMid ? state.models.find(x => x.id === _codeSheetMid) : null;
+  if (!m) return;
+  const txt = document.getElementById('model-code-text').value.trim();
+  if (txt && txt !== m.name) m.codeText = txt; else delete m.codeText;
+  saveState();
+  toast('✅ 已保存自定义编码');
+}
+
+function _downloadModelCode(type) {
+  const m = _codeSheetMid ? state.models.find(x => x.id === _codeSheetMid) : null;
+  const baseName = (m ? m.name : '商品码').replace(/[\/\\?%*:|"<>]/g, '_');
+  if (type === 'qr') {
+    const canvas = document.querySelector('#model-qr-container canvas');
+    const img = document.querySelector('#model-qr-container img');
+    let url = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+    if (!url) { toast('请先等二维码生成完成'); return; }
+    const a = document.createElement('a'); a.href = url; a.download = baseName + '-QR.png'; a.click();
+  } else {
+    const svg = document.getElementById('model-barcode-svg');
+    if (!svg || !svg.querySelector('rect')) { toast('请先等条形码生成完成'); return; }
+    const W = svg.viewBox?.baseVal?.width || svg.getBoundingClientRect().width || 320;
+    const H = svg.viewBox?.baseVal?.height || svg.getBoundingClientRect().height || 110;
+    const cv = document.createElement('canvas'); cv.width = Math.round(W); cv.height = Math.round(H);
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const imgObj = new Image();
+    imgObj.onload = () => {
+      ctx.drawImage(imgObj, 0, 0, cv.width, cv.height);
+      const a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = baseName + '-barcode.png'; a.click();
+    };
+    imgObj.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+  }
+}
+
+async function _printAllModelCodes() {
+  if (!state.models?.length) { toast('型号库为空'); return; }
+  toast('⏳ 正在生成，请稍候...');
+  try {
+    await _loadCodeLibs();
+    const items = [];
+    for (const m of state.models) {
+      const txt = m.codeText || m.name;
+      // QR
+      const tmpDiv = document.createElement('div');
+      new QRCode(tmpDiv, { text: txt, width: 120, height: 120, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+      await new Promise(r => setTimeout(r, 30));
+      const qrCanvas = tmpDiv.querySelector('canvas');
+      const qrUrl = qrCanvas ? qrCanvas.toDataURL('image/png') : '';
+      // Barcode
+      const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      tmpSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      document.body.appendChild(tmpSvg);
+      let svgUrl = '';
+      try {
+        JsBarcode(tmpSvg, txt, { format: 'CODE128', lineColor: '#000', width: 1.5, height: 45, fontSize: 10, margin: 6, displayValue: true });
+        svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(tmpSvg));
+      } catch(e) {}
+      document.body.removeChild(tmpSvg);
+      items.push({ name: m.name, txt, qrUrl, svgUrl });
+    }
+    const win = window.open('', '_blank');
+    if (!win) { toast('⚠️ 请允许弹出窗口后重试'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>型号商品码 · ATMM</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;background:#fff;padding:8mm;}
+h1{font-size:13px;color:#888;margin-bottom:6mm;text-align:center;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(55mm,1fr));gap:5mm;}
+.item{border:0.5px solid #ddd;border-radius:2mm;padding:3mm;page-break-inside:avoid;text-align:center;}
+.name{font-size:8.5px;font-weight:700;color:#111;margin-bottom:2mm;word-break:break-all;line-height:1.3;}
+.codes{display:flex;flex-direction:column;align-items:center;gap:2mm;}
+.codes img{max-width:100%;}
+@media print{body{padding:3mm;}h1{display:none;}.grid{gap:3mm;}}
+</style></head><body>
+<h1>ATMM.store · 型号商品码 · 共 ${items.length} 个型号</h1>
+<div class="grid">${items.map(it => `<div class="item"><div class="name">${it.name}</div><div class="codes">${it.qrUrl ? `<img src="${it.qrUrl}" width="96">` : ''}${it.svgUrl ? `<img src="${it.svgUrl}" style="width:100%;max-width:130px;">` : ''}</div></div>`).join('')}</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script></body></html>`);
+    win.document.close();
+    toast('✅ 打印页已生成（共 ' + items.length + ' 个型号）');
+  } catch(e) { toast('❌ 生成失败: ' + e.message); }
+}
 
 const _libExportBtn = document.getElementById('lib-export');
 if (_libExportBtn) _libExportBtn.addEventListener('click', () => {
