@@ -1311,7 +1311,7 @@
 </div>
 
 <!-- Model barcode/QR code sheet -->
-<div class="sheet-backdrop modal-top" id="model-code-sheet">
+<div class="sheet-backdrop modal-top" id="model-code-sheet" style="z-index:200;">
   <div class="sheet" style="max-height:90vh;">
     <div class="sheet-body">
       <h3 id="model-code-title">商品码</h3>
@@ -1335,6 +1335,7 @@
             <svg id="model-barcode-svg" style="display:block; margin:0 auto;"></svg>
           </div>
           <div><button onclick="_downloadModelCode('bar')" style="margin-top:6px; padding:5px 12px; font-size:11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); cursor:pointer; font-family:inherit;">⬇ 下载 PNG</button></div>
+          <div id="barcode-note" style="font-size:10px; color:#b45309; margin-top:4px; line-height:1.4;"></div>
         </div>
       </div>
       <button onclick="_printAllModelCodes()" class="action-row" style="background:#f0f4ff; border-color:#2563eb;">
@@ -1384,6 +1385,19 @@
         </div>
         <input type="text" id="lib-search" placeholder="🔍 搜索型号库..." autocomplete="off" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; margin-bottom:6px; background:var(--paper); -webkit-user-select:text; user-select:text;">
         <div id="lib-list" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: var(--paper); -webkit-overflow-scrolling: touch;"></div>
+      </div>
+
+      <!-- Current model snapshot table -->
+      <div style="margin-bottom:12px;">
+        <button onclick="_refreshModelSnapshot()" style="display:flex; align-items:center; gap:6px; width:100%; padding:8px 12px; background:#f0f7ff; border:1.5px solid #93c5fd; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:#1e40af;">
+          <span>📋</span>
+          <span style="flex:1; text-align:left;">当前型号清单</span>
+          <span id="snapshot-date" style="font-weight:400; font-size:10px; color:#60a5fa;"></span>
+          <span style="font-size:10px; color:#60a5fa;">↻ 刷新</span>
+        </button>
+        <div id="model-snapshot-wrap" style="display:none; border:1.5px solid #93c5fd; border-top:none; border-radius:0 0 8px 8px; overflow:hidden; background:var(--paper);">
+          <div id="model-snapshot-inner" style="max-height:220px; overflow-y:auto; font-size:12px;"></div>
+        </div>
       </div>
 
       <!-- Upload sources -->
@@ -6186,6 +6200,34 @@ function refreshLibList(filter) {
   </div>`).join('');
 }
 
+function _refreshModelSnapshot() {
+  const wrap = document.getElementById('model-snapshot-wrap');
+  const inner = document.getElementById('model-snapshot-inner');
+  const dateEl = document.getElementById('snapshot-date');
+  if (!wrap || !inner) return;
+  const now = new Date();
+  const d = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if (dateEl) dateEl.textContent = d;
+  wrap.style.display = '';
+  if (!state.models?.length) {
+    inner.innerHTML = '<div style="padding:12px; text-align:center; color:var(--muted); font-size:11px;">型号库为空</div>';
+    return;
+  }
+  const sorted = state.models.slice().sort((a,b) => a.name.localeCompare(b.name));
+  inner.innerHTML = `<table style="width:100%; border-collapse:collapse;">
+    <thead><tr style="background:var(--bg);">
+      <th style="padding:5px 8px; text-align:left; font-size:10px; color:var(--muted); font-weight:700; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg);">#</th>
+      <th style="padding:5px 8px; text-align:left; font-size:10px; color:var(--muted); font-weight:700; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg);">型号</th>
+      <th style="padding:5px 8px; text-align:right; font-size:10px; color:var(--muted); font-weight:700; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg); white-space:nowrap;">换算</th>
+    </tr></thead>
+    <tbody>${sorted.map((m,i) => `<tr style="border-bottom:1px solid rgba(0,0,0,0.04);">
+      <td style="padding:4px 8px; font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace;">${i+1}</td>
+      <td style="padding:4px 8px; font-size:11px; color:var(--ink); word-break:break-word;">${escapeHtml(m.name)}</td>
+      <td style="padding:4px 8px; font-size:10px; color:var(--muted); text-align:right; white-space:nowrap;">1箱=${m.boxToSetRatio||40}${m.boxToSetUnit||'套'}</td>
+    </tr>`).join('')}
+    </tbody></table>`;
+}
+
 document.getElementById('upload-btn').addEventListener('click', () => {
   if (!_user) { _pulseLoginBtn(); return; }
   showSheet('upload-sheet');
@@ -6193,6 +6235,7 @@ document.getElementById('upload-btn').addEventListener('click', () => {
   refreshLibList('');
   const searchEl = document.getElementById('lib-search');
   if (searchEl) searchEl.value = '';
+  _refreshModelSnapshot();
 });
 
 // === TRANSLATE & LANGUAGE PICKER ===
@@ -6353,18 +6396,35 @@ async function openModelCodeSheet(mid) {
   await _renderModelCode();
 }
 
+function _barcodeText(txt) {
+  // Code128 supports ASCII only; strip non-ASCII and limit length
+  return txt.replace(/[^\x20-\x7E]/g, ' ').trim().replace(/\s+/g, ' ').slice(0, 48);
+}
+
 async function _renderModelCode() {
   const txt = document.getElementById('model-code-text').value.trim();
   if (!txt) return;
+  await _loadCodeLibs();
+  // QR Code — supports full unicode
+  const qrContainer = document.getElementById('model-qr-container');
+  qrContainer.innerHTML = '';
   try {
-    await _loadCodeLibs();
-    const qrContainer = document.getElementById('model-qr-container');
-    qrContainer.innerHTML = '';
     new QRCode(qrContainer, { text: txt, width: 180, height: 180, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-    try {
-      JsBarcode('#model-barcode-svg', txt, { format: 'CODE128', lineColor: '#1a1a1a', width: 2, height: 65, fontSize: 12, margin: 8, displayValue: true });
-    } catch(e) { document.getElementById('model-barcode-svg').innerHTML = `<text x="4" y="20" font-size="11" fill="#d94f3b">条形码暂不支持此内容（含特殊字符）</text>`; }
-  } catch(e) { toast('⚠️ 码生成失败: ' + e.message); }
+  } catch(e) {
+    try { new QRCode(qrContainer, { text: txt, width: 180, height: 180, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L }); }
+    catch(e2) { qrContainer.innerHTML = '<div style="font-size:11px;color:var(--red);padding:8px;">二维码生成失败，请缩短内容</div>'; }
+  }
+  // Barcode — Code128 ASCII only, auto-truncate
+  const barTxt = _barcodeText(txt);
+  const svgEl = document.getElementById('model-barcode-svg');
+  const noteEl = document.getElementById('barcode-note');
+  try {
+    JsBarcode(svgEl, barTxt || 'NO-CODE', { format: 'CODE128', lineColor: '#1a1a1a', width: 2, height: 65, fontSize: 12, margin: 8, displayValue: true });
+    if (noteEl) noteEl.textContent = barTxt !== txt ? '⚠️ 条形码内容已自动截短为ASCII（可在上方自定义简短编码）' : '';
+  } catch(e) {
+    svgEl.innerHTML = '';
+    if (noteEl) noteEl.textContent = '⚠️ 条形码生成失败，请在上方输入简短英文编码';
+  }
 }
 
 let _codeRenderTimer;
@@ -6416,6 +6476,7 @@ async function _printAllModelCodes() {
     const items = [];
     for (const m of state.models) {
       const txt = m.codeText || m.name;
+      const barTxt = _barcodeText(txt);
       // QR
       const tmpDiv = document.createElement('div');
       new QRCode(tmpDiv, { text: txt, width: 120, height: 120, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
@@ -6428,7 +6489,7 @@ async function _printAllModelCodes() {
       document.body.appendChild(tmpSvg);
       let svgUrl = '';
       try {
-        JsBarcode(tmpSvg, txt, { format: 'CODE128', lineColor: '#000', width: 1.5, height: 45, fontSize: 10, margin: 6, displayValue: true });
+        JsBarcode(tmpSvg, barTxt || 'NO-CODE', { format: 'CODE128', lineColor: '#000', width: 1.5, height: 45, fontSize: 10, margin: 6, displayValue: true });
         svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(tmpSvg));
       } catch(e) {}
       document.body.removeChild(tmpSvg);
