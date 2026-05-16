@@ -448,11 +448,19 @@
 
   <!-- 预览表格 -->
   <div id="out-preview-section" style="display:none;">
-    <h3 style="font-size:14px; font-weight:800; margin-bottom:10px;">📋 出货预览</h3>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <h3 style="font-size:14px; font-weight:800;">📋 出货预览</h3>
+      <span style="font-size:11px; color:var(--muted);">双击数量可修改</span>
+    </div>
     <div style="overflow-x:auto; border-radius:10px; border:1.5px solid var(--line); background:var(--paper); margin-bottom:12px;">
       <table class="preview-table">
         <thead>
           <tr>
+            <th style="width:36px; text-align:center; padding:7px 6px;">
+              <input type="checkbox" id="out-chk-all" checked title="全选/全部取消"
+                onchange="toggleAllChecks(this.checked)"
+                style="width:15px;height:15px;cursor:pointer;accent-color:#fff;vertical-align:middle;">
+            </th>
             <th>型号</th>
             <th style="text-align:right;">当前库存</th>
             <th style="text-align:right;">出货数量</th>
@@ -1057,10 +1065,11 @@ function parseOutCsv(csv) {
   renderOutPreview();
 }
 
-function renderOutPreview() {
+function renderOutPreview(savedChecks) {
   if (!outPreviewItems.length && !outUnmatched.length) return;
   document.getElementById('out-preview-section').style.display = '';
-  document.getElementById('out-preview-tbody').innerHTML = outPreviewItems.map(item => {
+  document.getElementById('out-preview-tbody').innerHTML = outPreviewItems.map((item, i) => {
+    const checked = savedChecks ? savedChecks[i] : true;
     const statusHtml = item.status === 'ok'
       ? '<span class="status-ok">✅ 正常</span>'
       : item.status === 'warn'
@@ -1068,14 +1077,20 @@ function renderOutPreview() {
       : '<span class="status-err">❌ 无库存</span>';
     const after = Math.max(0, item.afterQty);
     const afterClass = item.afterQty < 0 ? 'qty-neg' : (after === 0 ? '' : 'qty-ok');
-    return `<tr>
+    return `<tr id="out-row-${i}" style="${checked ? '' : 'opacity:.45;'}">
+      <td style="text-align:center; padding:7px 6px;">
+        <input type="checkbox" id="out-chk-${i}" ${checked ? 'checked' : ''}
+          onchange="onRowCheck(${i}, this.checked)"
+          style="width:15px;height:15px;cursor:pointer;accent-color:var(--ink);vertical-align:middle;">
+      </td>
       <td style="font-weight:700;">${escHtml(item.modelName)}</td>
       <td style="text-align:right;">${item.currentQty}</td>
-      <td style="text-align:right; font-weight:700;">-${item.deductQty}</td>
-      <td style="text-align:right;" class="${afterClass}">${after}</td>
-      <td>${statusHtml}</td>
+      <td id="out-dqty-${i}" style="text-align:right; font-weight:700; cursor:pointer;" ondblclick="startEditQty(${i})" title="双击修改">-${item.deductQty}</td>
+      <td id="out-after-${i}" style="text-align:right;" class="${afterClass}">${after}</td>
+      <td id="out-stat-${i}">${statusHtml}</td>
     </tr>`;
   }).join('');
+  syncMasterCheck();
   const unmatchedDiv = document.getElementById('out-unmatched');
   if (outUnmatched.length) {
     unmatchedDiv.innerHTML = `<div style="background:#ffebee; border:1.5px solid #ef9a9a; border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:12px;">
@@ -1087,6 +1102,69 @@ function renderOutPreview() {
   } else {
     unmatchedDiv.innerHTML = '';
   }
+}
+
+function getCheckedState() {
+  return outPreviewItems.map((_, i) => {
+    const chk = document.getElementById('out-chk-' + i);
+    return chk ? chk.checked : true;
+  });
+}
+
+function toggleAllChecks(checked) {
+  outPreviewItems.forEach((_, i) => {
+    const chk = document.getElementById('out-chk-' + i);
+    const row = document.getElementById('out-row-' + i);
+    if (chk) { chk.checked = checked; }
+    if (row) row.style.opacity = checked ? '' : '.45';
+  });
+}
+
+function onRowCheck(i, checked) {
+  const row = document.getElementById('out-row-' + i);
+  if (row) row.style.opacity = checked ? '' : '.45';
+  syncMasterCheck();
+}
+
+function syncMasterCheck() {
+  const master = document.getElementById('out-chk-all');
+  if (!master) return;
+  const states = outPreviewItems.map((_, i) => {
+    const chk = document.getElementById('out-chk-' + i);
+    return chk ? chk.checked : true;
+  });
+  const all = states.every(Boolean);
+  const none = states.every(v => !v);
+  master.checked = all;
+  master.indeterminate = !all && !none;
+}
+
+function startEditQty(i) {
+  const cell = document.getElementById('out-dqty-' + i);
+  if (!cell || cell.querySelector('input')) return;
+  const cur = outPreviewItems[i].deductQty;
+  cell.innerHTML = `<input type="number" min="1" value="${cur}"
+    style="width:56px;padding:3px 5px;border:1.5px solid var(--ink);border-radius:4px;font-size:13px;font-weight:700;text-align:center;font-family:inherit;"
+    onblur="finishEditQty(${i}, this.value)"
+    onkeydown="if(event.key==='Enter'){this.blur();} if(event.key==='Escape'){cancelEditQty(${i});}"
+    onclick="event.stopPropagation()">`;
+  const input = cell.querySelector('input');
+  input.focus(); input.select();
+}
+
+function cancelEditQty(i) {
+  const cell = document.getElementById('out-dqty-' + i);
+  if (cell) cell.innerHTML = '-' + outPreviewItems[i].deductQty;
+}
+
+function finishEditQty(i, val) {
+  const qty = Math.max(1, parseInt(val) || 1);
+  const saved = getCheckedState();
+  outPreviewItems[i].deductQty = qty;
+  outPreviewItems[i].afterQty = outPreviewItems[i].currentQty - qty;
+  outPreviewItems[i].status = outPreviewItems[i].currentQty >= qty ? 'ok'
+    : (outPreviewItems[i].currentQty > 0 ? 'warn' : 'err');
+  renderOutPreview(saved);
 }
 
 function clearOutPreview() {
@@ -1101,11 +1179,15 @@ function clearOutPreview() {
 }
 
 function confirmOutbound() {
-  if (!outPreviewItems.length) { alert('没有可扣减的项目'); return; }
+  const toProcess = outPreviewItems.filter((_, i) => {
+    const chk = document.getElementById('out-chk-' + i);
+    return chk && chk.checked;
+  });
+  if (!toProcess.length) { alert('请至少勾选一个型号'); return; }
   const inv = loadInventory();
   if (!inv) { alert('⚠️ 加载库存失败'); return; }
   const results = [];
-  for (const item of outPreviewItems) {
+  for (const item of toProcess) {
     let remaining = item.deductQty;
     for (const zone of (inv.zones || [])) {
       for (const aisle of (zone.aisles || [])) {
