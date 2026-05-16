@@ -400,6 +400,20 @@ main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:58px;}
         </div>
         <div id="sh-credits-tx" style="font-size:11px;color:var(--muted);"></div>
       </div>
+      <!-- 记录 History row -->
+      <div class="set-row" onclick="shopTogglePay('history')">
+        <div class="sr-left">
+          <div class="sr-label">📋 记录 History</div>
+          <div class="sr-sub">充值 · 积分 · 兑换流水</div>
+        </div>
+        <div class="sr-right"><span class="arrow" id="sh-arr-history">›</span></div>
+      </div>
+      <div id="sh-panel-history" style="display:none;padding:12px;background:var(--bg);border-bottom:1px solid var(--line);">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">⭐ Z Credits 哲礼金</div>
+        <div id="sh-credits-history" style="font-size:11px;color:var(--muted);"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin:10px 0 6px;">💰 USD 余额</div>
+        <div id="sh-wallet-history" style="font-size:11px;color:var(--muted);"></div>
+      </div>
     </div>
 
     <!-- My Shop -->
@@ -1010,8 +1024,12 @@ async function loadWallet(){
       const date=new Date(tx.created_at).toLocaleDateString('zh-CN');
       return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);"><span>${esc(tx.description||tx.type)}</span><span style="font-weight:700;color:${sign==='+'?'var(--accent)':'var(--ink)'}">${sign}${amt}</span></div>`;
     };
-    if(el('sh-wallet-tx'))el('sh-wallet-tx').innerHTML=(d.wallet_transactions||[]).length?(d.wallet_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无记录</div>';
-    if(el('sh-credits-tx'))el('sh-credits-tx').innerHTML=(d.credit_transactions||[]).length?(d.credit_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无积分记录</div>';
+    const walTxHtml=(d.wallet_transactions||[]).length?(d.wallet_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无记录</div>';
+    const crTxHtml=(d.credit_transactions||[]).length?(d.credit_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无积分记录</div>';
+    if(el('sh-wallet-tx'))el('sh-wallet-tx').innerHTML=walTxHtml;
+    if(el('sh-credits-tx'))el('sh-credits-tx').innerHTML=crTxHtml;
+    if(el('sh-credits-history'))el('sh-credits-history').innerHTML=crTxHtml;
+    if(el('sh-wallet-history'))el('sh-wallet-history').innerHTML=walTxHtml;
     // Notifications
     const notifs=d.notifications||[];
     const newCnt=d.new_notifications||0;
@@ -1163,7 +1181,7 @@ async function shopDeleteCard(pmId){
   else toast('❌ '+(d.error||'至少保留一张，无法删除'));
 }
 function shopTogglePay(type){
-  ['card','wallet','credits'].forEach(t=>{
+  ['card','wallet','credits','history'].forEach(t=>{
     const p=document.getElementById('sh-panel-'+t);
     const a=document.getElementById('sh-arr-'+t);
     if(t===type){const open=p?.style.display!=='none';if(p)p.style.display=open?'none':'';if(a)a.textContent=open?'›':'˅';}

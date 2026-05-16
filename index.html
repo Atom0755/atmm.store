@@ -1983,6 +1983,21 @@
           </div>
           <div id="credit-tx-list" style="font-size:11px; color:var(--muted);"></div>
         </div>
+        <!-- 4. 记录 History -->
+        <div class="settings-nav-row" onclick="_togglePayPanel('history')">
+          <span class="snr-ico">📋</span>
+          <div class="snr-body">
+            <div class="snr-title">记录 History</div>
+            <div class="snr-sub">充值 · 积分 · 兑换流水</div>
+          </div>
+          <span class="snr-arr" id="pay-arr-history">›</span>
+        </div>
+        <div id="pay-panel-history" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
+          <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px;">⭐ Z Credits 哲礼金</div>
+          <div id="credits-history-list" style="font-size:11px; color:var(--muted);"></div>
+          <div style="font-size:11px; font-weight:700; color:var(--muted); margin:10px 0 6px;">💰 USD 余额</div>
+          <div id="wallet-history-list" style="font-size:11px; color:var(--muted);"></div>
+        </div>
         <!-- Subscription nav row (expandable) -->
         <div class="settings-nav-row" onclick="_toggleSubDetail()">
           <span class="snr-ico">📋</span>
@@ -8287,7 +8302,7 @@ function _copyCode() {
   navigator.clipboard.writeText(_warehouse?.code || '').then(() => toast('邀请码已复制'));
 }
 function _togglePayPanel(type) {
-  ['card','wallet','credits'].forEach(t => {
+  ['card','wallet','credits','history'].forEach(t => {
     const panel = document.getElementById(`pay-panel-${t}`);
     const arr   = document.getElementById(`pay-arr-${t}`);
     if (t === type) {
@@ -8554,12 +8569,18 @@ async function _loadWalletCredits() {
   };
   const walTxEl = document.getElementById('wallet-tx-list');
   const crTxEl  = document.getElementById('credit-tx-list');
-  if (walTxEl) walTxEl.innerHTML = (d.wallet_transactions||[]).length
-    ? (d.wallet_transactions.map(txFmt).join(''))
-    : '<div style="color:var(--muted);font-size:11px;">暂无记录</div>';
-  if (crTxEl) crTxEl.innerHTML = (d.credit_transactions||[]).length
+  const crHistEl  = document.getElementById('credits-history-list');
+  const walHistEl = document.getElementById('wallet-history-list');
+  const crTxHtml  = (d.credit_transactions||[]).length
     ? (d.credit_transactions.map(txFmt).join(''))
     : '<div style="color:var(--muted);font-size:11px;">暂无积分记录</div>';
+  const walTxHtml = (d.wallet_transactions||[]).length
+    ? (d.wallet_transactions.map(txFmt).join(''))
+    : '<div style="color:var(--muted);font-size:11px;">暂无记录</div>';
+  if (walTxEl)   walTxEl.innerHTML   = walTxHtml;
+  if (crTxEl)    crTxEl.innerHTML    = crTxHtml;
+  if (crHistEl)  crHistEl.innerHTML  = crTxHtml;
+  if (walHistEl) walHistEl.innerHTML = walTxHtml;
 }
 function _toggleSubDetail() {
   const panel = document.getElementById('sub-detail-panel');

@@ -86,6 +86,12 @@ module.exports = async function handler(req, res) {
     await sb.from('subscriptions').update({ stripe_customer_id: customerId }).eq('warehouse_id', warehouseId);
   }
 
+  // Sync customer ID to user_subscriptions (for cross-platform card visibility in ZEHEM.AI)
+  await sb.from('user_subscriptions').upsert(
+    { user_id: user.id, stripe_customer_id: customerId, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  ).catch(() => {}); // non-fatal
+
   // Try direct charge with saved card (bypasses Stripe Link / Checkout)
   let defaultPmId = null;
   try {
