@@ -1321,15 +1321,15 @@
         <input id="model-code-text" type="text" style="flex:1; padding:8px 10px; border:1.5px solid var(--ink); border-radius:8px; font-size:14px; font-weight:600; background:#fff8d6; font-family:inherit;">
         <button onclick="_saveModelCodeText()" style="flex-shrink:0; padding:8px 12px; background:var(--ink); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">保存</button>
       </div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-        <div style="flex:1; min-width:140px; text-align:center;">
+      <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:12px;">
+        <div style="text-align:center;">
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">二维码 QR Code</div>
           <div id="model-qr-container" style="display:inline-flex; padding:10px; background:#fff; border:1px solid var(--line); border-radius:8px; min-height:80px; align-items:center; justify-content:center;">
             <span style="font-size:11px; color:var(--muted);">生成中…</span>
           </div>
           <div><button onclick="_downloadModelCode('qr')" style="margin-top:6px; padding:5px 12px; font-size:11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); cursor:pointer; font-family:inherit;">⬇ 下载 PNG</button></div>
         </div>
-        <div style="flex:2; min-width:200px; text-align:center;">
+        <div style="border-top:1px solid var(--line); padding-top:14px; text-align:center;">
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">条形码 Barcode (Code 128)</div>
           <div style="background:#fff; padding:10px 8px; border:1px solid var(--line); border-radius:8px; overflow-x:auto;">
             <svg id="model-barcode-svg" style="display:block; margin:0 auto;"></svg>
