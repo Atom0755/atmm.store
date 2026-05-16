@@ -8386,6 +8386,7 @@ async function _openSettings() {
 
   // Load wallet & credits balances
   _loadWalletCredits();
+  _dailyGrantCredits();
 
   // Fetch profile info from profiles table (shared with zehem.ai)
   try {
@@ -8697,9 +8698,10 @@ async function _loadWalletCredits() {
     const amt  = tx.amount_cents !== undefined
       ? `$${(Math.abs(tx.amount_cents) / 100).toFixed(2)}`
       : `${Math.abs(tx.amount)} Credits`;
-    const date = new Date(tx.created_at).toLocaleDateString('zh-CN');
+    const rawDesc = tx.description || tx.type || '';
+    const desc = rawDesc === 'daily_grant' ? '每日登录赠送' : escapeHtml(rawDesc);
     return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);">
-      <span>${tx.description || tx.type}</span>
+      <span>${desc}</span>
       <span style="font-weight:700;color:${sign==='+' ? 'var(--red)' : 'var(--ink)'}">${sign}${amt}</span>
     </div>`;
   };
@@ -8717,6 +8719,24 @@ async function _loadWalletCredits() {
   if (crTxEl)    crTxEl.innerHTML    = crTxHtml;
   if (crHistEl)  crHistEl.innerHTML  = crTxHtml;
   if (walHistEl) walHistEl.innerHTML = walTxHtml;
+}
+async function _dailyGrantCredits() {
+  if (!_warehouse?.id) return;
+  const today = new Date().toISOString().split('T')[0];
+  const key = `atmm_dgz_${_warehouse.id}_${today}`;
+  if (localStorage.getItem(key)) return;
+  try {
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    if (!token) return;
+    const r = await fetch('/api/daily-credit-grant', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ warehouseId: _warehouse.id }),
+    });
+    const d = await r.json();
+    if (d.granted || d.reason === 'already_granted_today') localStorage.setItem(key, '1');
+    if (d.granted) _loadWalletCredits();
+  } catch (e) {}
 }
 function _toggleSubDetail() {
   const panel = document.getElementById('sub-detail-panel');

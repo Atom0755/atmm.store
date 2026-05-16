@@ -979,7 +979,7 @@ function updAuthUI(){
   if(user){
     btn.textContent='设置';
     if(whBtn)whBtn.style.display=whId?'':'none';
-    if(whId)loadWallet();
+    if(whId){loadWallet();_shopDailyGrant();}
     if(user.email===ADMIN_EMAIL)document.getElementById('admin-section').style.display='';
     _checkUserShop();
   }else{
@@ -1002,6 +1002,17 @@ async function _checkUserShop(){
     if(!hasShop&&selAdm)selAdm.style.display='none';
   }catch(e){}
 }
+async function _shopDailyGrant(){
+  if(!whId||!token)return;
+  const today=new Date().toISOString().split('T')[0];
+  const key=`atmm_dgz_${whId}_${today}`;
+  if(localStorage.getItem(key))return;
+  try{
+    const d=await api('/api/daily-credit-grant',{method:'POST',body:JSON.stringify({warehouseId:whId})});
+    if(d.granted||d.reason==='already_granted_today')localStorage.setItem(key,'1');
+    if(d.granted)loadWallet();
+  }catch(e){}
+}
 async function loadWallet(){
   if(!whId||!token)return;
   try{
@@ -1022,7 +1033,9 @@ async function loadWallet(){
       const sign=(tx.amount_cents!=null?tx.amount_cents:tx.amount)>0?'+':'';
       const amt=tx.amount_cents!=null?`$${(Math.abs(tx.amount_cents)/100).toFixed(2)}`:`${Math.abs(tx.amount)} Cr`;
       const date=new Date(tx.created_at).toLocaleDateString('zh-CN');
-      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);"><span>${esc(tx.description||tx.type)}</span><span style="font-weight:700;color:${sign==='+'?'var(--accent)':'var(--ink)'}">${sign}${amt}</span></div>`;
+      const rawDesc=tx.description||tx.type||'';
+      const desc=rawDesc==='daily_grant'?'每日登录赠送':esc(rawDesc);
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);"><span>${desc}</span><span style="font-weight:700;color:${sign==='+'?'var(--accent)':'var(--ink)'}">${sign}${amt}</span></div>`;
     };
     const walTxHtml=(d.wallet_transactions||[]).length?(d.wallet_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无记录</div>';
     const crTxHtml=(d.credit_transactions||[]).length?(d.credit_transactions.map(txFmt).join('')):'<div style="color:var(--muted);font-size:11px;">暂无积分记录</div>';
