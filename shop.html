@@ -979,7 +979,7 @@ function updAuthUI(){
   if(user){
     btn.textContent='设置';
     if(whBtn)whBtn.style.display=whId?'':'none';
-    if(whId){loadWallet();_shopDailyGrant();}
+    if(whId)loadWallet();
     if(user.email===ADMIN_EMAIL)document.getElementById('admin-section').style.display='';
     _checkUserShop();
   }else{

@@ -1,7 +1,14 @@
 {
   "functions": {
-    "api/*.js": { "memory": 128, "maxDuration": 10 }
+    "api/*.js": { "memory": 128, "maxDuration": 10 },
+    "api/cron-daily-grant.js": { "memory": 256, "maxDuration": 60 }
   },
+  "crons": [
+    {
+      "path": "/api/cron-daily-grant",
+      "schedule": "1 0 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/shop", "destination": "/shop.html" },
     { "source": "/models", "destination": "/models.html" },
