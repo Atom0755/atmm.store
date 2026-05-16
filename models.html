@@ -70,7 +70,7 @@
 <div class="toolbar" style="flex-wrap:wrap;gap:6px;">
   <button class="tbtn" style="flex-basis:100%;text-align:left;background:#f0fff4;border-color:#6ee7b7;color:#065f46;font-size:12px;" onclick="openImgUpload()">📷 批量上传型号图片 <span style="font-size:10px;font-weight:400;color:var(--muted);">（文件名命名为型号编码，自动匹配）</span></button>
   <input type="text" class="srch" id="srch" placeholder="🔍 搜索型号..." oninput="renderList()" style="flex:1;min-width:0;">
-  <button class="tbtn" onclick="exportTxt()">📤 导出</button>
+  <button class="tbtn" onclick="openExportModal()">📤 导出</button>
   <button class="tbtn" style="background:#f0f4ff;border-color:#93c5fd;color:#1e40af;" onclick="openPrint()">🖨️ 打印</button>
 </div>
 
@@ -111,6 +111,21 @@
       <button onclick="doPrint()" style="flex:2;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ 生成打印页</button>
       <button onclick="closePrint()" class="fdel" style="flex:1;background:var(--bg);border-color:var(--line);color:var(--muted);">取消</button>
     </div>
+  </div>
+</div>
+
+<!-- Export format modal -->
+<div class="back-drop" id="export-modal">
+  <div class="modal">
+    <h3>📤 选择导出格式</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">选择格式后会弹出「另存为」对话框（Chrome/Edge），可选保存路径。其他浏览器直接下载到默认路径。</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="doExport('txt')" style="text-align:left;padding:12px 16px;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;cursor:pointer;font-family:inherit;"><div style="font-weight:700;font-size:13px;">📄 TXT 文本</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">纯文本，每行一个型号名称</div></button>
+      <button onclick="doExport('csv')" style="text-align:left;padding:12px 16px;background:#f0f7ff;border:1.5px solid #93c5fd;border-radius:10px;cursor:pointer;font-family:inherit;"><div style="font-weight:700;font-size:13px;color:#1e40af;">📊 CSV 表格</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">含全部字段，可用 Excel / WPS 打开</div></button>
+      <button onclick="doExport('xlsx')" style="text-align:left;padding:12px 16px;background:#f0fff4;border:1.5px solid #6ee7b7;border-radius:10px;cursor:pointer;font-family:inherit;"><div style="font-weight:700;font-size:13px;color:#065f46;">📗 XLSX Excel 表格</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">标准 Excel 格式，含全部字段，可直接再上传导入</div></button>
+      <button onclick="doExport('json')" style="text-align:left;padding:12px 16px;background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;cursor:pointer;font-family:inherit;"><div style="font-weight:700;font-size:13px;color:#92400e;">🔧 JSON 数据</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">JSON 格式，含全部字段（开发者 / 备份用）</div></button>
+    </div>
+    <button onclick="closeExportModal()" style="width:100%;margin-top:14px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:700;cursor:pointer;font-family:inherit;">取消</button>
   </div>
 </div>
 
@@ -355,13 +370,63 @@ function doAdd() {
 }
 
 // ── Export ──
-function exportTxt() {
+function openExportModal() {
   if (!state.models.length) { toast('型号库为空'); return; }
-  const a = document.createElement('a');
-  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(state.models.map(m => m.name).join('\n'));
-  a.download = 'models-' + new Date().toISOString().slice(0,10) + '.txt';
-  a.click();
-  toast('已导出 ' + state.models.length + ' 个型号');
+  document.getElementById('export-modal').classList.add('on');
+}
+function closeExportModal() { document.getElementById('export-modal').classList.remove('on'); }
+
+async function doExport(fmt) {
+  closeExportModal();
+  const models = state.models.slice().sort((a,b) => a.name.localeCompare(b.name));
+  const date = new Date().toISOString().slice(0,10);
+  const filename = 'models-' + date;
+  if (fmt === 'txt') {
+    const blob = new Blob([models.map(m => m.name).join('\r\n')], {type:'text/plain;charset=utf-8'});
+    await _saveFile(filename + '.txt', blob, '.txt', 'text/plain');
+  } else if (fmt === 'csv') {
+    const hdr = ['型号名称','尺寸','重量','1箱换算','单位','自定义扫码内容'];
+    const rows = models.map(m => [m.name, m.dimensions||'', m.weight||'', m.boxToSetRatio||40, m.boxToSetUnit||'套', m.codeText||'']);
+    const csv = '﻿' + [hdr,...rows].map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    await _saveFile(filename + '.csv', new Blob([csv], {type:'text/csv;charset=utf-8'}), '.csv', 'text/csv');
+  } else if (fmt === 'json') {
+    const data = models.map(m => ({ name:m.name, dimensions:m.dimensions||'', weight:m.weight||'', boxToSetRatio:m.boxToSetRatio||40, boxToSetUnit:m.boxToSetUnit||'套', codeText:m.codeText||'' }));
+    await _saveFile(filename + '.json', new Blob([JSON.stringify(data,null,2)], {type:'application/json'}), '.json', 'application/json');
+  } else if (fmt === 'xlsx') {
+    await _exportXlsx(models, filename);
+  }
+}
+
+async function _saveFile(name, blob, ext, mime) {
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: ext.slice(1).toUpperCase()+' 文件', accept: {[mime]: [ext]} }] });
+      const w = await handle.createWritable();
+      await w.write(blob); await w.close();
+      toast('✅ 文件已保存');
+      return;
+    } catch(e) { if (e.name === 'AbortError') { toast('已取消'); return; } }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('✅ 已下载: ' + name);
+}
+
+async function _exportXlsx(models, filename) {
+  try {
+    if (!window.XLSX) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script'); s.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
+        s.onload = res; s.onerror = () => { const s2 = document.createElement('script'); s2.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'; s2.onload = res; s2.onerror = rej; document.head.appendChild(s2); };
+        document.head.appendChild(s);
+      });
+    }
+    const wb = window.XLSX.utils.book_new();
+    const rows = [['型号名称','尺寸','重量','1箱换算','单位','自定义扫码内容'], ...models.map(m => [m.name, m.dimensions||'', m.weight||'', m.boxToSetRatio||40, m.boxToSetUnit||'套', m.codeText||''])];
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(rows), '型号清单');
+    const buf = window.XLSX.write(wb, {type:'array', bookType:'xlsx'});
+    await _saveFile(filename + '.xlsx', new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  } catch(e) { toast('❌ XLSX 生成失败: ' + (e.message||'未知错误')); }
 }
 
 // ── Print select ──
