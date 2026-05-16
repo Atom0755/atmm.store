@@ -1331,8 +1331,8 @@
         </div>
         <div style="border-top:1px solid var(--line); padding-top:14px; text-align:center;">
           <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">条形码 Barcode (Code 128)</div>
-          <div style="background:#fff; padding:10px 8px; border:1px solid var(--line); border-radius:8px; overflow-x:auto;">
-            <svg id="model-barcode-svg" style="display:block; margin:0 auto;"></svg>
+          <div style="background:#fff; padding:10px 8px; border:1px solid var(--line); border-radius:8px; overflow:hidden;">
+            <svg id="model-barcode-svg" style="display:block; width:100%; height:auto;"></svg>
           </div>
           <div><button onclick="_downloadModelCode('bar')" style="margin-top:6px; padding:5px 12px; font-size:11px; border:1px solid var(--line); border-radius:6px; background:var(--bg); cursor:pointer; font-family:inherit;">⬇ 下载 PNG</button></div>
           <div id="barcode-note" style="font-size:10px; color:#b45309; margin-top:4px; line-height:1.4;"></div>
@@ -6470,6 +6470,7 @@ async function _renderModelCode() {
   const noteEl = document.getElementById('barcode-note');
   try {
     _jsBarcodeLib(svgEl, barTxt || 'NO-CODE', { format: 'CODE128', lineColor: '#1a1a1a', width: 2, height: 65, fontSize: 12, margin: 8, displayValue: true });
+    svgEl.style.width = '100%'; svgEl.style.height = 'auto';
     if (noteEl) noteEl.textContent = barTxt !== txt ? '⚠️ 条形码内容已自动截短为ASCII（可在上方自定义简短编码）' : '';
   } catch(e) {
     svgEl.innerHTML = '';
