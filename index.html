@@ -1412,7 +1412,7 @@
     <div class="sheet-body">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
         <h3 style="margin:0;">📋 型号库管理</h3>
-        <a href="/models" style="font-size:11px; font-weight:700; color:#2563eb; text-decoration:none; padding:4px 10px; border:1.5px solid #93c5fd; border-radius:6px; background:#f0f7ff; white-space:nowrap;">🗂 独立管理页</a>
+        <a href="/models" style="font-size:11px; font-weight:700; color:#1e40af; text-decoration:none; padding:4px 10px; border:1.5px solid #93c5fd; border-radius:6px; background:#f0f7ff; white-space:nowrap;">📋 当前型号清单 →</a>
       </div>
 
       <!-- Current models in library, with search -->
@@ -1422,23 +1422,7 @@
           <button id="lib-export" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:600;">📤 导出 TXT</button>
         </div>
         <input type="text" id="lib-search" placeholder="🔍 搜索型号库..." autocomplete="off" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; margin-bottom:6px; background:var(--paper); -webkit-user-select:text; user-select:text;">
-        <div id="lib-list" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: var(--paper); -webkit-overflow-scrolling: touch;"></div>
-      </div>
-
-      <!-- Current model snapshot table -->
-      <div style="margin-bottom:12px;">
-        <div style="display:flex; gap:0;">
-          <button onclick="_refreshModelSnapshot()" style="flex:1; display:flex; align-items:center; gap:6px; padding:8px 10px; background:#f0f7ff; border:1.5px solid #93c5fd; border-right:none; border-radius:8px 0 0 8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:#1e40af;">
-            <span>📋</span>
-            <span style="flex:1; text-align:left;">当前型号清单</span>
-            <span id="snapshot-date" style="font-weight:400; font-size:10px; color:#60a5fa;"></span>
-            <span style="font-size:10px; color:#60a5fa;">↻</span>
-          </button>
-          <button onclick="location.href='/models'" style="flex-shrink:0; padding:8px 12px; background:#fff8e1; border:1.5px solid #f59e0b; border-radius:0 8px 8px 0; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; color:#92400e;">✏️ 编辑</button>
-        </div>
-        <div id="model-snapshot-wrap" style="display:none; border:1.5px solid #93c5fd; border-top:none; border-radius:0 0 8px 8px; overflow:hidden; background:var(--paper);">
-          <div id="model-snapshot-inner" style="max-height:220px; overflow-y:auto; font-size:12px;"></div>
-        </div>
+        <div id="lib-list" style="max-height: 96px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: var(--paper); -webkit-overflow-scrolling: touch;"></div>
       </div>
 
       <!-- Upload sources -->
