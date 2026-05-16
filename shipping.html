@@ -396,35 +396,36 @@
 <!-- ═══════════════════════════════════════════════════ -->
 <div class="panel" id="panel-outbound">
 
-  <div style="background:#f0fff4; border:2px solid #6ee7b7; border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
-    <div style="font-size:30px; margin-bottom:6px;">📤</div>
-    <h2 style="font-size:17px; font-weight:900; margin-bottom:5px;">出货扣库存</h2>
-    <p style="font-size:12px; color:var(--muted); line-height:1.6;">上传发货 CSV 或手动录入型号数量，<br>系统自动从货架库存中扣除。</p>
+  <div style="background:#f0fff4; border:1.5px solid #6ee7b7; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:10px;">
+    <span style="font-size:24px; flex-shrink:0;">📤</span>
+    <div>
+      <div style="font-size:15px; font-weight:900;">出货扣库存</div>
+      <div style="font-size:11px; color:var(--muted); margin-top:2px;">上传 CSV 或手动录入，自动从货架库存扣减</div>
+    </div>
   </div>
 
-  <div class="out-method-grid">
-    <div class="out-method-card selected" id="mc-csv" onclick="switchOutMethod('csv')">
-      <span class="ico">📄</span>
+  <div class="out-method-grid" style="gap:8px; margin-bottom:12px;">
+    <div class="out-method-card selected" id="mc-csv" onclick="switchOutMethod('csv')" style="padding:10px 8px;">
+      <span class="ico" style="font-size:20px; margin-bottom:4px;">📄</span>
       <h4>CSV 导入</h4>
-      <p>上传 ShipStation / Veeqo 发货明细</p>
+      <p style="font-size:10px;">ShipStation / Veeqo</p>
     </div>
-    <div class="out-method-card" id="mc-manual" onclick="switchOutMethod('manual')">
-      <span class="ico">✏️</span>
+    <div class="out-method-card" id="mc-manual" onclick="switchOutMethod('manual')" style="padding:10px 8px;">
+      <span class="ico" style="font-size:20px; margin-bottom:4px;">✏️</span>
       <h4>手动录入</h4>
-      <p>搜索型号逐条输入出货数量</p>
+      <p style="font-size:10px;">搜索型号输入数量</p>
     </div>
   </div>
 
   <!-- CSV 方式 -->
   <div id="out-csv-section">
-    <div class="format-hint">
-      <b>支持格式：</b>ShipStation · Veeqo · 或任意含 SKU + 数量列的 CSV<br>
-      <b>自动识别列名：</b><code>Item SKU</code> / <code>SKU</code> / <code>Item Name</code> · <code>Quantity</code> / <code>Qty</code>
+    <div class="format-hint" style="padding:7px 10px; font-size:11px; margin-bottom:10px;">
+      <b>自动识别列名：</b><code>Item SKU</code> / <code>SKU</code> / <code>Name</code> &nbsp;+&nbsp; <code>Quantity</code> / <code>Qty</code>
     </div>
-    <div class="import-zone" id="out-drop-zone" ondragover="outDragOver(event)" ondragleave="outDragLeave(event)" ondrop="outDrop(event)">
-      <h3>拖拽出货 CSV 到这里</h3>
-      <p>支持 ShipStation / Veeqo / 任意含 SKU+数量的 CSV</p>
-      <div class="import-btns">
+    <div class="import-zone" id="out-drop-zone" ondragover="outDragOver(event)" ondragleave="outDragLeave(event)" ondrop="outDrop(event)" style="padding:16px 14px; margin-bottom:10px;">
+      <h3 style="font-size:14px; margin-bottom:4px;">拖拽出货 CSV 到这里</h3>
+      <p style="font-size:11px;">或点击选择文件 / 粘贴内容</p>
+      <div class="import-btns" style="margin-top:10px; gap:6px;">
         <button class="btn primary" onclick="document.getElementById('out-file-input').click()">📂 选择 CSV 文件</button>
         <button class="btn" onclick="showOutPaste()">📋 粘贴内容</button>
       </div>
