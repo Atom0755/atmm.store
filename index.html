@@ -153,6 +153,18 @@
   .meta-save-btn:active { transform: scale(0.94); background: #b8232f; }
   .meta-fill-btn { flex-shrink:0; background:#1a73e8; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:0.02em; white-space:nowrap; }
   .meta-fill-btn:active { transform:scale(0.94); background:#1558b0; }
+  .color-alert-btns { display:flex; gap:5px; flex-shrink:0; }
+  .color-alert-btn { border:none; border-radius:20px; padding:4px 9px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:2px; transition:transform .12s, opacity .15s; white-space:nowrap; }
+  .color-alert-btn:active { transform:scale(0.88); }
+  .color-alert-btn[data-alert-color="red"] { background:#ffe0e0; color:var(--red); }
+  .color-alert-btn[data-alert-color="yellow"] { background:#fffad0; color:#8a6000; }
+  .color-alert-btn.no-items { opacity:0.28; pointer-events:none; }
+  /* color-alert modal */
+  #color-alert-sheet .cal-item { display:flex; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); gap:8px; }
+  #color-alert-sheet .cal-item:last-child { border-bottom:none; }
+  #color-alert-sheet .cal-model { font-size:12px; font-weight:700; color:var(--ink); }
+  #color-alert-sheet .cal-loc { font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; margin-top:1px; }
+  #color-alert-sheet .cal-qty { font-size:13px; font-weight:700; white-space:nowrap; }
 
   /* Import mode checkboxes */
   .import-mode-list { display:flex; flex-direction:column; gap:6px; }
@@ -1217,7 +1229,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2260,7 +2272,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.8</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-16</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>每个区域标题行新增 🔴无货 / 🟡少量 快捷按钮，显示本区该状态型号数量</li>
+            <li>点击按钮弹窗查看完整型号清单（含库位编号、存货数量和单位）</li>
+            <li>弹窗内支持一键导出 TXT / CSV / JSON 三种格式（可选保存路径）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.8</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-16</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2664,6 +2688,29 @@
   </div>
 </div>
 
+<!-- Color Alert Sheet: 无货(red) / 少量(yellow) 型号清单 -->
+<div class="sheet-backdrop modal-top" id="color-alert-sheet" style="z-index:500;">
+  <div class="sheet" style="display:flex; flex-direction:column; max-height:82vh;">
+    <!-- Header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid var(--line); flex-shrink:0;">
+      <div>
+        <div id="color-alert-title" style="font-size:15px; font-weight:800; color:var(--ink);"></div>
+        <div id="color-alert-count" style="font-size:11px; color:var(--muted); margin-top:2px;"></div>
+      </div>
+      <button onclick="hideSheets()" style="border:none; background:none; font-size:18px; cursor:pointer; padding:2px 6px; color:var(--muted); line-height:1;">✕</button>
+    </div>
+    <!-- List -->
+    <div id="color-alert-list" style="overflow-y:auto; flex:1; padding:0 16px;"></div>
+    <!-- Export bar -->
+    <div style="padding:10px 16px; border-top:1px solid var(--line); flex-shrink:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <span style="font-size:11px; font-weight:700; color:var(--muted);">导出清单：</span>
+      <button onclick="_exportColorAlert('txt')" style="flex:1; min-width:60px; padding:8px 6px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">📄 TXT</button>
+      <button onclick="_exportColorAlert('csv')" style="flex:1; min-width:60px; padding:8px 6px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">📊 CSV</button>
+      <button onclick="_exportColorAlert('json')" style="flex:1; min-width:60px; padding:8px 6px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">🗂️ JSON</button>
+    </div>
+  </div>
+</div>
+
 <!-- Plan QR code sheet -->
 <div class="sheet-backdrop modal-style" id="plan-qr-sheet">
   <div class="sheet" style="max-height:88vh;">
@@ -3052,6 +3099,24 @@ function renderMetaBars() {
     if (fillerInp && document.activeElement !== fillerInp) fillerInp.value = z.filler || '';
     if (dateInp   && document.activeElement !== dateInp)   dateInp.value   = z.date   || '';
     if (titleEl   && titleEl.contentEditable !== 'true')   titleEl.textContent = z.name;
+    // Update color-alert button counts
+    const ck = z.type === 'shelf' ? 'shelves' : 'pallets';
+    const sk = z.type === 'shelf' ? 'slots' : 'layers';
+    let redCnt = 0, yellowCnt = 0;
+    for (const a of (z.aisles||[])) for (const c of (a[ck]||[])) for (const s of (c[sk]||[])) {
+      if (!s.modelId) continue;
+      if (s.color === 'red') redCnt++;
+      else if (s.color === 'yellow') yellowCnt++;
+      for (const sm of (s.subModels||[])) {
+        if (!sm.modelId) continue;
+        if (sm.color === 'red') redCnt++;
+        else if (sm.color === 'yellow') yellowCnt++;
+      }
+    }
+    const redBtn    = document.querySelector(`.color-alert-btn[data-alert-zone="${z.id}"][data-alert-color="red"]`);
+    const yellowBtn = document.querySelector(`.color-alert-btn[data-alert-zone="${z.id}"][data-alert-color="yellow"]`);
+    if (redBtn)    { redBtn.querySelector('.cal-cnt').textContent = redCnt;       redBtn.classList.toggle('no-items', redCnt === 0); }
+    if (yellowBtn) { yellowBtn.querySelector('.cal-cnt').textContent = yellowCnt; yellowBtn.classList.toggle('no-items', yellowCnt === 0); }
   });
 }
 
@@ -3065,6 +3130,8 @@ document.getElementById('main-panes').addEventListener('input', e => {
 document.getElementById('main-panes').addEventListener('click', e => {
   const fillBtn = e.target.closest('[data-fill-wizard]');
   if (fillBtn) { e.preventDefault(); e.stopPropagation(); _startFillWizard(fillBtn.dataset.fillWizard); return; }
+  const alertBtn = e.target.closest('[data-alert-zone][data-alert-color]');
+  if (alertBtn) { e.preventDefault(); e.stopPropagation(); _openColorAlert(alertBtn.dataset.alertZone, alertBtn.dataset.alertColor); return; }
   const btn = e.target.closest('[data-meta-save]');
   if (!btn) return;
   e.preventDefault(); e.stopPropagation();
@@ -7088,6 +7155,78 @@ function downloadCSV() {
   triggerDownload(makeCsvBlob(), `inventory-${dateStamp()}.csv`); toast('已下载 CSV');
 }
 
+// ── Color Alert: 无货/少量 型号清单弹窗 ───────────────────────────────────────
+let _calData = { zone: null, color: null, items: [] };
+
+function _openColorAlert(zoneId, color) {
+  const zone = state.zones.find(z => z.id === zoneId);
+  if (!zone) return;
+  const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+  const sk = zone.type === 'shelf' ? 'slots' : 'layers';
+  const items = [];
+  zone.aisles.forEach((aisle, ai) => {
+    (aisle[ck] || []).forEach((container, ci) => {
+      (container[sk] || []).forEach((slot, si) => {
+        if (!slot.modelId) return;
+        const locCode = makeLocationCode(zoneId, ai, ci, si);
+        const modelName = (state.models.find(m => m.id === slot.modelId) || {}).name || slot.modelId;
+        if (slot.color === color) items.push({ model: modelName, qty: slot.qty || 0, unit: slot.unit || '', loc: locCode });
+        (slot.subModels || []).forEach((sm, smi) => {
+          if (!sm.modelId || sm.color !== color) return;
+          const smName = (state.models.find(m => m.id === sm.modelId) || {}).name || sm.modelId;
+          items.push({ model: smName, qty: sm.qty || 0, unit: sm.unit || '', loc: locCode + '+' + (smi + 1) });
+        });
+      });
+    });
+  });
+  _calData = { zone, color, items };
+
+  const isRed = color === 'red';
+  const colorLabel = isRed ? '🔴 无货型号' : '🟡 少量存货型号';
+  const qtyColor   = isRed ? 'var(--red)' : '#8a6000';
+  document.getElementById('color-alert-title').textContent = zone.name + ' — ' + colorLabel;
+  document.getElementById('color-alert-count').textContent = items.length ? `共 ${items.length} 个型号` : '本区暂无此状态型号';
+
+  const listEl = document.getElementById('color-alert-list');
+  if (!items.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;">暂无${isRed ? '无货' : '少量存货'}型号 ✅</div>`;
+  } else {
+    listEl.innerHTML = items.map(item => `
+      <div class="cal-item">
+        <div style="flex:1;min-width:0;">
+          <div class="cal-model">${escapeHtml(item.model)}</div>
+          <div class="cal-loc">${escapeHtml(item.loc)}</div>
+        </div>
+        <div class="cal-qty" style="color:${qtyColor};">${item.qty}${item.unit ? ' ' + escapeHtml(item.unit) : ''}</div>
+      </div>`).join('');
+  }
+  showSheet('color-alert-sheet');
+}
+
+function _exportColorAlert(format) {
+  const { zone, color, items } = _calData;
+  if (!zone) return;
+  const colorLabel = color === 'red' ? '无货' : '少量存货';
+  const stamp = dateStamp();
+  const filename = `${zone.name}-${colorLabel}-${stamp}`;
+  let blob;
+  if (format === 'json') {
+    blob = new Blob([JSON.stringify({ zone: zone.name, filter: colorLabel, exported: stamp, items }, null, 2)], { type: 'application/json' });
+    triggerDownload(blob, filename + '.json');
+  } else if (format === 'csv') {
+    const rows = [['型号', '数量', '单位', '库位编号'], ...items.map(i => [i.model, i.qty, i.unit, i.loc])];
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    triggerDownload(blob, filename + '.csv');
+  } else {
+    const header = `${zone.name} — ${colorLabel}\n日期：${stamp}\n共 ${items.length} 个型号\n${'─'.repeat(36)}`;
+    const body = items.map(i => `${(i.loc).padEnd(18)}${i.model}  ${i.qty}${i.unit}`).join('\n');
+    blob = new Blob([header + '\n' + body], { type: 'text/plain;charset=utf-8' });
+    triggerDownload(blob, filename + '.txt');
+  }
+  toast('✅ 已下载 ' + format.toUpperCase());
+}
+
 // SHARE TO WECHAT — uses Web Share API (system share sheet, includes WeChat if installed)
 async function shareToWeChat() {
   const summary = buildExportSummaryText();
@@ -7512,6 +7651,10 @@ function renderPanes() {
         <div class="meta-bar">
           <div class="meta-title-row">
             <div class="meta-title editable" data-meta-title="${z.id}">${escapeHtml(z.name)}</div>
+            <div class="color-alert-btns">
+              <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="red">🔴 <span class="cal-cnt">0</span></button>
+              <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="yellow">🟡 <span class="cal-cnt">0</span></button>
+            </div>
             <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 批量填型号</button>
           </div>
           <div class="meta-fields">
