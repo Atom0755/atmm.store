@@ -1,22 +1,33 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
-async function creditWallet(sb, warehouseId, topupCents, paymentIntentId) {
+async function creditWallet(sb, userId, warehouseId, topupCents, paymentIntentId) {
+  // Idempotency: check warehouse_transactions for this payment_intent
   const { data: existing } = await sb.from('warehouse_transactions')
     .select('id').eq('stripe_payment_intent_id', paymentIntentId).maybeSingle();
-  if (existing) return; // idempotency — already credited
+  if (existing) return;
 
-  const { data: walletRow } = await sb.from('wallets')
-    .select('id, balance_cents').eq('warehouse_id', warehouseId).maybeSingle();
-  const current = walletRow?.balance_cents ?? 0;
-  if (walletRow?.id) {
-    await sb.from('wallets')
-      .update({ balance_cents: current + topupCents, updated_at: new Date().toISOString() })
-      .eq('id', walletRow.id);
+  // Credit user_wallets (unified across all platforms)
+  const { data: wRow } = await sb.from('user_wallets')
+    .select('balance_cents').eq('user_id', userId).maybeSingle();
+  const cur = wRow?.balance_cents ?? 0;
+  if (wRow) {
+    await sb.from('user_wallets')
+      .update({ balance_cents: cur + topupCents, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
   } else {
-    await sb.from('wallets')
-      .insert({ warehouse_id: warehouseId, balance_cents: current + topupCents, updated_at: new Date().toISOString() });
+    await sb.from('user_wallets')
+      .insert({ user_id: userId, balance_cents: cur + topupCents, updated_at: new Date().toISOString() });
   }
+
+  // Record in wallet_transactions (user-based history, shared across platforms)
+  await sb.from('wallet_transactions').insert({
+    user_id: userId,
+    amount_cents: topupCents,
+    description: `钱包充值 $${(topupCents / 100).toFixed(2)}`,
+  });
+
+  // Record in warehouse_transactions for idempotency + audit trail
   await sb.from('warehouse_transactions').insert({
     warehouse_id: warehouseId,
     type: 'topup',
@@ -50,9 +61,10 @@ module.exports = async function handler(req, res) {
     const session = event.data.object;
     if (session.metadata?.type === 'wallet_topup') {
       const warehouseId = session.metadata.warehouse_id;
+      const userId      = session.metadata.user_id;
       const topupCents  = parseInt(session.metadata.topup_cents, 10);
-      if (warehouseId && topupCents > 0) {
-        await creditWallet(sb, warehouseId, topupCents, session.payment_intent);
+      if (warehouseId && userId && topupCents > 0) {
+        await creditWallet(sb, userId, warehouseId, topupCents, session.payment_intent);
       }
     }
   }
@@ -62,9 +74,10 @@ module.exports = async function handler(req, res) {
     const pi = event.data.object;
     if (pi.metadata?.type === 'wallet_topup') {
       const warehouseId = pi.metadata.warehouse_id;
+      const userId      = pi.metadata.user_id;
       const topupCents  = parseInt(pi.metadata.topup_cents, 10);
-      if (warehouseId && topupCents > 0) {
-        await creditWallet(sb, warehouseId, topupCents, pi.id);
+      if (warehouseId && userId && topupCents > 0) {
+        await creditWallet(sb, userId, warehouseId, topupCents, pi.id);
       }
     }
   }
