@@ -1217,7 +1217,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1957,15 +1957,15 @@
         <div class="settings-nav-row" onclick="_togglePayPanel('credits')">
           <span class="snr-ico">⭐</span>
           <div class="snr-body">
-            <div class="snr-title">Credits 积分</div>
-            <div class="snr-sub" id="settings-credits-display">0 Credits</div>
+            <div class="snr-title">Z Credits 哲礼金</div>
+            <div class="snr-sub" id="settings-credits-display">0 Z Credits</div>
           </div>
           <span class="snr-arr" id="pay-arr-credits">›</span>
         </div>
         <div id="pay-panel-credits" style="display:none; padding:12px; background:var(--bg); border-radius:10px; border:1.5px solid var(--line); margin-bottom:8px;">
           <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
             <span style="font-size:22px; font-weight:800;" id="credits-balance-big">0</span>
-            <span style="font-size:11px; color:var(--muted);">Credits</span>
+            <span style="font-size:11px; color:var(--muted);">Z Credits</span>
             <span style="font-size:11px; color:var(--muted);" id="credits-dollar-equiv"></span>
           </div>
           <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">汇率：$10 = 120 Credits（约 $0.083/Credit）</div>
@@ -2245,7 +2245,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.7</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-16</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>积分名称统一为「Z Credits 哲礼金」（与 ZEHEM.AI 三处一致）</li>
+            <li>每日登录自动赠送 +1 Z Credit，注册之日起每天到账</li>
+            <li>新用户数字编号从 0000010001 起（五位数格式，旧四位数编号保留）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.7</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-16</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -7972,6 +7984,14 @@ function _pulseLoginBtn() {
 async function _onSignIn(user) {
   _user = user;
 
+  // Daily +1 Z Credit grant (fire-and-forget)
+  sb.auth.getSession().then(({data:{session:_s}})=>{
+    if(_s?.access_token) fetch('https://vkwndhdqbmuyogieccph.supabase.co/functions/v1/zehem-daily-grant',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+_s.access_token,apikey:_SUPA_ANON}
+    }).then(r=>r.json()).then(d=>{if(d.granted)setTimeout(_loadWalletCredits,1200);}).catch(()=>{});
+  }).catch(()=>{});
+
   // Check URL for invite params (when boss invited an existing user)
   const params = new URLSearchParams(location.search);
   const invWh   = params.get('invite_warehouse') || _inviteWarehouseId;
@@ -8469,7 +8489,7 @@ async function _loadWalletCredits() {
   const crDolEl = document.getElementById('credits-dollar-equiv');
   if (walEl1) walEl1.textContent = `余额 $${walDollars}`;
   if (walEl2) walEl2.textContent = `$${walDollars}`;
-  if (crEl1)  crEl1.textContent  = `${creds} Credits`;
+  if (crEl1)  crEl1.textContent  = `${creds} Z Credits`;
   if (crEl2)  crEl2.textContent  = creds;
   if (crDolEl) crDolEl.textContent = creds > 0 ? `≈ $${(creds / 12).toFixed(2)}` : '';
 
