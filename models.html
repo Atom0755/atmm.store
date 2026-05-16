@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>型号库管理 · ATMM.store</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>📋</text></svg>">
+  <style>
+    :root { --green:#2e7d52; --red:#c0392b; --ink:#1a1a1a; --muted:#888; --bg:#f4f5f7; --paper:#fff; --line:#e5e7eb; --blue:#1a73e8; }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100dvh;}
+    /* Header */
+    .hdr{background:var(--blue);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+    .back{background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;}
+    .htitle{flex:1;font-size:15px;font-weight:800;}
+    .hcount{font-size:11px;opacity:.8;flex-shrink:0;}
+    .hadd{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
+    /* Toolbar */
+    .toolbar{background:var(--paper);border-bottom:1px solid var(--line);padding:9px 14px;display:flex;gap:8px;align-items:center;position:sticky;top:57px;z-index:90;}
+    .srch{flex:1;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--bg);font-family:inherit;}
+    .srch:focus{outline:none;border-color:var(--blue);}
+    .tbtn{flex-shrink:0;padding:7px 11px;border:1px solid var(--line);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;background:var(--paper);white-space:nowrap;font-family:inherit;}
+    /* List */
+    .mlist{padding:8px;display:flex;flex-direction:column;gap:4px;}
+    .mitem{background:var(--paper);border-radius:8px;border:1px solid var(--line);overflow:hidden;}
+    .mrow{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;}
+    .mnum{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;min-width:22px;}
+    .mname{flex:1;font-size:12px;font-weight:600;color:var(--ink);word-break:break-word;line-height:1.3;}
+    .mmeta{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+    .marr{color:var(--muted);font-size:11px;flex-shrink:0;transition:transform .2s;}
+    .mitem.open .marr{transform:rotate(90deg);}
+    .mitem.open .mrow{background:#f0f7ff;}
+    /* Edit form */
+    .eform{padding:12px 14px;background:#f8faff;border-top:1px solid #dbeafe;}
+    .frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+    .frow.full{grid-template-columns:1fr;}
+    .flabel{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;display:block;}
+    .finput{width:100%;padding:7px 9px;border:1.5px solid var(--line);border-radius:7px;font-size:12px;font-family:inherit;background:#fff;}
+    .finput:focus{outline:none;border-color:var(--blue);}
+    .faction{display:flex;gap:8px;margin-top:10px;}
+    .fsave{flex:2;padding:9px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .fcode{flex:1;padding:9px;background:#f0f4ff;color:#2563eb;border:1px solid #93c5fd;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .fdel{flex:1;padding:9px;background:#ffe5e5;color:var(--red);border:1px solid var(--red);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+    /* Toast */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;max-width:85vw;text-align:center;}
+    .toast.on{opacity:1;}
+    /* Loading */
+    .loading{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+    /* Dim backdrop */
+    .back-drop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:center;padding:60px 16px 20px;}
+    .back-drop.on{display:flex;}
+    .modal{background:var(--paper);border-radius:14px;width:100%;max-width:480px;padding:20px;}
+    .modal h3{font-size:16px;font-weight:800;margin-bottom:14px;}
+    /* Code sheet */
+    .code-view{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+    .code-img-box{text-align:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;min-height:80px;display:flex;align-items:center;justify-content:center;}
+    .save-ind{font-size:10px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;}
+    .save-ind.on{opacity:1;}
+  </style>
+</head>
+<body>
+<header class="hdr">
+  <button class="back" onclick="location.href='/'">← 仓管</button>
+  <div class="htitle">📋 型号库管理</div>
+  <span class="save-ind" id="save-ind">✓ 已保存</span>
+  <div class="hcount" id="page-count">—</div>
+  <button class="hadd" onclick="openAdd()">+ 添加</button>
+</header>
+
+<div class="toolbar">
+  <input type="text" class="srch" id="srch" placeholder="🔍 搜索型号..." oninput="renderList()">
+  <button class="tbtn" onclick="exportTxt()">📤 导出</button>
+  <button class="tbtn" style="background:#f0f4ff;border-color:#93c5fd;color:#1e40af;" onclick="openPrint()">🖨️ 打印</button>
+</div>
+
+<div id="mlist" class="mlist"><div class="loading">加载中...</div></div>
+<div class="toast" id="toast"></div>
+
+<!-- Add modal -->
+<div class="back-drop" id="add-modal">
+  <div class="modal">
+    <h3>+ 添加新型号</h3>
+    <div style="margin-bottom:10px;">
+      <div class="flabel">型号名称</div>
+      <input type="text" id="add-name" class="finput" placeholder="输入完整型号名称...">
+    </div>
+    <div class="frow" style="margin-bottom:0;">
+      <div><div class="flabel">1箱换算</div><input type="number" id="add-ratio" class="finput" value="40" min="1"></div>
+      <div><div class="flabel">单位</div><input type="text" id="add-unit" class="finput" value="套"></div>
+    </div>
+    <div class="faction" style="margin-top:14px;">
+      <button onclick="doAdd()" class="fsave" style="flex:2;">✅ 添加到型号库</button>
+      <button onclick="closeAdd()" class="fdel" style="flex:1;background:var(--bg);border-color:var(--line);color:var(--muted);">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print select modal -->
+<div class="back-drop" id="print-modal">
+  <div class="modal" style="max-height:85vh;display:flex;flex-direction:column;">
+    <h3>🖨️ 选择打印范围</h3>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button onclick="selAll(true)" class="tbtn">全选</button>
+      <button onclick="selAll(false)" class="tbtn">取消</button>
+      <span id="sel-count" style="font-size:11px;color:var(--muted);margin-left:auto;align-self:center;"></span>
+    </div>
+    <input type="text" class="srch" id="psrch" placeholder="🔍 搜索..." oninput="renderPrintList()" style="margin-bottom:8px;">
+    <div id="plist" style="flex:1;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--paper);min-height:200px;max-height:50vh;"></div>
+    <div class="faction" style="margin-top:12px;">
+      <button onclick="doPrint()" style="flex:2;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ 生成打印页</button>
+      <button onclick="closePrint()" class="fdel" style="flex:1;background:var(--bg);border-color:var(--line);color:var(--muted);">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const _SUPA_URL  = 'https://vkwndhdqbmuyogieccph.supabase.co';
+const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrd25kaGRxYm11eW9naWVjY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDg2NzcsImV4cCI6MjA4MTkyNDY3N30.Q2Kf4rzJWJdWnYjpLRofmGUp6DNWBgFoDkFJ4yr473k';
+
+let state = { models: [], zones: [] };
+let _expandId = null;
+let _sb = null, _user = null, _warehouse = null;
+let _saveTimer = null, _saveIndTimer = null;
+let _printIds = new Set();
+
+// ── State ──
+function loadState() {
+  try {
+    const raw = localStorage.getItem('inventoryV3');
+    if (raw) { const p = JSON.parse(raw); if (p.models) { state = p; migrate(); } }
+  } catch(e) {}
+}
+function migrate() {
+  state.models?.forEach(m => {
+    if (!m.boxToSetRatio || m.boxToSetRatio === 1) m.boxToSetRatio = 40;
+    if (!m.boxToSetUnit) m.boxToSetUnit = '套';
+  });
+}
+function saveState() {
+  try { localStorage.setItem('inventoryV3', JSON.stringify(state)); } catch(e) {}
+  const ind = document.getElementById('save-ind');
+  if (ind) { ind.classList.add('on'); clearTimeout(_saveIndTimer); _saveIndTimer = setTimeout(() => ind.classList.remove('on'), 1500); }
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(cloudSave, 2500);
+}
+async function cloudSave() {
+  if (!_sb || !_warehouse) return;
+  try {
+    const zSB = state.zones?.find(z => z.id === 'shelfBlack');
+    const zSW = state.zones?.find(z => z.id === 'shelfWhite');
+    const zPL = state.zones?.find(z => z.id === 'pallet');
+    await _sb.from('warehouse_state').upsert({
+      warehouse_id: _warehouse.id,
+      models: state.models,
+      shelf_black_table: zSB ? { aisles: zSB.aisles } : null,
+      shelf_white_table: zSW ? { aisles: zSW.aisles } : null,
+      pallet_table: zPL ? { aisles: zPL.aisles } : null,
+      meta: { zones: state.zones },
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'warehouse_id' });
+  } catch(e) { console.warn('Cloud save failed:', e); }
+}
+
+// ── Supabase init ──
+async function initSb() {
+  try {
+    _sb = window.supabase.createClient(_SUPA_URL, _SUPA_ANON);
+    const { data: { user } } = await _sb.auth.getUser();
+    _user = user;
+    if (!_user) { toast('请先登录主仓管页面', 4000); setTimeout(() => location.href = '/', 4500); return; }
+    const { data } = await _sb.from('warehouse_members')
+      .select('role, warehouse_id, warehouses(*)')
+      .eq('user_id', _user.id).limit(1).single();
+    if (data?.warehouses) _warehouse = data.warehouses;
+  } catch(e) { console.warn('Supabase init:', e); }
+}
+
+// ── Render ──
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderList() {
+  const q = (document.getElementById('srch')?.value || '').toLowerCase().trim();
+  const el = document.getElementById('mlist');
+  const sorted = state.models.slice().sort((a,b) => a.name.localeCompare(b.name));
+  const filtered = q ? sorted.filter(m => m.name.toLowerCase().includes(q)) : sorted;
+  document.getElementById('page-count').textContent = state.models.length + ' 个型号';
+  if (!filtered.length) {
+    el.innerHTML = '<div class="loading">' + (q ? '没有匹配的型号' : '型号库为空，点击右上角 + 添加') + '</div>';
+    return;
+  }
+  el.innerHTML = filtered.map((m, i) => {
+    const isOpen = _expandId === m.id;
+    const dimBadge = m.dimensions ? ` <span style="font-size:9px;color:var(--muted);font-weight:400;">📐${esc(m.dimensions)}</span>` : '';
+    return `<div class="mitem${isOpen?' open':''}" id="mi-${m.id}">
+      <div class="mrow" onclick="toggleEx('${m.id}')">
+        <span class="mnum">${i+1}</span>
+        <div class="mname">${esc(m.name)}${dimBadge}</div>
+        <span class="mmeta">1箱=${m.boxToSetRatio||40}${esc(m.boxToSetUnit||'套')}</span>
+        <span class="marr">▶</span>
+      </div>
+      ${isOpen ? buildForm(m) : ''}
+    </div>`;
+  }).join('');
+}
+
+function buildForm(m) {
+  return `<div class="eform">
+    <div class="frow full" style="margin-bottom:8px;">
+      <div><span class="flabel">型号名称</span>
+        <input class="finput" id="f-name-${m.id}" type="text" value="${esc(m.name)}"></div>
+    </div>
+    <div class="frow">
+      <div><span class="flabel">尺寸</span><input class="finput" id="f-dim-${m.id}" type="text" value="${esc(m.dimensions||'')}" placeholder="如 110×22×6cm"></div>
+      <div><span class="flabel">重量</span><input class="finput" id="f-weight-${m.id}" type="text" value="${esc(m.weight||'')}" placeholder="如 2.5kg"></div>
+    </div>
+    <div class="frow">
+      <div><span class="flabel">1箱换算</span><input class="finput" id="f-ratio-${m.id}" type="number" value="${m.boxToSetRatio||40}" min="1"></div>
+      <div><span class="flabel">单位</span><input class="finput" id="f-unit-${m.id}" type="text" value="${esc(m.boxToSetUnit||'套')}"></div>
+    </div>
+    <div class="frow full" style="margin-bottom:0;">
+      <div><span class="flabel">自定义扫码内容 <span style="font-weight:400;text-transform:none;">(留空用型号名)</span></span>
+        <input class="finput" id="f-code-${m.id}" type="text" value="${esc(m.codeText||'')}" placeholder="留空自动用型号名称"></div>
+    </div>
+    <div class="faction">
+      <button class="fsave" onclick="saveModel('${m.id}')">💾 保存</button>
+      <button class="fcode" onclick="openCode('${m.id}')">🔲 商品码</button>
+      <button class="fdel" onclick="delModel('${m.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function toggleEx(id) {
+  _expandId = _expandId === id ? null : id;
+  renderList();
+  if (_expandId) {
+    setTimeout(() => { const el = document.getElementById('mi-'+id); if (el) el.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 80);
+  }
+}
+
+function saveModel(id) {
+  const m = state.models.find(x => x.id === id);
+  if (!m) return;
+  const name = document.getElementById('f-name-'+id)?.value.trim();
+  if (!name) { toast('型号名称不能为空'); return; }
+  m.name = name;
+  const dim = document.getElementById('f-dim-'+id)?.value.trim();
+  const weight = document.getElementById('f-weight-'+id)?.value.trim();
+  const ratio = parseInt(document.getElementById('f-ratio-'+id)?.value) || 40;
+  const unit = document.getElementById('f-unit-'+id)?.value.trim() || '套';
+  const code = document.getElementById('f-code-'+id)?.value.trim();
+  if (dim) m.dimensions = dim; else delete m.dimensions;
+  if (weight) m.weight = weight; else delete m.weight;
+  m.boxToSetRatio = ratio; m.boxToSetUnit = unit;
+  if (code && code !== name) m.codeText = code; else delete m.codeText;
+  saveState();
+  _expandId = null;
+  renderList();
+  toast('✅ 已保存: ' + name);
+}
+
+function delModel(id) {
+  const m = state.models.find(x => x.id === id);
+  if (!m || !confirm('确定删除「' + m.name + '」？\n这会同时清除货架上的该型号引用。')) return;
+  state.models = state.models.filter(x => x.id !== id);
+  (state.zones||[]).forEach(z => {
+    const zones = z.type === 'shelf' ? (z.aisles||[]).flatMap(a => a.shelves||[]) : (z.aisles||[]).flatMap(a => a.pallets||[]);
+    zones.forEach(c => {
+      const slots = z.type === 'shelf' ? (c.slots||[]) : (c.layers||[]);
+      slots.forEach(s => { if (s.modelId === id) { s.modelId = null; s.qty = 0; } });
+    });
+  });
+  saveState();
+  _expandId = null;
+  renderList();
+  toast('已删除');
+}
+
+// ── Add modal ──
+function openAdd() {
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-ratio').value = '40';
+  document.getElementById('add-unit').value = '套';
+  document.getElementById('add-modal').classList.add('on');
+  setTimeout(() => document.getElementById('add-name').focus(), 100);
+}
+function closeAdd() { document.getElementById('add-modal').classList.remove('on'); }
+function doAdd() {
+  const name = document.getElementById('add-name').value.trim();
+  if (!name) { toast('请输入型号名称'); return; }
+  if (state.models.find(m => m.name.toLowerCase() === name.toLowerCase())) { toast('该型号已存在'); return; }
+  const ratio = parseInt(document.getElementById('add-ratio').value) || 40;
+  const unit = document.getElementById('add-unit').value.trim() || '套';
+  state.models.push({ id: 'm_' + Date.now(), name, boxToSetRatio: ratio, boxToSetUnit: unit });
+  saveState(); renderList(); closeAdd();
+  toast('✅ 已添加: ' + name);
+}
+
+// ── Export ──
+function exportTxt() {
+  if (!state.models.length) { toast('型号库为空'); return; }
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(state.models.map(m => m.name).join('\n'));
+  a.download = 'models-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+  toast('已导出 ' + state.models.length + ' 个型号');
+}
+
+// ── Print select ──
+function openPrint() {
+  _printIds = new Set(state.models.map(m => m.id));
+  document.getElementById('psrch').value = '';
+  renderPrintList();
+  document.getElementById('print-modal').classList.add('on');
+}
+function closePrint() { document.getElementById('print-modal').classList.remove('on'); }
+function renderPrintList() {
+  const q = (document.getElementById('psrch')?.value || '').toLowerCase();
+  const sorted = state.models.slice().sort((a,b) => a.name.localeCompare(b.name));
+  const filtered = q ? sorted.filter(m => m.name.toLowerCase().includes(q)) : sorted;
+  document.getElementById('plist').innerHTML = filtered.map(m =>
+    `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(0,0,0,0.05);cursor:pointer;">
+      <input type="checkbox" ${_printIds.has(m.id)?'checked':''} onchange="togPrint('${m.id}',this.checked)" style="width:15px;height:15px;accent-color:#2563eb;flex-shrink:0;">
+      <span style="font-size:12px;word-break:break-word;">${esc(m.name)}</span>
+    </label>`
+  ).join('');
+  document.getElementById('sel-count').textContent = `已选 ${_printIds.size}/${state.models.length}`;
+}
+function togPrint(id, checked) { if (checked) _printIds.add(id); else _printIds.delete(id); document.getElementById('sel-count').textContent = `已选 ${_printIds.size}/${state.models.length}`; }
+function selAll(v) { v ? state.models.forEach(m => _printIds.add(m.id)) : _printIds.clear(); renderPrintList(); }
+
+async function doPrint() {
+  const mods = state.models.filter(m => _printIds.has(m.id));
+  if (!mods.length) { toast('请先选择型号'); return; }
+  closePrint();
+  toast('⏳ 正在生成...');
+  try {
+    const [qrMod, barMod] = await Promise.all([
+      loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js').then(() => window.QRCode),
+      loadScript('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js').then(() => window.JsBarcode)
+    ]);
+    const items = [];
+    for (const m of mods) {
+      const txt = m.codeText || m.name;
+      const barTxt = txt.replace(/[^\x20-\x7E]/g,' ').trim().replace(/\s+/g,' ').slice(0,48);
+      let qrUrl = '';
+      try { qrUrl = await qrMod.toDataURL(txt, { width:120, margin:1 }); }
+      catch(e) { try { qrUrl = await qrMod.toDataURL(barTxt||txt.slice(0,40), { width:120, margin:1 }); } catch(e2) {} }
+      const svgEl = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svgEl.setAttribute('xmlns','http://www.w3.org/2000/svg');
+      document.body.appendChild(svgEl);
+      let barUrl = '';
+      try {
+        barMod(svgEl, barTxt||'NO-CODE', { format:'CODE128', lineColor:'#000', width:1.5, height:45, fontSize:10, margin:6, displayValue:true });
+        barUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svgEl));
+      } catch(e) {}
+      document.body.removeChild(svgEl);
+      const extra = [m.dimensions && '📐'+m.dimensions, m.weight && '⚖️'+m.weight].filter(Boolean).join(' ');
+      items.push({ name: m.name, extra, qrUrl, barUrl });
+    }
+    const win = window.open('','_blank');
+    if (!win) { toast('⚠️ 请允许弹出窗口后重试'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>型号商品码</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;background:#fff;padding:8mm;}
+h1{font-size:12px;color:#888;margin-bottom:5mm;text-align:center;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(50mm,1fr));gap:4mm;}
+.item{border:.5px solid #ddd;border-radius:2mm;padding:3mm;page-break-inside:avoid;text-align:center;}
+.nm{font-size:7.5px;font-weight:700;color:#111;margin-bottom:1.5mm;word-break:break-all;line-height:1.3;}
+.ex{font-size:6.5px;color:#666;margin-bottom:2mm;}
+.codes{display:flex;flex-direction:column;align-items:center;gap:1.5mm;}
+.codes img{max-width:100%;}
+@media print{body{padding:3mm;}h1{display:none;}.grid{gap:3mm;}}
+</style></head><body>
+<h1>ATMM.store · 型号商品码 · ${items.length} 个</h1>
+<div class="grid">${items.map(it=>`<div class="item"><div class="nm">${it.name}</div>${it.extra?`<div class="ex">${it.extra}</div>`:''}<div class="codes">${it.qrUrl?`<img src="${it.qrUrl}" width="90">`:''} ${it.barUrl?`<img src="${it.barUrl}" style="width:100%;max-width:120px;">`:''}</div></div>`).join('')}</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script></body></html>`);
+    win.document.close();
+    toast('✅ 打印页已生成（' + items.length + ' 个型号）');
+  } catch(e) { toast('❌ 生成失败: ' + e.message); }
+}
+
+function loadScript(url) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${url}"]`) && window.QRCode) { res(); return; }
+    const s = document.createElement('script'); s.src = url;
+    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+  });
+}
+
+// ── Code sheet (redirect to main app) ──
+function openCode(id) {
+  toast('💡 商品码功能在主仓管界面「型号库」中使用');
+}
+
+// ── Toast ──
+let _tt;
+function toast(msg, dur) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('on'), dur || 2500);
+}
+
+// ── Init ──
+loadState();
+renderList();
+initSb();
+</script>
+</body>
+</html>

@@ -1217,7 +1217,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1347,6 +1347,41 @@
       <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
+<!-- Print select sheet -->
+<div class="sheet-backdrop modal-top" id="print-select-sheet" style="z-index:300;">
+  <div class="sheet" style="max-height:92vh;">
+    <div class="sheet-body">
+      <h3>🖨️ 选择打印范围</h3>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+        <button onclick="_printSelAll(true)" style="padding:5px 10px; border:1px solid var(--line); border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; background:var(--bg);">全选</button>
+        <button onclick="_printSelAll(false)" style="padding:5px 10px; border:1px solid var(--line); border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; background:var(--bg);">取消全选</button>
+        <span id="print-sel-count" style="font-size:11px; color:var(--muted); flex:1; text-align:right;"></span>
+      </div>
+      <input id="print-sel-search" type="text" placeholder="🔍 搜索..." autocomplete="off" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; margin-bottom:8px; background:var(--paper);" oninput="_renderPrintSelList()">
+      <div id="print-sel-list" style="max-height:52vh; overflow-y:auto; border:1px solid var(--line); border-radius:8px; background:var(--paper);"></div>
+    </div>
+    <div class="sheet-footer" style="display:flex; gap:8px;">
+      <button onclick="_doPrintSelected()" style="flex:2; padding:12px; background:#2563eb; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">🖨️ 生成打印页</button>
+      <button class="sheet-cancel" data-close style="flex:1;">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit model sheet -->
+<div class="sheet-backdrop modal-top" id="edit-model-sheet" style="z-index:300;">
+  <div class="sheet" style="max-height:92vh;">
+    <div class="sheet-body">
+      <h3>✏️ 编辑型号内容</h3>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:10px; line-height:1.5;">点击型号展开编辑，保存后自动更新型号库和商品码</p>
+      <input id="edit-model-search" type="text" placeholder="🔍 搜索型号..." autocomplete="off" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; margin-bottom:8px; background:var(--paper);" oninput="_renderEditModelList()">
+      <div id="edit-model-list" style="max-height:62vh; overflow-y:auto;"></div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-cancel" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <!-- SAVE / EXPORT sheet — with WeChat / Drive / Email -->
@@ -1375,7 +1410,10 @@
 <div class="sheet-backdrop" id="upload-sheet">
   <div class="sheet">
     <div class="sheet-body">
-      <h3>📋 型号库管理</h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <h3 style="margin:0;">📋 型号库管理</h3>
+        <a href="/models" style="font-size:11px; font-weight:700; color:#2563eb; text-decoration:none; padding:4px 10px; border:1.5px solid #93c5fd; border-radius:6px; background:#f0f7ff; white-space:nowrap;">🗂 独立管理页</a>
+      </div>
 
       <!-- Current models in library, with search -->
       <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 12px;">
@@ -1389,12 +1427,15 @@
 
       <!-- Current model snapshot table -->
       <div style="margin-bottom:12px;">
-        <button onclick="_refreshModelSnapshot()" style="display:flex; align-items:center; gap:6px; width:100%; padding:8px 12px; background:#f0f7ff; border:1.5px solid #93c5fd; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:#1e40af;">
-          <span>📋</span>
-          <span style="flex:1; text-align:left;">当前型号清单</span>
-          <span id="snapshot-date" style="font-weight:400; font-size:10px; color:#60a5fa;"></span>
-          <span style="font-size:10px; color:#60a5fa;">↻ 刷新</span>
-        </button>
+        <div style="display:flex; gap:0;">
+          <button onclick="_refreshModelSnapshot()" style="flex:1; display:flex; align-items:center; gap:6px; padding:8px 10px; background:#f0f7ff; border:1.5px solid #93c5fd; border-right:none; border-radius:8px 0 0 8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:#1e40af;">
+            <span>📋</span>
+            <span style="flex:1; text-align:left;">当前型号清单</span>
+            <span id="snapshot-date" style="font-weight:400; font-size:10px; color:#60a5fa;"></span>
+            <span style="font-size:10px; color:#60a5fa;">↻</span>
+          </button>
+          <button onclick="openEditModelSheet()" style="flex-shrink:0; padding:8px 12px; background:#fff8e1; border:1.5px solid #f59e0b; border-radius:0 8px 8px 0; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; color:#92400e;">✏️ 编辑</button>
+        </div>
         <div id="model-snapshot-wrap" style="display:none; border:1.5px solid #93c5fd; border-top:none; border-radius:0 0 8px 8px; overflow:hidden; background:var(--paper);">
           <div id="model-snapshot-inner" style="max-height:220px; overflow-y:auto; font-size:12px;"></div>
         </div>
@@ -2198,7 +2239,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-16</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复：商品码 QR 生成换用可靠库，不再溢出报错</li>
+            <li>打印商品码可选择全部或部分型号，再打印</li>
+            <li>型号清单新增「✏️编辑」，可编辑尺寸/重量/换算/扫码内容</li>
+            <li>独立型号管理页面 /models，空间更大操作更便</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-15</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -6373,14 +6427,8 @@ const _libSearchEl = document.getElementById('lib-search');
 if (_libSearchEl) _libSearchEl.addEventListener('input', e => refreshLibList(e.target.value));
 
 // ===== 商品条形码 / 二维码 =====
-let _codeLibsLoaded = false;
 async function _loadCodeLibs() {
-  if (_codeLibsLoaded) return;
-  await Promise.all([
-    new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); }),
-    new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); })
-  ]);
-  _codeLibsLoaded = true;
+  await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
 }
 
 let _codeSheetMid = null;
@@ -6409,17 +6457,19 @@ async function _renderModelCode() {
   const qrContainer = document.getElementById('model-qr-container');
   qrContainer.innerHTML = '';
   try {
-    new QRCode(qrContainer, { text: txt, width: 180, height: 180, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    const qrDataUrl = await _qrLib.toDataURL(txt, { width: 180, margin: 2, color: { dark: '#1a1a1a', light: '#ffffff' } });
+    const img = document.createElement('img'); img.src = qrDataUrl;
+    img.style.cssText = 'width:180px;height:180px;display:block;';
+    qrContainer.appendChild(img);
   } catch(e) {
-    try { new QRCode(qrContainer, { text: txt, width: 180, height: 180, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L }); }
-    catch(e2) { qrContainer.innerHTML = '<div style="font-size:11px;color:var(--red);padding:8px;">二维码生成失败，请缩短内容</div>'; }
+    qrContainer.innerHTML = '<div style="font-size:11px;color:var(--red);padding:8px;">二维码生成失败，请缩短内容</div>';
   }
   // Barcode — Code128 ASCII only, auto-truncate
   const barTxt = _barcodeText(txt);
   const svgEl = document.getElementById('model-barcode-svg');
   const noteEl = document.getElementById('barcode-note');
   try {
-    JsBarcode(svgEl, barTxt || 'NO-CODE', { format: 'CODE128', lineColor: '#1a1a1a', width: 2, height: 65, fontSize: 12, margin: 8, displayValue: true });
+    _jsBarcodeLib(svgEl, barTxt || 'NO-CODE', { format: 'CODE128', lineColor: '#1a1a1a', width: 2, height: 65, fontSize: 12, margin: 8, displayValue: true });
     if (noteEl) noteEl.textContent = barTxt !== txt ? '⚠️ 条形码内容已自动截短为ASCII（可在上方自定义简短编码）' : '';
   } catch(e) {
     svgEl.innerHTML = '';
@@ -6468,21 +6518,21 @@ function _downloadModelCode(type) {
   }
 }
 
-async function _printAllModelCodes() {
-  if (!state.models?.length) { toast('型号库为空'); return; }
+function _printAllModelCodes() { openPrintSelectSheet(); }
+
+async function _runPrintModelCodes(mods) {
+  if (!mods?.length) { toast('请先选择型号'); return; }
   toast('⏳ 正在生成，请稍候...');
   try {
-    await _loadCodeLibs();
+    await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
     const items = [];
-    for (const m of state.models) {
+    for (const m of mods) {
       const txt = m.codeText || m.name;
       const barTxt = _barcodeText(txt);
-      // QR
-      const tmpDiv = document.createElement('div');
-      new QRCode(tmpDiv, { text: txt, width: 120, height: 120, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
-      await new Promise(r => setTimeout(r, 30));
-      const qrCanvas = tmpDiv.querySelector('canvas');
-      const qrUrl = qrCanvas ? qrCanvas.toDataURL('image/png') : '';
+      // QR — uses _qrLib (qrcode@1.5.3, handles unicode)
+      let qrUrl = '';
+      try { qrUrl = await _qrLib.toDataURL(txt, { width: 120, margin: 1, color: { dark: '#000000', light: '#ffffff' } }); }
+      catch(e) { try { qrUrl = await _qrLib.toDataURL(barTxt || txt.slice(0,40), { width: 120, margin: 1 }); } catch(e2) {} }
       // Barcode
       const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       tmpSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -6507,12 +6557,162 @@ h1{font-size:13px;color:#888;margin-bottom:6mm;text-align:center;}
 .codes img{max-width:100%;}
 @media print{body{padding:3mm;}h1{display:none;}.grid{gap:3mm;}}
 </style></head><body>
-<h1>ATMM.store · 型号商品码 · 共 ${items.length} 个型号</h1>
+<h1>ATMM.store · 型号商品码 · 共 ${items.length} 个</h1>
 <div class="grid">${items.map(it => `<div class="item"><div class="name">${it.name}</div><div class="codes">${it.qrUrl ? `<img src="${it.qrUrl}" width="96">` : ''}${it.svgUrl ? `<img src="${it.svgUrl}" style="width:100%;max-width:130px;">` : ''}</div></div>`).join('')}</div>
 <script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script></body></html>`);
     win.document.close();
     toast('✅ 打印页已生成（共 ' + items.length + ' 个型号）');
   } catch(e) { toast('❌ 生成失败: ' + e.message); }
+}
+
+// ===== 打印选择 / 型号编辑 =====
+let _printSelIds = new Set();
+
+function openPrintSelectSheet() {
+  if (!state.models?.length) { toast('型号库为空'); return; }
+  _printSelIds = new Set(state.models.map(m => m.id));
+  const searchEl = document.getElementById('print-sel-search');
+  if (searchEl) searchEl.value = '';
+  _renderPrintSelList();
+  showSheet('print-select-sheet');
+}
+
+function _renderPrintSelList() {
+  const q = (document.getElementById('print-sel-search')?.value || '').toLowerCase();
+  const list = document.getElementById('print-sel-list');
+  if (!list) return;
+  const sorted = state.models.slice().sort((a,b) => a.name.localeCompare(b.name));
+  const filtered = q ? sorted.filter(m => m.name.toLowerCase().includes(q)) : sorted;
+  list.innerHTML = filtered.map(m => `<label style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid rgba(0,0,0,0.05); cursor:pointer;">
+    <input type="checkbox" ${_printSelIds.has(m.id) ? 'checked' : ''} onchange="_togglePrintSel('${m.id}',this.checked)" style="width:15px;height:15px;accent-color:#2563eb;flex-shrink:0;">
+    <span style="font-size:12px; color:var(--ink); word-break:break-word;">${escapeHtml(m.name)}</span>
+  </label>`).join('');
+  _updatePrintSelCount();
+}
+
+function _togglePrintSel(id, checked) {
+  if (checked) _printSelIds.add(id); else _printSelIds.delete(id);
+  _updatePrintSelCount();
+}
+
+function _printSelAll(checked) {
+  if (checked) state.models.forEach(m => _printSelIds.add(m.id)); else _printSelIds.clear();
+  _renderPrintSelList();
+}
+
+function _updatePrintSelCount() {
+  const el = document.getElementById('print-sel-count');
+  if (el) el.textContent = `已选 ${_printSelIds.size} / ${state.models.length} 个`;
+}
+
+async function _doPrintSelected() {
+  const mods = state.models.filter(m => _printSelIds.has(m.id));
+  if (!mods.length) { toast('请先选择至少一个型号'); return; }
+  document.getElementById('print-select-sheet').classList.remove('show');
+  await _runPrintModelCodes(mods);
+}
+
+let _editExpandedId = null;
+
+function openEditModelSheet() {
+  _editExpandedId = null;
+  const searchEl = document.getElementById('edit-model-search');
+  if (searchEl) searchEl.value = '';
+  _renderEditModelList();
+  showSheet('edit-model-sheet');
+}
+
+function _renderEditModelList() {
+  const q = (document.getElementById('edit-model-search')?.value || '').toLowerCase();
+  const list = document.getElementById('edit-model-list');
+  if (!list) return;
+  const sorted = state.models.slice().sort((a,b) => a.name.localeCompare(b.name));
+  const filtered = q ? sorted.filter(m => m.name.toLowerCase().includes(q)) : sorted;
+  if (!filtered.length) { list.innerHTML = '<div style="padding:16px; text-align:center; color:var(--muted); font-size:12px;">没有匹配的型号</div>'; return; }
+  list.innerHTML = filtered.map(m => {
+    const isExp = _editExpandedId === m.id;
+    const dimStr = m.dimensions ? ` <span style="font-size:9px;color:var(--muted);">📐${escapeHtml(m.dimensions)}</span>` : '';
+    return `<div style="border-bottom:1px solid var(--line);">
+      <div onclick="_toggleEditExpand('${m.id}')" style="display:flex; align-items:center; gap:8px; padding:10px 12px; cursor:pointer; background:${isExp ? '#f0f7ff' : 'var(--paper)'}; user-select:none;">
+        <div style="flex:1; font-size:12px; color:var(--ink); word-break:break-word; line-height:1.4;">${escapeHtml(m.name)}${dimStr}</div>
+        <span style="font-size:10px; color:var(--muted); white-space:nowrap;">${m.boxToSetRatio||40}${m.boxToSetUnit||'套'}</span>
+        <span style="font-size:14px; color:#60a5fa;">${isExp ? '▲' : '▶'}</span>
+      </div>
+      ${isExp ? _editModelForm(m) : ''}
+    </div>`;
+  }).join('');
+}
+
+function _editModelForm(m) {
+  return `<div style="padding:12px 14px; background:#f8faff; border-top:1px solid #dbeafe;">
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">型号名称</div>
+      <input id="ef-name-${m.id}" type="text" value="${escapeHtml(m.name)}" style="width:100%; padding:7px 9px; border:1.5px solid var(--line); border-radius:7px; font-size:12px; background:#fff; font-family:inherit;">
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+      <div>
+        <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">尺寸</div>
+        <input id="ef-dim-${m.id}" type="text" value="${escapeHtml(m.dimensions||'')}" placeholder="如 110×22×6cm" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:7px; font-size:12px; background:#fff; font-family:inherit;">
+      </div>
+      <div>
+        <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">重量</div>
+        <input id="ef-weight-${m.id}" type="text" value="${escapeHtml(m.weight||'')}" placeholder="如 2.5kg" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:7px; font-size:12px; background:#fff; font-family:inherit;">
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:8px; margin-bottom:8px;">
+      <div>
+        <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">1箱换算</div>
+        <input id="ef-ratio-${m.id}" type="number" value="${m.boxToSetRatio||40}" min="1" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:7px; font-size:12px; background:#fff; font-family:inherit;">
+      </div>
+      <div>
+        <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">单位</div>
+        <input id="ef-unit-${m.id}" type="text" value="${escapeHtml(m.boxToSetUnit||'套')}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:7px; font-size:12px; background:#fff; font-family:inherit;">
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">自定义扫码内容 <span style="font-weight:400; text-transform:none;">(留空则自动用型号名)</span></div>
+      <input id="ef-code-${m.id}" type="text" value="${escapeHtml(m.codeText||'')}" placeholder="留空将自动用型号名称" style="width:100%; padding:7px 9px; border:1.5px solid var(--line); border-radius:7px; font-size:12px; background:#fff; font-family:inherit;">
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="_saveEditModel('${m.id}')" style="flex:2; padding:9px; background:#1a73e8; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">💾 保存</button>
+      <button onclick="openModelCodeSheet('${m.id}')" style="flex:1; padding:9px; background:#f0f4ff; color:#2563eb; border:1px solid #93c5fd; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">🔲 码</button>
+    </div>
+  </div>`;
+}
+
+function _toggleEditExpand(id) {
+  _editExpandedId = _editExpandedId === id ? null : id;
+  _renderEditModelList();
+  if (_editExpandedId) {
+    setTimeout(() => {
+      const el = document.querySelector(`#edit-model-list [onclick="_toggleEditExpand('${id}')"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+  }
+}
+
+function _saveEditModel(id) {
+  const m = state.models.find(x => x.id === id);
+  if (!m) return;
+  const name = document.getElementById('ef-name-'+id)?.value.trim();
+  if (!name) { toast('型号名称不能为空'); return; }
+  const dim = document.getElementById('ef-dim-'+id)?.value.trim();
+  const weight = document.getElementById('ef-weight-'+id)?.value.trim();
+  const ratio = parseInt(document.getElementById('ef-ratio-'+id)?.value) || 40;
+  const unit = document.getElementById('ef-unit-'+id)?.value.trim() || '套';
+  const code = document.getElementById('ef-code-'+id)?.value.trim();
+  m.name = name;
+  if (dim) m.dimensions = dim; else delete m.dimensions;
+  if (weight) m.weight = weight; else delete m.weight;
+  m.boxToSetRatio = ratio;
+  m.boxToSetUnit = unit;
+  if (code && code !== name) m.codeText = code; else delete m.codeText;
+  saveState();
+  refreshLibList('');
+  _refreshModelSnapshot();
+  _editExpandedId = null;
+  _renderEditModelList();
+  toast('✅ 已保存');
 }
 
 const _libExportBtn = document.getElementById('lib-export');
