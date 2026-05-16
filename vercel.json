@@ -3,6 +3,7 @@
     "api/*.js": { "memory": 128, "maxDuration": 10 }
   },
   "rewrites": [
-    { "source": "/shop", "destination": "/shop.html" }
+    { "source": "/shop", "destination": "/shop.html" },
+    { "source": "/models", "destination": "/models.html" }
   ]
 }
