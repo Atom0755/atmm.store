@@ -105,6 +105,30 @@
     .label-preview { border: 2px solid #000; break-inside: avoid; max-width: none; }
   }
 
+  /* ── OUTBOUND ── */
+  .out-method-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+  .out-method-card { border:2px solid var(--line); border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:var(--paper); transition:border-color .15s; }
+  .out-method-card:hover, .out-method-card.selected { border-color:var(--ink); background:#f8f8f4; }
+  .out-method-card .ico { font-size:28px; display:block; margin-bottom:8px; }
+  .out-method-card h4 { font-size:13px; font-weight:800; margin-bottom:4px; }
+  .out-method-card p { font-size:11px; color:var(--muted); line-height:1.5; }
+  .preview-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .preview-table th { background:var(--ink); color:var(--paper); padding:7px 10px; text-align:left; }
+  .preview-table td { padding:7px 10px; border-bottom:1px solid rgba(0,0,0,.06); vertical-align:middle; }
+  .preview-table tr:last-child td { border-bottom:none; }
+  .preview-table tr:hover td { background:rgba(0,0,0,.025); }
+  .qty-neg { color:var(--red); font-weight:700; }
+  .qty-ok { color:var(--green); font-weight:700; }
+  .status-ok { background:#e8f5e9; color:var(--green); padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+  .status-warn { background:#fff3e0; color:var(--yellow); padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+  .status-err { background:#ffebee; color:var(--red); padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+  .history-row { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:12px; }
+  .history-row:last-child { border-bottom:none; }
+  .out-btn-hero { display:block; width:100%; padding:18px; background:#1a1a1a; color:#fff; border:none; border-radius:14px; font-size:18px; font-weight:900; cursor:pointer; font-family:inherit; letter-spacing:.04em; margin-bottom:16px; text-align:center; }
+  .out-btn-hero:active { opacity:.8; }
+  .manual-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,.06); }
+  .manual-row:last-child { border-bottom:none; }
+
   /* ── API KEY NOTICE ── */
   .api-notice { background: #e3f2fd; border: 1.5px solid #1565c0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
   .api-notice h4 { color: var(--blue); font-size: 13px; font-weight: 800; margin-bottom: 8px; }
@@ -144,6 +168,7 @@
 <div class="tab-bar">
   <button class="tab active" onclick="switchTab('address')">📍 地址核查</button>
   <button class="tab" onclick="switchTab('labels')">📦 打单发货</button>
+  <button class="tab" onclick="switchTab('outbound')">📤 出货</button>
   <button class="tab" onclick="switchTab('setup')">⚙️ API 设置</button>
 </div>
 
@@ -214,6 +239,8 @@
 <!-- TAB 2: 打单发货                                     -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div class="panel" id="panel-labels">
+
+  <button class="out-btn-hero" onclick="switchTab('outbound')" style="background:#065f46;">📤 出货扣库存</button>
 
   <div class="api-notice">
     <h4>⚠️ 真实打单需要快递公司 API 账号</h4>
@@ -365,7 +392,95 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
-<!-- TAB 3: API 设置                                     -->
+<!-- TAB 3: 出货扣库存                                   -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="panel" id="panel-outbound">
+
+  <div style="background:#f0fff4; border:2px solid #6ee7b7; border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
+    <div style="font-size:30px; margin-bottom:6px;">📤</div>
+    <h2 style="font-size:17px; font-weight:900; margin-bottom:5px;">出货扣库存</h2>
+    <p style="font-size:12px; color:var(--muted); line-height:1.6;">上传发货 CSV 或手动录入型号数量，<br>系统自动从货架库存中扣除。</p>
+  </div>
+
+  <div class="out-method-grid">
+    <div class="out-method-card selected" id="mc-csv" onclick="switchOutMethod('csv')">
+      <span class="ico">📄</span>
+      <h4>CSV 导入</h4>
+      <p>上传 ShipStation / Veeqo 发货明细</p>
+    </div>
+    <div class="out-method-card" id="mc-manual" onclick="switchOutMethod('manual')">
+      <span class="ico">✏️</span>
+      <h4>手动录入</h4>
+      <p>搜索型号逐条输入出货数量</p>
+    </div>
+  </div>
+
+  <!-- CSV 方式 -->
+  <div id="out-csv-section">
+    <div class="format-hint">
+      <b>支持格式：</b>ShipStation · Veeqo · 或任意含 SKU + 数量列的 CSV<br>
+      <b>自动识别列名：</b><code>Item SKU</code> / <code>SKU</code> / <code>Item Name</code> · <code>Quantity</code> / <code>Qty</code>
+    </div>
+    <div class="import-zone" id="out-drop-zone" ondragover="outDragOver(event)" ondragleave="outDragLeave(event)" ondrop="outDrop(event)">
+      <h3>拖拽出货 CSV 到这里</h3>
+      <p>支持 ShipStation / Veeqo / 任意含 SKU+数量的 CSV</p>
+      <div class="import-btns">
+        <button class="btn primary" onclick="document.getElementById('out-file-input').click()">📂 选择 CSV 文件</button>
+        <button class="btn" onclick="showOutPaste()">📋 粘贴内容</button>
+      </div>
+    </div>
+    <input type="file" id="out-file-input" accept=".csv,.txt" style="display:none" onchange="onOutFileSelect(event)">
+    <div id="out-paste-area" style="display:none; margin-bottom:16px;">
+      <textarea id="out-csv-paste" placeholder="粘贴出货 CSV 内容..." style="width:100%;height:120px;border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn primary" onclick="parseOutCsv(document.getElementById('out-csv-paste').value)">解析 →</button>
+        <button class="btn" onclick="document.getElementById('out-paste-area').style.display='none'">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手动录入方式 -->
+  <div id="out-manual-section" style="display:none;">
+    <input type="text" id="out-model-search" placeholder="🔍 搜索型号名称..." oninput="renderManualSearch()" style="width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; margin-bottom:8px;">
+    <div id="out-search-results" style="display:none; background:var(--paper); border:1.5px solid var(--line); border-radius:8px; margin-bottom:12px; max-height:200px; overflow-y:auto;"></div>
+    <div id="out-manual-items"></div>
+  </div>
+
+  <!-- 预览表格 -->
+  <div id="out-preview-section" style="display:none;">
+    <h3 style="font-size:14px; font-weight:800; margin-bottom:10px;">📋 出货预览</h3>
+    <div style="overflow-x:auto; border-radius:10px; border:1.5px solid var(--line); background:var(--paper); margin-bottom:12px;">
+      <table class="preview-table">
+        <thead>
+          <tr>
+            <th>型号</th>
+            <th style="text-align:right;">当前库存</th>
+            <th style="text-align:right;">出货数量</th>
+            <th style="text-align:right;">扣后库存</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody id="out-preview-tbody"></tbody>
+      </table>
+    </div>
+    <div id="out-unmatched"></div>
+    <button class="out-btn-hero" onclick="confirmOutbound()">✅ 确认扣减库存</button>
+    <button class="btn" onclick="clearOutPreview()" style="width:100%; margin-bottom:16px;">✖ 清除</button>
+  </div>
+
+  <!-- 出货记录 -->
+  <div style="margin-top:8px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <h3 style="font-size:14px; font-weight:800;">📜 出货记录</h3>
+      <button class="btn" style="font-size:11px; padding:4px 10px;" onclick="clearOutHistory()">清空记录</button>
+    </div>
+    <div id="out-history"></div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB 4: API 设置                                     -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div class="panel" id="panel-setup">
 
@@ -491,11 +606,12 @@ function saveAllSettings() {
 // ═══════════════════════════════════════════════════
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    const names = ['address','labels','setup'];
+    const names = ['address','labels','outbound','setup'];
     t.classList.toggle('active', names[i] === name);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'outbound') renderOutHistory();
 }
 
 // ═══════════════════════════════════════════════════
@@ -822,6 +938,316 @@ function printLabel() {
   pa.innerHTML = '';
 }
 function downloadLabelPdf() { alert('PDF 下载需要配置运费 API 后由服务器生成正式电子运单。\n当前请使用浏览器打印 → 另存为 PDF。'); }
+
+// ═══════════════════════════════════════════════════
+// OUTBOUND INVENTORY DEDUCTION
+// ═══════════════════════════════════════════════════
+let outMethod = 'csv';
+let outPreviewItems = [];
+let manualItems = [];
+let outUnmatched = [];
+
+function loadInventory() {
+  try { return JSON.parse(localStorage.getItem('inventoryV3') || 'null'); } catch(e) { return null; }
+}
+function saveInventory(state) {
+  localStorage.setItem('inventoryV3', JSON.stringify(state));
+}
+
+function collectAllSlots(inv) {
+  const slots = [];
+  for (const zone of (inv.zones || [])) {
+    for (const aisle of (zone.aisles || [])) {
+      const containers = [...(aisle.shelves || []), ...(aisle.pallets || [])];
+      for (const container of containers) {
+        for (const slot of (container.slots || [])) slots.push(slot);
+      }
+    }
+  }
+  return slots;
+}
+
+function getModelTotalQty(inv, modelId) {
+  return collectAllSlots(inv).filter(s => s.modelId === modelId).reduce((t, s) => t + (s.qty || 0), 0);
+}
+
+function matchModelBySku(inv, sku) {
+  if (!sku || !inv || !inv.models) return null;
+  const s = sku.trim().toLowerCase();
+  return inv.models.find(m => m.name.toLowerCase() === s)
+    || inv.models.find(m => m.name.toLowerCase().includes(s) || s.includes(m.name.toLowerCase()))
+    || null;
+}
+
+function switchOutMethod(method) {
+  outMethod = method;
+  document.getElementById('mc-csv').classList.toggle('selected', method === 'csv');
+  document.getElementById('mc-manual').classList.toggle('selected', method === 'manual');
+  document.getElementById('out-csv-section').style.display = method === 'csv' ? '' : 'none';
+  document.getElementById('out-manual-section').style.display = method === 'manual' ? '' : 'none';
+}
+
+function showOutPaste() {
+  document.getElementById('out-paste-area').style.display = '';
+  document.getElementById('out-csv-paste').focus();
+}
+function onOutFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => parseOutCsv(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
+}
+function outDragOver(e) { e.preventDefault(); document.getElementById('out-drop-zone').classList.add('drag-over'); }
+function outDragLeave(e) { document.getElementById('out-drop-zone').classList.remove('drag-over'); }
+function outDrop(e) {
+  e.preventDefault();
+  document.getElementById('out-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => parseOutCsv(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseOutCsv(csv) {
+  if (!csv || !csv.trim()) { alert('内容为空'); return; }
+  const inv = loadInventory();
+  if (!inv || !inv.models || !inv.models.length) {
+    alert('⚠️ 未找到库存数据。\n请先在主页面建立货架并添加型号。');
+    return;
+  }
+  const lines = csv.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) { alert('CSV 格式错误或无数据行'); return; }
+  const headers = parseCsvLine(lines[0]).map(h =>
+    h.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  );
+  const skuCol = findCol(headers, ['item_sku','sku','item_name','product_name','model_name','model','name','product','item','description']);
+  const qtyCol = findCol(headers, ['quantity','quantity_ordered','quantity_shipped','item_quantity','qty','count','units']);
+  if (skuCol < 0) { alert('未找到 SKU / 型号列\n（支持列名: Item SKU, SKU, Name, Model 等）'); return; }
+  if (qtyCol < 0) { alert('未找到数量列\n（支持列名: Quantity, Qty, Count 等）'); return; }
+
+  const skuMap = {};
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cols = parseCsvLine(lines[i]);
+    const sku = (cols[skuCol] || '').trim();
+    const qty = parseInt(cols[qtyCol]) || 0;
+    if (!sku || qty <= 0) continue;
+    skuMap[sku] = (skuMap[sku] || 0) + qty;
+  }
+
+  outPreviewItems = [];
+  outUnmatched = [];
+  for (const [sku, qty] of Object.entries(skuMap)) {
+    const model = matchModelBySku(inv, sku);
+    if (model) {
+      const currentQty = getModelTotalQty(inv, model.id);
+      outPreviewItems.push({
+        modelId: model.id, modelName: model.name, deductQty: qty, currentQty,
+        afterQty: currentQty - qty,
+        status: currentQty >= qty ? 'ok' : (currentQty > 0 ? 'warn' : 'err')
+      });
+    } else {
+      outUnmatched.push({ sku, qty });
+    }
+  }
+  document.getElementById('out-paste-area').style.display = 'none';
+  renderOutPreview();
+}
+
+function renderOutPreview() {
+  if (!outPreviewItems.length && !outUnmatched.length) return;
+  document.getElementById('out-preview-section').style.display = '';
+  document.getElementById('out-preview-tbody').innerHTML = outPreviewItems.map(item => {
+    const statusHtml = item.status === 'ok'
+      ? '<span class="status-ok">✅ 正常</span>'
+      : item.status === 'warn'
+      ? '<span class="status-warn">⚠️ 不足</span>'
+      : '<span class="status-err">❌ 无库存</span>';
+    const after = Math.max(0, item.afterQty);
+    const afterClass = item.afterQty < 0 ? 'qty-neg' : (after === 0 ? '' : 'qty-ok');
+    return `<tr>
+      <td style="font-weight:700;">${escHtml(item.modelName)}</td>
+      <td style="text-align:right;">${item.currentQty}</td>
+      <td style="text-align:right; font-weight:700;">-${item.deductQty}</td>
+      <td style="text-align:right;" class="${afterClass}">${after}</td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  }).join('');
+  const unmatchedDiv = document.getElementById('out-unmatched');
+  if (outUnmatched.length) {
+    unmatchedDiv.innerHTML = `<div style="background:#ffebee; border:1.5px solid #ef9a9a; border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:12px;">
+      <b style="color:var(--red);">⚠️ 以下 SKU 未匹配到库存型号（${outUnmatched.length} 条）：</b>
+      <div style="margin-top:6px; line-height:2.2;">${outUnmatched.map(u =>
+        `<span style="background:#fff; border:1px solid #ef9a9a; border-radius:4px; padding:1px 8px; margin-right:6px; font-family:monospace; font-size:11px;">${escHtml(u.sku)}</span>×${u.qty}`
+      ).join('  ')}</div>
+    </div>`;
+  } else {
+    unmatchedDiv.innerHTML = '';
+  }
+}
+
+function clearOutPreview() {
+  outPreviewItems = [];
+  outUnmatched = [];
+  manualItems = [];
+  document.getElementById('out-preview-section').style.display = 'none';
+  document.getElementById('out-manual-items').innerHTML = '';
+  const srch = document.getElementById('out-model-search');
+  if (srch) srch.value = '';
+  document.getElementById('out-search-results').style.display = 'none';
+}
+
+function confirmOutbound() {
+  if (!outPreviewItems.length) { alert('没有可扣减的项目'); return; }
+  const inv = loadInventory();
+  if (!inv) { alert('⚠️ 加载库存失败'); return; }
+  const results = [];
+  for (const item of outPreviewItems) {
+    let remaining = item.deductQty;
+    for (const zone of (inv.zones || [])) {
+      for (const aisle of (zone.aisles || [])) {
+        const containers = [...(aisle.shelves || []), ...(aisle.pallets || [])];
+        for (const container of containers) {
+          for (const slot of (container.slots || [])) {
+            if (slot.modelId === item.modelId && remaining > 0) {
+              const take = Math.min(slot.qty || 0, remaining);
+              slot.qty = (slot.qty || 0) - take;
+              remaining -= take;
+            }
+          }
+        }
+      }
+    }
+    results.push({ ...item, actualDeducted: item.deductQty - remaining });
+  }
+  saveInventory(inv);
+  const histKey = 'atmm_out_history';
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(histKey) || '[]'); } catch(e) {}
+  hist.unshift({ ts: Date.now(), items: results.map(r => ({ name: r.modelName, deduct: r.deductQty, actual: r.actualDeducted })) });
+  if (hist.length > 30) hist = hist.slice(0, 30);
+  localStorage.setItem(histKey, JSON.stringify(hist));
+  const total = results.reduce((s, r) => s + r.actualDeducted, 0);
+  const partial = results.filter(r => r.actualDeducted < r.deductQty);
+  clearOutPreview();
+  renderOutHistory();
+  if (partial.length) {
+    alert(`✅ 已扣减 ${total} 件\n⚠️ ${partial.length} 个型号库存不足，已扣至0件:\n${partial.map(r => `· ${r.modelName}: 计划${r.deductQty}，实扣${r.actualDeducted}`).join('\n')}`);
+  } else {
+    alert(`✅ 出货完成！共扣减 ${total} 件库存。`);
+  }
+}
+
+// ── Manual method ──
+function renderManualSearch() {
+  const q = (document.getElementById('out-model-search').value || '').trim().toLowerCase();
+  const inv = loadInventory();
+  const resultsEl = document.getElementById('out-search-results');
+  if (!q || !inv || !inv.models) { resultsEl.style.display = 'none'; return; }
+  const matches = inv.models.filter(m => m.name.toLowerCase().includes(q)).slice(0, 12);
+  if (!matches.length) { resultsEl.style.display = 'none'; return; }
+  resultsEl.style.display = '';
+  resultsEl.innerHTML = matches.map(m => {
+    const qty = getModelTotalQty(inv, m.id);
+    return `<div data-model-id="${escHtml(m.id)}" data-model-name="${escHtml(m.name)}" onclick="addManualItemFromEl(this)"
+      style="display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-bottom:1px solid rgba(0,0,0,.06); cursor:pointer; font-size:13px;">
+      <span style="font-weight:700;">${escHtml(m.name)}</span>
+      <span style="font-size:11px; color:var(--muted);">库存: ${qty}</span>
+    </div>`;
+  }).join('');
+}
+
+function addManualItemFromEl(el) {
+  addManualItem(el.dataset.modelId, el.dataset.modelName);
+}
+
+function addManualItem(modelId, modelName) {
+  document.getElementById('out-search-results').style.display = 'none';
+  document.getElementById('out-model-search').value = '';
+  if (manualItems.find(i => i.modelId === modelId)) { alert('该型号已在列表中'); return; }
+  const inv = loadInventory();
+  const currentQty = inv ? getModelTotalQty(inv, modelId) : 0;
+  manualItems.push({ modelId, modelName, qty: 1, currentQty });
+  renderManualItems();
+}
+
+function renderManualItems() {
+  const el = document.getElementById('out-manual-items');
+  if (!manualItems.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div style="background:var(--paper); border:1.5px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:12px;">
+      ${manualItems.map((item, i) => `
+        <div class="manual-row" style="padding:10px 12px;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:13px;">${escHtml(item.modelName)}</div>
+            <div style="font-size:11px; color:var(--muted);">当前库存: ${item.currentQty}</div>
+          </div>
+          <input type="number" min="1" value="${item.qty}" onchange="updateManualQty(${i}, this.value)"
+            style="width:72px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; font-size:14px; font-weight:700; text-align:center; font-family:inherit;">
+          <button onclick="removeManualItem(${i})" style="background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:2px 6px; line-height:1;">×</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn primary" onclick="buildManualPreview()" style="width:100%; margin-bottom:8px;">📋 生成预览</button>`;
+}
+
+function updateManualQty(i, val) { manualItems[i].qty = Math.max(1, parseInt(val) || 1); }
+
+function removeManualItem(i) {
+  manualItems.splice(i, 1);
+  renderManualItems();
+  if (!manualItems.length) { outPreviewItems = []; document.getElementById('out-preview-section').style.display = 'none'; }
+}
+
+function buildManualPreview() {
+  if (!manualItems.length) return;
+  const inv = loadInventory();
+  outPreviewItems = manualItems.map(item => {
+    const currentQty = inv ? getModelTotalQty(inv, item.modelId) : 0;
+    return {
+      modelId: item.modelId, modelName: item.modelName, deductQty: item.qty, currentQty,
+      afterQty: currentQty - item.qty,
+      status: currentQty >= item.qty ? 'ok' : (currentQty > 0 ? 'warn' : 'err')
+    };
+  });
+  outUnmatched = [];
+  renderOutPreview();
+}
+
+// ── History ──
+function renderOutHistory() {
+  const el = document.getElementById('out-history');
+  if (!el) return;
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem('atmm_out_history') || '[]'); } catch(e) {}
+  if (!hist.length) {
+    el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:13px;">暂无出货记录</div>';
+    return;
+  }
+  el.innerHTML = hist.map(h => {
+    const dt = new Date(h.ts);
+    const dtStr = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0')
+      + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    const total = h.items.reduce((s, i) => s + (i.actual != null ? i.actual : i.deduct || 0), 0);
+    const detail = h.items.slice(0, 4).map(i => `${escHtml(i.name)} ×${i.actual}`).join(' · ')
+      + (h.items.length > 4 ? ` · 等${h.items.length}种` : '');
+    return `<div class="history-row">
+      <div style="flex-shrink:0; font-size:11px; color:var(--muted); white-space:nowrap; min-width:82px;">${dtStr}</div>
+      <div style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <span style="font-weight:800; color:var(--green);">-${total} 件</span>
+        <span style="font-size:11px; color:var(--muted); margin-left:6px;">${detail}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearOutHistory() {
+  if (!confirm('确定清空所有出货记录？')) return;
+  localStorage.removeItem('atmm_out_history');
+  renderOutHistory();
+}
 
 // ═══════════════════════════════════════════════════
 // INIT

@@ -4,6 +4,7 @@
   },
   "rewrites": [
     { "source": "/shop", "destination": "/shop.html" },
-    { "source": "/models", "destination": "/models.html" }
+    { "source": "/models", "destination": "/models.html" },
+    { "source": "/shipping", "destination": "/shipping.html" }
   ]
 }
