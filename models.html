@@ -335,10 +335,7 @@ async function doPrint() {
   closePrint();
   toast('⏳ 正在生成...');
   try {
-    const [qrMod, barMod] = await Promise.all([
-      loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js').then(() => window.QRCode),
-      loadScript('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js').then(() => window.JsBarcode)
-    ]);
+    const [qrMod, barMod] = await Promise.all([loadQR(), loadBar()]);
     const items = [];
     for (const m of mods) {
       const txt = m.codeText || m.name;
@@ -379,12 +376,37 @@ h1{font-size:12px;color:#888;margin-bottom:5mm;text-align:center;}
   } catch(e) { toast('❌ 生成失败: ' + e.message); }
 }
 
-function loadScript(url) {
+let _qrLib = null, _barLib = null;
+function _tryLoadScript(url) {
   return new Promise((res, rej) => {
-    if (document.querySelector(`script[src="${url}"]`) && window.QRCode) { res(); return; }
+    if (document.querySelector(`script[src="${url}"]`)) { res(); return; }
     const s = document.createElement('script'); s.src = url;
-    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    s.onload = res; s.onerror = () => rej(new Error('load failed: ' + url));
+    document.head.appendChild(s);
   });
+}
+function _loadWithFallback(urls, getGlobal, errMsg) {
+  async function attempt(i) {
+    if (i >= urls.length) throw new Error(errMsg);
+    try { await _tryLoadScript(urls[i]); const g = getGlobal(); if (g) return g; throw new Error('global not set'); }
+    catch(e) { return attempt(i + 1); }
+  }
+  return attempt(0);
+}
+function loadQR() {
+  if (_qrLib) return Promise.resolve(_qrLib);
+  return _loadWithFallback([
+    'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js',
+    'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+    'https://unpkg.com/qrcode@1.4.4/build/qrcode.min.js',
+  ], () => { _qrLib = window.QRCode; return _qrLib; }, '无法加载QR码库');
+}
+function loadBar() {
+  if (_barLib) return Promise.resolve(_barLib);
+  return _loadWithFallback([
+    'https://unpkg.com/jsbarcode@3.11.6/dist/JsBarcode.all.min.js',
+    'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js',
+  ], () => { _barLib = window.JsBarcode; return _barLib; }, '无法加载条码库');
 }
 
 // ── Code sheet (redirect to main app) ──
