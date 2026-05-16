@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>型号库管理 · ATMM.store</title>
+  <title>当前型号清单 · ATMM.store</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>📋</text></svg>">
   <style>
     :root { --green:#2e7d52; --red:#c0392b; --ink:#1a1a1a; --muted:#888; --bg:#f4f5f7; --paper:#fff; --line:#e5e7eb; --blue:#1a73e8; }
@@ -60,15 +60,16 @@
 </head>
 <body>
 <header class="hdr">
-  <button class="back" onclick="location.href='/'">← 仓管</button>
-  <div class="htitle">📋 型号库管理</div>
+  <button class="back" onclick="location.href='/?sheet=upload'">← 返回</button>
+  <div class="htitle">📋 当前型号清单</div>
   <span class="save-ind" id="save-ind">✓ 已保存</span>
   <div class="hcount" id="page-count">—</div>
   <button class="hadd" onclick="openAdd()">+ 添加</button>
 </header>
 
-<div class="toolbar">
-  <input type="text" class="srch" id="srch" placeholder="🔍 搜索型号..." oninput="renderList()">
+<div class="toolbar" style="flex-wrap:wrap;gap:6px;">
+  <button class="tbtn" style="flex-basis:100%;text-align:left;background:#f0fff4;border-color:#6ee7b7;color:#065f46;font-size:12px;" onclick="openImgUpload()">📷 批量上传型号图片 <span style="font-size:10px;font-weight:400;color:var(--muted);">（文件名命名为型号编码，自动匹配）</span></button>
+  <input type="text" class="srch" id="srch" placeholder="🔍 搜索型号..." oninput="renderList()" style="flex:1;min-width:0;">
   <button class="tbtn" onclick="exportTxt()">📤 导出</button>
   <button class="tbtn" style="background:#f0f4ff;border-color:#93c5fd;color:#1e40af;" onclick="openPrint()">🖨️ 打印</button>
 </div>
@@ -110,6 +111,52 @@
       <button onclick="doPrint()" style="flex:2;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ 生成打印页</button>
       <button onclick="closePrint()" class="fdel" style="flex:1;background:var(--bg);border-color:var(--line);color:var(--muted);">取消</button>
     </div>
+  </div>
+</div>
+
+<!-- Code modal -->
+<div class="back-drop" id="code-modal">
+  <div class="modal" style="max-height:88vh;overflow-y:auto;">
+    <h3 id="code-title" style="font-size:13px;word-break:break-word;">商品码</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">内容可自定义（如英文型号、SKU编号等）</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <input id="code-text-input" type="text" class="finput" style="flex:1;background:#fff8d6;border-color:#1a1a1a;">
+      <button onclick="saveCodeText()" style="flex-shrink:0;padding:8px 12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">保存</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">二维码 QR Code</div>
+        <div id="code-qr" style="display:inline-flex;padding:10px;background:#fff;border:1px solid var(--line);border-radius:8px;min-height:80px;align-items:center;justify-content:center;"><span style="font-size:11px;color:var(--muted);">生成中…</span></div>
+        <div><button onclick="downloadCode('qr')" style="margin-top:6px;padding:5px 12px;font-size:11px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer;font-family:inherit;">⬇ 下载 PNG</button></div>
+      </div>
+      <div style="text-align:center;border-top:1px solid var(--line);padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">条形码 Barcode (Code 128)</div>
+        <div style="background:#fff;padding:10px 8px;border:1px solid var(--line);border-radius:8px;overflow:hidden;">
+          <svg id="code-bar-svg" style="display:block;width:100%;height:auto;"></svg>
+        </div>
+        <div><button onclick="downloadCode('bar')" style="margin-top:6px;padding:5px 12px;font-size:11px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer;font-family:inherit;">⬇ 下载 PNG</button></div>
+        <div id="code-note" style="font-size:10px;color:#b45309;margin-top:4px;line-height:1.4;"></div>
+      </div>
+    </div>
+    <button onclick="closeCode()" style="width:100%;margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:700;cursor:pointer;font-family:inherit;">关闭</button>
+  </div>
+</div>
+
+<!-- Image upload modal -->
+<div class="back-drop" id="img-modal">
+  <div class="modal">
+    <h3>📷 批量上传型号图片</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7;">
+      图片文件名命名为<b>型号编码</b>（如 <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;">IC-11FEXP.jpg</code>），系统自动匹配绑定。<br>
+      可一次选多张图片，或选择整个文件夹。
+    </p>
+    <input type="file" id="img-files" multiple accept="image/*" style="display:none;" onchange="handleImgFiles(this.files)">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button onclick="document.getElementById('img-files').removeAttribute('webkitdirectory');document.getElementById('img-files').click()" class="fsave" style="flex:1;">🖼️ 选多张图片</button>
+      <button onclick="document.getElementById('img-files').setAttribute('webkitdirectory','');document.getElementById('img-files').click()" class="fsave" style="flex:1;background:#f0f7ff;color:#1e40af;border:1px solid #93c5fd;">📁 选整个文件夹</button>
+    </div>
+    <div id="img-result" style="font-size:12px;min-height:32px;line-height:1.6;"></div>
+    <button onclick="closeImgModal()" style="width:100%;margin-top:14px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:700;cursor:pointer;font-family:inherit;">关闭</button>
   </div>
 </div>
 
@@ -192,8 +239,11 @@ function renderList() {
   el.innerHTML = filtered.map((m, i) => {
     const isOpen = _expandId === m.id;
     const dimBadge = m.dimensions ? ` <span style="font-size:9px;color:var(--muted);font-weight:400;">📐${esc(m.dimensions)}</span>` : '';
+    const thumb = m.imageData ? `<img src="${m.imageData}" onclick="event.stopPropagation();showImgFull('${m.id}')" style="width:30px;height:30px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer;border:1px solid var(--line);">` : '';
     return `<div class="mitem${isOpen?' open':''}" id="mi-${m.id}">
       <div class="mrow" onclick="toggleEx('${m.id}')">
+        <button onclick="event.stopPropagation();openCode('${m.id}')" style="flex-shrink:0;padding:3px 6px;border:1px solid #93c5fd;border-radius:5px;background:#f0f7ff;color:#1e40af;font-size:11px;cursor:pointer;line-height:1;font-family:inherit;">🔲</button>
+        ${thumb}
         <span class="mnum">${i+1}</span>
         <div class="mname">${esc(m.name)}${dimBadge}</div>
         <span class="mmeta">1箱=${m.boxToSetRatio||40}${esc(m.boxToSetUnit||'套')}</span>
@@ -218,9 +268,17 @@ function buildForm(m) {
       <div><span class="flabel">1箱换算</span><input class="finput" id="f-ratio-${m.id}" type="number" value="${m.boxToSetRatio||40}" min="1"></div>
       <div><span class="flabel">单位</span><input class="finput" id="f-unit-${m.id}" type="text" value="${esc(m.boxToSetUnit||'套')}"></div>
     </div>
-    <div class="frow full" style="margin-bottom:0;">
+    <div class="frow full" style="margin-bottom:8px;">
       <div><span class="flabel">自定义扫码内容 <span style="font-weight:400;text-transform:none;">(留空用型号名)</span></span>
         <input class="finput" id="f-code-${m.id}" type="text" value="${esc(m.codeText||'')}" placeholder="留空自动用型号名称"></div>
+    </div>
+    <div class="frow full" style="margin-bottom:0;">
+      <div><span class="flabel">商品图片</span>
+        ${m.imageData
+          ? `<div style="display:flex;align-items:center;gap:10px;margin-top:4px;"><img src="${m.imageData}" onclick="showImgFull('${m.id}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--line);"><button onclick="delImg('${m.id}')" style="padding:5px 10px;border:1px solid var(--red);border-radius:6px;background:#ffe5e5;color:var(--red);font-size:11px;cursor:pointer;font-family:inherit;">🗑 删除图片</button></div>`
+          : `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span style="font-size:11px;color:var(--muted);">暂无图片</span><label style="padding:5px 10px;border:1px solid #6ee7b7;border-radius:6px;background:#f0fff4;color:#065f46;font-size:11px;cursor:pointer;font-weight:700;">📷 单张上传<input type="file" accept="image/*" style="display:none;" onchange="uploadSingleImg('${m.id}',this)"></label></div>`
+        }
+      </div>
     </div>
     <div class="faction">
       <button class="fsave" onclick="saveModel('${m.id}')">💾 保存</button>
@@ -409,9 +467,135 @@ function loadBar() {
   ], () => { _barLib = window.JsBarcode; return _barLib; }, '无法加载条码库');
 }
 
-// ── Code sheet (redirect to main app) ──
+// ── Code modal ──
+let _codeModelId = null;
 function openCode(id) {
-  toast('💡 商品码功能在主仓管界面「型号库」中使用');
+  const m = state.models.find(x => x.id === id);
+  if (!m) return;
+  _codeModelId = id;
+  document.getElementById('code-title').textContent = m.name + ' · 商品码';
+  document.getElementById('code-text-input').value = m.codeText || m.name;
+  document.getElementById('code-qr').innerHTML = '<span style="font-size:11px;color:var(--muted);">生成中…</span>';
+  document.getElementById('code-bar-svg').innerHTML = '';
+  document.getElementById('code-note').textContent = '';
+  document.getElementById('code-modal').classList.add('on');
+  _renderCode();
+}
+function closeCode() { document.getElementById('code-modal').classList.remove('on'); }
+function saveCodeText() {
+  const m = state.models.find(x => x.id === _codeModelId);
+  if (!m) return;
+  const txt = document.getElementById('code-text-input').value.trim();
+  if (txt && txt !== m.name) m.codeText = txt; else delete m.codeText;
+  saveState(); renderList(); _renderCode(); toast('✅ 扫码内容已保存');
+}
+async function _renderCode() {
+  const txt = document.getElementById('code-text-input').value.trim();
+  const qrEl = document.getElementById('code-qr');
+  const svgEl = document.getElementById('code-bar-svg');
+  const noteEl = document.getElementById('code-note');
+  try {
+    const [QR, Bar] = await Promise.all([loadQR(), loadBar()]);
+    try {
+      const url = await QR.toDataURL(txt, { width:180, margin:2, color:{ dark:'#1a1a1a', light:'#ffffff' } });
+      qrEl.innerHTML = `<img src="${url}" style="width:180px;height:180px;display:block;">`;
+    } catch(e) { qrEl.innerHTML = '<div style="font-size:11px;color:var(--red);padding:8px;">二维码生成失败，请缩短内容</div>'; }
+    const barTxt = txt.replace(/[^\x20-\x7E]/g,' ').trim().replace(/\s+/g,' ').slice(0,48);
+    try {
+      Bar(svgEl, barTxt||'NO-CODE', { format:'CODE128', lineColor:'#1a1a1a', width:2, height:65, fontSize:12, margin:8, displayValue:true });
+      svgEl.style.width = '100%'; svgEl.style.height = 'auto';
+      noteEl.textContent = barTxt !== txt ? '⚠️ 条形码内容已自动截短为ASCII（可在上方自定义简短编码）' : '';
+    } catch(e) {}
+  } catch(e) { qrEl.innerHTML = '<div style="color:var(--red);font-size:11px;">库加载失败，请检查网络</div>'; }
+}
+async function downloadCode(type) {
+  const txt = document.getElementById('code-text-input').value.trim();
+  const baseName = txt.slice(0,30).replace(/[^a-zA-Z0-9一-龥]/g,'_');
+  if (type === 'qr') {
+    const img = document.querySelector('#code-qr img');
+    if (!img) { toast('请先等二维码生成完成'); return; }
+    const a = document.createElement('a'); a.href = img.src; a.download = baseName + '-QR.png'; a.click();
+  } else {
+    const svg = document.getElementById('code-bar-svg');
+    if (!svg || !svg.querySelector('rect')) { toast('请先等条形码生成完成'); return; }
+    const W = svg.viewBox?.baseVal?.width || 300, H = svg.viewBox?.baseVal?.height || 110;
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img,0,0,W,H); const a = document.createElement('a'); a.href = canvas.toDataURL(); a.download = baseName+'-BAR.png'; a.click(); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+  }
+}
+
+// ── Image upload ──
+function openImgUpload() {
+  document.getElementById('img-result').textContent = '';
+  document.getElementById('img-modal').classList.add('on');
+}
+function closeImgModal() { document.getElementById('img-modal').classList.remove('on'); }
+async function handleImgFiles(files) {
+  if (!files.length) return;
+  const resultEl = document.getElementById('img-result');
+  resultEl.textContent = `处理中… (0/${files.length})`;
+  let matched = 0, skipped = 0, done = 0;
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) { skipped++; done++; continue; }
+    const baseName = file.name.replace(/\.[^.]+$/, '').toLowerCase().trim();
+    const m = state.models.find(mo => {
+      const code = (mo.codeText || mo.name).toLowerCase().trim();
+      const name = mo.name.toLowerCase().trim();
+      return code === baseName || name === baseName ||
+             code.replace(/[^a-z0-9]/gi,'') === baseName.replace(/[^a-z0-9]/gi,'');
+    });
+    if (!m) { skipped++; done++; resultEl.textContent = `处理中… (${done}/${files.length})`; continue; }
+    const dataUrl = await compressImg(file, 240, 0.78);
+    if (dataUrl) { m.imageData = dataUrl; matched++; }
+    done++;
+    resultEl.textContent = `处理中… (${done}/${files.length})`;
+  }
+  if (matched) { saveState(); renderList(); }
+  resultEl.innerHTML = `✅ 成功匹配 <b>${matched}</b> 张图片${skipped ? `，${skipped} 张未匹配（文件名须与型号编码一致）` : ''}`;
+}
+async function uploadSingleImg(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const m = state.models.find(x => x.id === id);
+  if (!m) return;
+  const dataUrl = await compressImg(file, 240, 0.78);
+  if (!dataUrl) { toast('图片处理失败'); return; }
+  m.imageData = dataUrl;
+  saveState(); renderList(); toast('✅ 图片已绑定');
+}
+function delImg(id) {
+  const m = state.models.find(x => x.id === id);
+  if (!m) return;
+  delete m.imageData;
+  saveState(); renderList(); toast('图片已删除');
+}
+function compressImg(file, maxPx, quality) {
+  return new Promise(res => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(''); };
+    img.src = url;
+  });
+}
+function showImgFull(id) {
+  const m = state.models.find(x => x.id === id);
+  if (!m?.imageData) return;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  ov.onclick = () => document.body.removeChild(ov);
+  const img = document.createElement('img'); img.src = m.imageData;
+  img.style.cssText = 'max-width:92vw;max-height:88vh;border-radius:8px;';
+  ov.appendChild(img); document.body.appendChild(ov);
 }
 
 // ── Toast ──
@@ -426,6 +610,12 @@ function toast(msg, dur) {
 loadState();
 renderList();
 initSb();
+// Close modals on backdrop click
+document.querySelectorAll('.back-drop').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('on'); });
+});
+// Auto-open image upload if ?imgupload=1
+if (location.search.includes('imgupload=1')) { setTimeout(openImgUpload, 400); }
 </script>
 </body>
 </html>
