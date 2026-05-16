@@ -1550,10 +1550,6 @@ async function init(){
 
   sb.auth.onAuthStateChange((_,s)=>{
     user=s?.user||null;token=s?.access_token||null;updAuthUI();
-    if(token) fetch('https://vkwndhdqbmuyogieccph.supabase.co/functions/v1/zehem-daily-grant',{
-      method:'POST',
-      headers:{Authorization:'Bearer '+token,apikey:SB_ANON}
-    }).catch(()=>{});
   });
 
   if(mode==='seller'){goSeller();}

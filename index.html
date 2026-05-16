@@ -7999,13 +7999,6 @@ function _pulseLoginBtn() {
 async function _onSignIn(user) {
   _user = user;
 
-  // Daily +1 Z Credit grant (fire-and-forget)
-  sb.auth.getSession().then(({data:{session:_s}})=>{
-    if(_s?.access_token) fetch('https://vkwndhdqbmuyogieccph.supabase.co/functions/v1/zehem-daily-grant',{
-      method:'POST',
-      headers:{Authorization:'Bearer '+_s.access_token,apikey:_SUPA_ANON}
-    }).then(r=>r.json()).then(d=>{if(d.granted)setTimeout(_loadWalletCredits,1200);}).catch(()=>{});
-  }).catch(()=>{});
 
   // Check URL for invite params (when boss invited an existing user)
   const params = new URLSearchParams(location.search);

@@ -4,32 +4,22 @@ const { createClient } = require('@supabase/supabase-js');
 const MIN_TOPUP_USD = 1;
 const MAX_TOPUP_USD = 9999;
 
-async function creditWallet(sb, userId, warehouseId, topupCents, amountUsd, paymentIntentId) {
+async function creditWallet(sb, warehouseId, topupCents, amountUsd, paymentIntentId) {
   const { data: existing } = await sb.from('warehouse_transactions')
     .select('id').eq('stripe_payment_intent_id', paymentIntentId).maybeSingle();
   if (existing) return; // already credited (idempotency)
 
-  // Credit user_wallets (unified across all platforms)
-  const { data: wRow } = await sb.from('user_wallets')
-    .select('balance_cents').eq('user_id', userId).maybeSingle();
-  const cur = wRow?.balance_cents ?? 0;
-  if (wRow) {
-    await sb.from('user_wallets')
-      .update({ balance_cents: cur + topupCents, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+  const { data: walletRow } = await sb.from('wallets')
+    .select('id, balance_cents').eq('warehouse_id', warehouseId).maybeSingle();
+  const current = walletRow?.balance_cents ?? 0;
+  if (walletRow?.id) {
+    await sb.from('wallets')
+      .update({ balance_cents: current + topupCents, updated_at: new Date().toISOString() })
+      .eq('id', walletRow.id);
   } else {
-    await sb.from('user_wallets')
-      .insert({ user_id: userId, balance_cents: cur + topupCents, updated_at: new Date().toISOString() });
+    await sb.from('wallets')
+      .insert({ warehouse_id: warehouseId, balance_cents: current + topupCents, updated_at: new Date().toISOString() });
   }
-
-  // Record in wallet_transactions (user-based, shared across platforms)
-  await sb.from('wallet_transactions').insert({
-    user_id: userId,
-    amount_cents: topupCents,
-    description: `钱包充值 $${amountUsd}`,
-  });
-
-  // Record in warehouse_transactions for idempotency + audit trail
   await sb.from('warehouse_transactions').insert({
     warehouse_id: warehouseId,
     type: 'topup',
@@ -86,12 +76,6 @@ module.exports = async function handler(req, res) {
     await sb.from('subscriptions').update({ stripe_customer_id: customerId }).eq('warehouse_id', warehouseId);
   }
 
-  // Sync customer ID to user_subscriptions (for cross-platform card visibility in ZEHEM.AI)
-  await sb.from('user_subscriptions').upsert(
-    { user_id: user.id, stripe_customer_id: customerId, updated_at: new Date().toISOString() },
-    { onConflict: 'user_id' }
-  ).catch(() => {}); // non-fatal
-
   // Try direct charge with saved card (bypasses Stripe Link / Checkout)
   let defaultPmId = null;
   try {
@@ -123,12 +107,12 @@ module.exports = async function handler(req, res) {
         off_session: true,
         confirm: true,
         description: `ATMM 钱包充值 $${amountUsd}`,
-        metadata: { warehouse_id: warehouseId, user_id: user.id, topup_cents: amountCents.toString(), type: 'wallet_topup' },
+        metadata: { warehouse_id: warehouseId, topup_cents: amountCents.toString(), type: 'wallet_topup' },
         return_url: `${origin}${rp}?topup=success`,
       });
 
       if (pi.status === 'succeeded') {
-        await creditWallet(sb, user.id, warehouseId, amountCents, amountUsd, pi.id);
+        await creditWallet(sb, warehouseId, amountCents, amountUsd, pi.id);
         return res.json({ success: true, message: `充值成功！已增加 $${amountUsd}` });
       }
       if (pi.status === 'requires_action') {
@@ -159,7 +143,7 @@ module.exports = async function handler(req, res) {
     }],
     success_url: `${origin}${rp}?topup=success`,
     cancel_url:  `${origin}${rp}?topup=canceled`,
-    metadata: { warehouse_id: warehouseId, user_id: user.id, topup_cents: amountCents.toString(), type: 'wallet_topup' },
+    metadata: { warehouse_id: warehouseId, topup_cents: amountCents.toString(), type: 'wallet_topup' },
   });
 
   res.json({ url: session.url });
