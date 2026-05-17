@@ -978,7 +978,7 @@
   .voice-status { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 6px; }
 
   [contenteditable="true"] { outline: 2px solid var(--ink); outline-offset: 2px; background: #fff8d6; border-radius: 4px; -webkit-user-select: text; user-select: text; }
-  .toast { position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; z-index: 200; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 80vw; text-align: center; }
+  .toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; z-index: 9000; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 80vw; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
   .toast.show { opacity: 1; }
   .delete-zone { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, rgba(214,51,64,0.95), rgba(214,51,64,0)); display: none; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; z-index: 90; pointer-events: none; padding-bottom: var(--safe-bottom); }
   .delete-zone.show { display: flex; }
@@ -1229,7 +1229,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2275,7 +2275,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.1</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.2</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>提示 Toast 移至屏幕顶部中央，手机端不再被键盘遮挡</li>
+            <li>英文/中文名称输入升级为「多种输入方式」面板（拍照 + 语音）</li>
+            <li>尺寸输入：三格分别填长×宽×高，右侧单位可一键切换 IN/CM/MM/M</li>
+            <li>重量输入：数值框右侧单位可一键切换 LB/KG/G</li>
+            <li>点击空的附加型号格位，直接进入10步向导（附加编号如 T-1-A-1-03-a 视为独立库位）</li>
+            <li>「批量填」按钮在附加型号情境下也可使用，批量填写区域内所有空附加型号格</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.1</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2283,6 +2296,7 @@
             <li>单格填写型号后自动进入10步向导（数量→单位→英文名→中文名→尺寸→重量→图片→附加型号）</li>
             <li>型号建议列表默认显示3行，弹窗更紧凑，一眼看完</li>
           </ul>
+          </div>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
             <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.0</span>
@@ -2730,13 +2744,44 @@
   <div class="sheet">
     <div class="sheet-body">
       <div id="wizard-text-progress" style="font-size:11px; color:var(--muted); font-weight:700; letter-spacing:0.06em; margin-bottom:4px;"></div>
-      <h3 id="wizard-text-title" style="margin-top:0; margin-bottom:12px;"></h3>
-      <input type="text" id="wizard-text-input" autocomplete="off" spellcheck="false" style="width:100%; padding:12px; border:2px solid var(--ink); border-radius:10px; font-size:16px; font-weight:600; background:#fff8d6; box-sizing:border-box; margin-bottom:12px;">
-      <div style="font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.04em;">语音输入</div>
-      <div class="input-methods" style="margin-bottom:8px;">
-        <button class="input-method-btn" id="wizard-text-voice-btn"><span class="imico">🎤</span><span>语音</span></button>
+      <h3 id="wizard-text-title" style="margin-top:0; margin-bottom:10px;"></h3>
+
+      <!-- 普通文字输入 (步骤5/6: 英文名/中文名) -->
+      <div id="wt-text-section">
+        <input type="text" id="wizard-text-input" autocomplete="off" spellcheck="false" style="width:100%; padding:12px; border:2px solid var(--ink); border-radius:10px; font-size:16px; font-weight:600; background:#fff8d6; box-sizing:border-box; margin-bottom:10px;">
       </div>
-      <div id="wizard-text-status" style="display:none; padding:8px; background:#fff8d6; border:1px solid var(--line); border-radius:8px; font-size:12px; font-weight:600; text-align:center; margin-top:8px;"></div>
+
+      <!-- 尺寸输入 (步骤7: 长×宽×高 + 单位) -->
+      <div id="wt-dim-section" style="display:none; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="number" id="wizard-dim-l" inputmode="decimal" placeholder="长" style="flex:1; padding:10px 8px; border:2px solid var(--ink); border-radius:8px; font-size:15px; font-weight:600; background:#fff8d6; text-align:center; min-width:0;">
+          <span style="font-weight:700; color:var(--muted);">×</span>
+          <input type="number" id="wizard-dim-w" inputmode="decimal" placeholder="宽" style="flex:1; padding:10px 8px; border:2px solid var(--ink); border-radius:8px; font-size:15px; font-weight:600; background:#fff8d6; text-align:center; min-width:0;">
+          <span style="font-weight:700; color:var(--muted);">×</span>
+          <input type="number" id="wizard-dim-h" inputmode="decimal" placeholder="高" style="flex:1; padding:10px 8px; border:2px solid var(--ink); border-radius:8px; font-size:15px; font-weight:600; background:#fff8d6; text-align:center; min-width:0;">
+          <button id="wizard-dim-unit" style="flex-shrink:0; padding:10px 10px; border:2px solid var(--ink); border-radius:8px; font-size:14px; font-weight:700; background:#fff; cursor:pointer; min-width:46px;">IN</button>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:5px; text-align:center;">点击单位可切换 IN · CM · MM · M</div>
+      </div>
+
+      <!-- 重量输入 (步骤8: 数值 + 单位) -->
+      <div id="wt-weight-section" style="display:none; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="number" id="wizard-weight-val" inputmode="decimal" placeholder="0.0" style="flex:1; padding:12px; border:2px solid var(--ink); border-radius:10px; font-size:16px; font-weight:600; background:#fff8d6; text-align:center; min-width:0;">
+          <button id="wizard-weight-unit" style="flex-shrink:0; padding:12px 14px; border:2px solid var(--ink); border-radius:10px; font-size:14px; font-weight:700; background:#fff; cursor:pointer; min-width:50px;">LB</button>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:5px; text-align:center;">点击单位可切换 LB · KG · G</div>
+      </div>
+
+      <!-- 多种输入方式 (所有文字步骤通用) -->
+      <div id="wt-multi-input">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.04em;">多种输入方式</div>
+        <div class="input-methods" style="margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+          <button class="input-method-btn" id="wizard-text-camera-btn"><span class="imico">📷</span><span>拍照</span></button>
+          <button class="input-method-btn" id="wizard-text-voice-btn"><span class="imico">🎤</span><span>语音</span></button>
+        </div>
+        <div id="wizard-text-status" style="display:none; padding:8px; background:#fff8d6; border:1px solid var(--line); border-radius:8px; font-size:12px; font-weight:600; text-align:center;"></div>
+      </div>
     </div>
     <div class="sheet-footer">
       <button class="sheet-confirm" id="wizard-text-confirm">下一步 →</button>
@@ -3609,18 +3654,14 @@ function attachListHandlers(root) {
       saveState(); render(); toast('已添加附加型号');
     });
   });
-  // Sub-model empty cell — click opens model picker
+  // Sub-model empty cell — click starts 10-step wizard in sub-model mode
   root.querySelectorAll('.sub-model-cell.empty-clickable').forEach(el => {
     el.addEventListener('click', () => {
       const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si, smi = +el.dataset.smi;
-      openModelPicker(null, null, null, false, (model) => {
-        const t = getActiveTable();
-        const ck = getContainerKey(), sk = getSlotsKey();
-        const slot = t.aisles[ai][ck][ci][sk][si];
-        if (!slot.subModels || !slot.subModels[smi]) return;
-        Object.assign(slot.subModels[smi], { modelId: model.id, color: null, qty: 0, unit: null });
-        saveState(); render();
-      });
+      const zoneId = currentTable;
+      hideSheets();
+      _wizardState = { zoneId, slots: [{ai, ci, si, smi}], idx: 0, step: 0, addingSubModel: true, tempSubModel: null, currentModelId: null, autoTimer: null };
+      setTimeout(() => _runWizardStep(1), 150);
     });
   });
   // Sub-model has-model cell — double-tap to change model
@@ -4959,16 +5000,25 @@ function _wizardCommitUnit(u) {
   if (_wizardState?.step === 4 && _wizardState.addingSubModel) {
     _wizardState.tempSubModel = _wizardState.tempSubModel || {};
     _wizardState.tempSubModel.unit = u || null;
-    // Commit sub-model to slot
     const { slots, idx } = _wizardState;
-    const { ai, ci, si } = slots[idx];
+    const { ai, ci, si, smi: curSmi } = slots[idx];
     const slot = getSlot(ai, ci, si);
     if (slot) {
-      if (!slot.subModels) slot.subModels = [];
-      if (slot.subModels.length < 3) {
-        slot.subModels.push({ modelId: _wizardState.tempSubModel.modelId, qty: _wizardState.tempSubModel.qty || 0, unit: _wizardState.tempSubModel.unit, color: null, restock: 0 });
-        toast('✅ 附加型号已添加');
-      } else { toast('⚠️ 此库位已有3个附加型号，跳过'); }
+      if (curSmi !== undefined) {
+        // UPDATE the specific existing sub-model entry
+        if (slot.subModels?.[curSmi] !== undefined) {
+          slot.subModels[curSmi].qty = _wizardState.tempSubModel.qty || 0;
+          slot.subModels[curSmi].unit = _wizardState.tempSubModel.unit;
+          toast('✅ 附加型号已更新');
+        }
+      } else {
+        // PUSH a new sub-model entry (main wizard step 10 loop)
+        if (!slot.subModels) slot.subModels = [];
+        if (slot.subModels.length < 3) {
+          slot.subModels.push({ modelId: _wizardState.tempSubModel.modelId, qty: _wizardState.tempSubModel.qty || 0, unit: _wizardState.tempSubModel.unit, color: null, restock: 0 });
+          toast('✅ 附加型号已添加');
+        } else { toast('⚠️ 此库位已有3个附加型号，跳过'); }
+      }
     }
     _wizardState.tempSubModel = null;
     saveState(); render(); hideSheets();
@@ -5915,11 +5965,50 @@ function commitModelChoice() {
 
 // 批量填按钮：从当前格位开始向导（model picker 已打开，直接接管）
 document.getElementById('model-picker-batch-btn').addEventListener('click', () => {
-  if (!pendingModelTarget) { toast('⚠️ 请先点击一个格位再开始批量填'); return; }
-  const { ai, ci, si } = pendingModelTarget;
   const zoneId = currentTable;
   const zone = state.zones.find(z => z.id === zoneId);
   if (!zone) return;
+
+  // Sub-model 批量填：_wizardState 已在运行 & 当前格位含 smi
+  const curSlot = _wizardState?.slots?.[_wizardState.idx];
+  if (_wizardState && _wizardState.addingSubModel && curSlot?.smi !== undefined) {
+    const ck = getContainerKey(), sk = getSlotsKey();
+    const allSubSlots = [];
+    zone.aisles.forEach((a, _ai) => {
+      a[ck].forEach((_c, _ci) => {
+        _c[sk].forEach((_s, _si) => {
+          (_s.subModels || []).forEach((_sm, _smi) => {
+            if (!_sm.modelId) allSubSlots.push({ ai: _ai, ci: _ci, si: _si, smi: _smi });
+          });
+        });
+      });
+    });
+    const startIdx = allSubSlots.findIndex(s => s.ai === curSlot.ai && s.ci === curSlot.ci && s.si === curSlot.si && s.smi === curSlot.smi);
+    const slots = startIdx >= 0 ? allSubSlots.slice(startIdx) : allSubSlots;
+    if (!slots.length) { toast('⚠️ 没有空的附加型号格位'); return; }
+    _wizardState = { zoneId, slots, idx: 0, step: 2, addingSubModel: true, tempSubModel: null, currentModelId: null, autoTimer: null };
+    const first = slots[0];
+    const firstLoc = makeLocationCode(zoneId, first.ai, first.ci, first.si) + '-' + String.fromCharCode(97 + first.smi);
+    document.getElementById('wizard-skip-btn').style.display = '';
+    document.getElementById('camera-title').textContent = `📝 附加 1/${slots.length} · ${firstLoc}`;
+    // model picker 已开着，重新打开以清空搜索
+    openModelPicker(null, null, null, false, (model) => {
+      _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
+      _wizardState.currentModelId = model.id;
+      const t = getActiveTable();
+      const f = _wizardState.slots[_wizardState.idx];
+      const slot = t.aisles[f.ai][ck][f.ci][sk][f.si];
+      if (slot?.subModels?.[f.smi] !== undefined) slot.subModels[f.smi].modelId = model.id;
+      saveState(); render(); hideSheets();
+      setTimeout(() => _runWizardStep(3), 300);
+    });
+    toast(`📋 附加批量填：从 ${firstLoc} 起共 ${slots.length} 格`);
+    return;
+  }
+
+  // 主格位批量填
+  if (!pendingModelTarget) { toast('⚠️ 请先点击一个格位再开始批量填'); return; }
+  const { ai, ci, si } = pendingModelTarget;
   const allSlots = [];
   if (zone.type === 'shelf') {
     zone.aisles.forEach((a,_ai) => a.shelves.forEach((_s,_ci) => _s.slots.forEach((_,_si) => allSlots.push({ai:_ai,ci:_ci,si:_si}))));
@@ -5929,7 +6018,6 @@ document.getElementById('model-picker-batch-btn').addEventListener('click', () =
   const startIdx = allSlots.findIndex(s => s.ai === ai && s.ci === ci && s.si === si);
   const slots = startIdx >= 0 ? allSlots.slice(startIdx) : allSlots;
   _wizardState = { zoneId, slots, idx: 0, step: 2, addingSubModel: false, tempSubModel: null, currentModelId: null, autoTimer: null };
-  // 已经在 model picker (step 2)，直接更新 UI 即可
   const locCode = makeLocationCode(zoneId, ai, ci, si);
   document.getElementById('wizard-skip-btn').style.display = '';
   document.getElementById('camera-title').textContent = `📝 格位 1/${slots.length} · ${locCode}`;
@@ -5980,9 +6068,11 @@ function _wizardCancel() {
 function _wizardNextSlot() {
   if (!_wizardState) return;
   _wizardClearTimer();
-  _wizardState.addingSubModel = false;
+  const nextIdx = _wizardState.idx + 1;
+  const nextSlot = _wizardState.slots[nextIdx];
+  _wizardState.addingSubModel = nextSlot?.smi !== undefined;
   _wizardState.tempSubModel = null;
-  _wizardState.idx++;
+  _wizardState.idx = nextIdx;
   _wizardState.step = 0;
   document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
   _wizardHideAll();
@@ -6011,9 +6101,11 @@ function _runWizardStep(step) {
     return;
   }
 
-  const { ai, ci, si } = slots[idx];
+  const { ai, ci, si, smi: curSmi } = slots[idx];
+  const isSubModelSlot = curSmi !== undefined;
   const total = slots.length, cur = idx + 1;
-  const locCode = makeLocationCode(zoneId, ai, ci, si);
+  const parentLocCode = makeLocationCode(zoneId, ai, ci, si);
+  const locCode = isSubModelSlot ? parentLocCode + '-' + String.fromCharCode(97 + curSmi) : parentLocCode;
 
   // Highlight slot
   document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
@@ -6023,7 +6115,7 @@ function _runWizardStep(step) {
   switch (step) {
     case 1: {
       // Location code preview — auto-advance after 1s
-      document.getElementById('wizard-loc-progress').textContent = `格位 ${cur} / ${total}${_wizardState.addingSubModel ? ' · 附加型号' : ''}`;
+      document.getElementById('wizard-loc-progress').textContent = `${isSubModelSlot ? '附加型号' : '格位'} ${cur} / ${total}`;
       document.getElementById('wizard-loc-code').textContent = locCode;
       document.getElementById('wizard-loc-overlay').style.display = 'flex';
       _wizardState.autoTimer = setTimeout(() => {
@@ -6034,8 +6126,21 @@ function _runWizardStep(step) {
     case 2: {
       // Model name
       document.getElementById('wizard-skip-btn').style.display = '';
-      document.getElementById('camera-title').textContent = `📝 格位 ${cur}/${total} · ${locCode}${_wizardState.addingSubModel ? ' · 附加' : ''}`;
-      if (_wizardState.addingSubModel) {
+      document.getElementById('camera-title').textContent = `📝 ${isSubModelSlot ? '附加' : '格位'} ${cur}/${total} · ${locCode}`;
+      if (isSubModelSlot) {
+        // Filling a specific existing sub-model slot
+        openModelPicker(null, null, null, false, (model) => {
+          _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
+          _wizardState.currentModelId = model.id;
+          const t = getActiveTable();
+          const ck = getContainerKey(), sk = getSlotsKey();
+          const slot = t.aisles[ai][ck][ci][sk][si];
+          if (slot?.subModels?.[curSmi] !== undefined) slot.subModels[curSmi].modelId = model.id;
+          saveState(); render(); hideSheets();
+          setTimeout(() => _runWizardStep(3), 300);
+        });
+      } else if (_wizardState.addingSubModel) {
+        // Adding a brand-new sub-model via main wizard flow (step 10 loop)
         openModelPicker(null, null, null, false, (model) => {
           _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
           _wizardState.currentModelId = model.id;
@@ -6091,17 +6196,25 @@ function _runWizardStep(step) {
       break;
     }
     case 10: {
-      // Sub-model preview — auto-advance after 1s
-      document.getElementById('wizard-submodel-progress').textContent = `格位 ${cur} / ${total}`;
-      document.getElementById('wizard-submodel-loccode').textContent = locCode;
-      document.getElementById('wizard-submodel-overlay').style.display = 'flex';
-      _wizardState.autoTimer = setTimeout(() => {
-        if (_wizardState?.step === 10) { document.getElementById('wizard-submodel-overlay').style.display = 'none'; _wizardNextSlot(); }
-      }, 1000);
+      if (isSubModelSlot) {
+        // In sub-model wizard: no "add sub-model" prompt, just advance
+        setTimeout(() => _wizardNextSlot(), 400);
+      } else {
+        // Main slot wizard: show sub-model add prompt, auto-advance after 1s
+        document.getElementById('wizard-submodel-progress').textContent = `格位 ${cur} / ${total}`;
+        document.getElementById('wizard-submodel-loccode').textContent = locCode;
+        document.getElementById('wizard-submodel-overlay').style.display = 'flex';
+        _wizardState.autoTimer = setTimeout(() => {
+          if (_wizardState?.step === 10) { document.getElementById('wizard-submodel-overlay').style.display = 'none'; _wizardNextSlot(); }
+        }, 1000);
+      }
       break;
     }
   }
 }
+
+const _dimUnits = ['IN','CM','MM','M'];
+const _wgtUnits = ['LB','KG','G'];
 
 function _wizardOpenTextField(field, label, cur, total, locCode) {
   document.getElementById('wizard-text-progress').textContent = `格位 ${cur} / ${total} · ${locCode}`;
@@ -6110,37 +6223,61 @@ function _wizardOpenTextField(field, label, cur, total, locCode) {
   const { ai, ci, si } = slots[idx];
   const s = getSlot(ai, ci, si);
   const m = (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null) || (s?.modelId ? getModel(s.modelId) : null);
-  let pre = '';
-  if (m) {
-    if (field === 'enName') pre = m.enName || '';
-    else if (field === 'cnName') pre = m.cnName || '';
-    else if (field === 'dimensions') pre = m.dimensions ? m.dimensions + (m.dimensionUnit ? ' ' + m.dimensionUnit : '') : '';
-    else if (field === 'weight') pre = m.weight ? m.weight + (m.weightUnit ? ' ' + m.weightUnit : '') : '';
-  }
-  document.getElementById('wizard-text-input').value = pre;
   _wizardState._textField = field;
   document.getElementById('wizard-text-status').style.display = 'none';
-  showSheet('wizard-text-sheet');
-  setTimeout(() => { const inp = document.getElementById('wizard-text-input'); if (inp) { inp.focus(); if (pre) inp.select(); } }, 300);
+
+  // Show correct section
+  const isDim = field === 'dimensions', isWgt = field === 'weight';
+  document.getElementById('wt-text-section').style.display = (isDim || isWgt) ? 'none' : '';
+  document.getElementById('wt-dim-section').style.display = isDim ? '' : 'none';
+  document.getElementById('wt-weight-section').style.display = isWgt ? '' : 'none';
+
+  if (isDim) {
+    const parts = (m?.dimensions || '').split(/[×x\*\s]+/).filter(Boolean);
+    document.getElementById('wizard-dim-l').value = parts[0] || '';
+    document.getElementById('wizard-dim-w').value = parts[1] || '';
+    document.getElementById('wizard-dim-h').value = parts[2] || '';
+    document.getElementById('wizard-dim-unit').textContent = m?.dimensionUnit || 'IN';
+    showSheet('wizard-text-sheet');
+    setTimeout(() => document.getElementById('wizard-dim-l').focus(), 300);
+  } else if (isWgt) {
+    document.getElementById('wizard-weight-val').value = m?.weight || '';
+    document.getElementById('wizard-weight-unit').textContent = m?.weightUnit || 'LB';
+    showSheet('wizard-text-sheet');
+    setTimeout(() => document.getElementById('wizard-weight-val').focus(), 300);
+  } else {
+    let pre = '';
+    if (m) {
+      if (field === 'enName') pre = m.enName || '';
+      else if (field === 'cnName') pre = m.cnName || '';
+    }
+    document.getElementById('wizard-text-input').value = pre;
+    showSheet('wizard-text-sheet');
+    setTimeout(() => { const inp = document.getElementById('wizard-text-input'); if (inp) { inp.focus(); if (pre) inp.select(); } }, 300);
+  }
 }
 
 function _wizardCommitTextField() {
   if (!_wizardState) return;
-  const val = document.getElementById('wizard-text-input').value.trim();
   const field = _wizardState._textField;
   const m = _wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null;
-  if (m && val) {
-    if (field === 'enName') m.enName = val;
-    else if (field === 'cnName') m.cnName = val;
-    else if (field === 'dimensions') {
-      const parts = val.trim().split(/\s+/);
-      if (parts.length >= 2) { m.dimensionUnit = parts[parts.length-1].toUpperCase(); m.dimensions = parts.slice(0,-1).join(' '); }
-      else m.dimensions = val;
-    }
-    else if (field === 'weight') {
-      const parts = val.trim().split(/\s+/);
-      if (parts.length >= 2) { m.weightUnit = parts[parts.length-1].toUpperCase(); m.weight = parts[0]; }
-      else m.weight = val;
+  if (m) {
+    if (field === 'dimensions') {
+      const l = document.getElementById('wizard-dim-l').value.trim();
+      const w = document.getElementById('wizard-dim-w').value.trim();
+      const h = document.getElementById('wizard-dim-h').value.trim();
+      const unit = document.getElementById('wizard-dim-unit').textContent;
+      if (l || w || h) { m.dimensions = [l,w,h].filter(Boolean).join('×'); m.dimensionUnit = unit; }
+    } else if (field === 'weight') {
+      const wv = document.getElementById('wizard-weight-val').value.trim();
+      const wu = document.getElementById('wizard-weight-unit').textContent;
+      if (wv) { m.weight = wv; m.weightUnit = wu; }
+    } else {
+      const val = document.getElementById('wizard-text-input').value.trim();
+      if (val) {
+        if (field === 'enName') m.enName = val;
+        else if (field === 'cnName') m.cnName = val;
+      }
     }
     saveState();
   }
@@ -9587,26 +9724,79 @@ document.addEventListener('focusin', (e) => {
   }
 }, true);
 
-// Wizard text sheet — voice input
+// Wizard text sheet — 多种输入方式
+function _wizardTextSetValue(txt) {
+  const field = _wizardState?._textField;
+  if (field === 'dimensions') {
+    // Try to parse "12×8×6" or "12 8 6"
+    const parts = txt.split(/[×x\*\s,，]+/).filter(Boolean);
+    if (parts[0]) document.getElementById('wizard-dim-l').value = parts[0];
+    if (parts[1]) document.getElementById('wizard-dim-w').value = parts[1];
+    if (parts[2]) document.getElementById('wizard-dim-h').value = parts[2];
+  } else if (field === 'weight') {
+    const num = txt.match(/[\d.]+/)?.[0] || '';
+    if (num) document.getElementById('wizard-weight-val').value = num;
+  } else {
+    document.getElementById('wizard-text-input').value = txt;
+  }
+}
+
+// 语音
 document.getElementById('wizard-text-voice-btn').addEventListener('click', async () => {
   const btn = document.getElementById('wizard-text-voice-btn');
   const status = document.getElementById('wizard-text-status');
+  const field = _wizardState?._textField;
+  const lang = (field === 'enName') ? 'en-US' : 'zh-CN';
   btn.classList.add('active');
   status.style.display = '';
-  status.textContent = '🎤 正在录音... 请说出内容';
+  status.textContent = '🎤 正在录音...';
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) { status.textContent = '⚠️ 此浏览器不支持语音识别'; btn.classList.remove('active'); return; }
   const rec = new SpeechRecognition();
-  rec.lang = 'zh-CN'; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.lang = lang; rec.interimResults = false; rec.maxAlternatives = 1;
   rec.onresult = (e) => {
     const txt = e.results[0][0].transcript;
-    document.getElementById('wizard-text-input').value = txt;
+    _wizardTextSetValue(txt);
     status.textContent = `✅ 识别: ${txt}`;
     btn.classList.remove('active');
   };
   rec.onerror = (e) => { status.textContent = `⚠️ 语音错误: ${e.error}`; btn.classList.remove('active'); };
   rec.onend = () => btn.classList.remove('active');
   rec.start();
+});
+
+// 拍照 (camera capture → show preview for reference)
+document.getElementById('wizard-text-camera-btn').addEventListener('click', () => {
+  const btn = document.getElementById('wizard-text-camera-btn');
+  const status = document.getElementById('wizard-text-status');
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
+  inp.onchange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    btn.classList.add('active');
+    status.style.display = '';
+    const url = URL.createObjectURL(file);
+    status.innerHTML = `<img src="${url}" style="max-width:100%; max-height:100px; border-radius:6px; margin-bottom:4px; display:block;"><span style="font-size:11px; color:var(--muted);">参考图片已显示，请手动输入或使用语音</span>`;
+    btn.classList.remove('active');
+  };
+  inp.click();
+});
+
+// 尺寸单位循环切换
+document.getElementById('wizard-dim-unit').addEventListener('click', () => {
+  const btn = document.getElementById('wizard-dim-unit');
+  const cur = btn.textContent;
+  const idx = _dimUnits.indexOf(cur);
+  btn.textContent = _dimUnits[(idx + 1) % _dimUnits.length];
+});
+
+// 重量单位循环切换
+document.getElementById('wizard-weight-unit').addEventListener('click', () => {
+  const btn = document.getElementById('wizard-weight-unit');
+  const cur = btn.textContent;
+  const idx = _wgtUnits.indexOf(cur);
+  btn.textContent = _wgtUnits[(idx + 1) % _wgtUnits.length];
 });
 </script>
 <!-- ZEHEM.AI brand footer -->

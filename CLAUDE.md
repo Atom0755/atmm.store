@@ -43,3 +43,9 @@ state = {
 - 使用 `modal-top` 定位（index.html 已有 `.sheet-backdrop.modal-top` 类）
 - shop.html 使用 `.ov` 覆盖层时，须设 `align-items:flex-start; padding-top:60px`，而不是 `align-items:flex-end`
 - 此规则适用于 atmm.store、atmm.store/shop、zehem.ai 三站所有弹窗
+
+### Toast 提示位置
+**Toast 必须显示在屏幕顶部中央（top: 64px），绝不能在底部。**
+- CSS：`position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:9000`
+- 手机端底部被键盘遮挡，顶部才能稳定可见
+- index.html 中已有此实现，修改时勿改回 bottom
