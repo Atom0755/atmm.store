@@ -3948,9 +3948,23 @@ function attachModelDoubleTap(el) {
   el.addEventListener('click', (e) => {
     const now = Date.now();
     if (now - lastTapTime < 380) {
+      // 双击 — 打开型号选择更换型号
       e.preventDefault(); e.stopPropagation();
       lastTapTime = 0; handleDoubleTap();
-    } else { lastTapTime = now; }
+    } else {
+      // 单击 — 启动单格10步向导（复用已有型号，从步骤1开始）
+      lastTapTime = now;
+      setTimeout(() => {
+        if (Date.now() - now >= 360) { // 单击确认（双击第二次不会到这里）
+          const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si;
+          const slot = getSlot(ai, ci, si);
+          if (slot?.modelId && !_wizardState) {
+            _wizardState = { zoneId: currentTable, slots: [{ai, ci, si}], idx: 0, step: 0, addingSubModel: false, tempSubModel: null, currentModelId: slot.modelId, autoTimer: null };
+            _runWizardStep(1);
+          }
+        }
+      }, 400);
+    }
   });
   el.addEventListener('touchend', (e) => {
     if (e.changedTouches && e.changedTouches.length) {
@@ -6248,7 +6262,14 @@ function _runWizardStep(step) {
           setTimeout(() => _runWizardStep(step + 1), 300);
         });
       } else {
-        openModelPicker(ai, ci, si, false, null);
+        const _existSlot = getSlot(ai, ci, si);
+        if (_existSlot?.modelId) {
+          // 格位已有型号 — 直接复用，跳过型号选择步骤
+          _wizardState.currentModelId = _existSlot.modelId;
+          setTimeout(() => _runWizardStep(step + 1), 150);
+        } else {
+          openModelPicker(ai, ci, si, false, null);
+        }
       }
       break;
     }
