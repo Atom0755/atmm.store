@@ -1229,7 +1229,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v3.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1294,6 +1294,7 @@
     </div>
     <div class="sheet-footer">
       <button class="sheet-confirm" id="qty-confirm">确定</button>
+      <button id="wizard-qty-skip" class="sheet-cancel" style="display:none; background:#fff8e1; border-color:#f59e0b; color:#92400e; flex:0 0 auto;">⏭ 跳过</button>
       <button class="sheet-cancel" data-close>取消</button>
     </div>
   </div>
@@ -1317,6 +1318,7 @@
     </div>
     <div class="sheet-footer">
       <button class="sheet-confirm" id="unit-confirm">确定</button>
+      <button id="wizard-unit-skip" class="sheet-cancel" style="display:none; background:#fff8e1; border-color:#f59e0b; color:#92400e; flex:0 0 auto;">⏭ 跳过</button>
       <button class="sheet-cancel" data-close>取消</button>
     </div>
   </div>
@@ -1629,6 +1631,7 @@
       </div>
     </div>
     <div class="sheet-footer">
+      <button id="wizard-img-next" class="sheet-confirm" style="display:none;">下一步 →</button>
       <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
@@ -2272,7 +2275,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v3.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.0</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>填型号向导升级为10步引导：库位预览 → 型号 → 数量 → 单位 → 英文名 → 中文名 → 尺寸 → 重量 → 图片 → 附加型号</li>
+            <li>向导每格先显示库位编号1秒（可立即跳入），每步均可单独跳过，随时取消</li>
+            <li>支持在同一格位添加附加型号（循环向导流程），自动附加至库位</li>
+            <li>点击任意输入框自动滚动至屏幕中央（手机键盘遮挡问题修复）</li>
+          </ul>
+        </div>
+
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v3.9</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-16</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2686,6 +2702,47 @@
       <button class="sheet-cancel" data-close>关闭</button>
     </div>
   </div>
+</div>
+
+<!-- Wizard: Step 1 - Location code preview overlay -->
+<div id="wizard-loc-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:600; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
+  <div id="wizard-loc-progress" style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:700; margin-bottom:16px; letter-spacing:0.1em;"></div>
+  <div id="wizard-loc-code" style="color:#fff; font-size:52px; font-weight:900; letter-spacing:0.06em; font-family:'JetBrains Mono',monospace; margin-bottom:8px;"></div>
+  <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-bottom:32px;">库位编号 · 1秒后自动开始填写</div>
+  <button id="wizard-loc-go" style="padding:14px 40px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); border-radius:12px; color:#fff; font-size:16px; font-weight:700; cursor:pointer; margin-bottom:12px;">立即开始填写 →</button>
+  <button id="wizard-loc-skip" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.45); font-size:13px; cursor:pointer;">⏭ 跳过此格</button>
+  <button id="wizard-loc-cancel" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.28); font-size:12px; cursor:pointer; margin-top:4px;">✕ 取消向导</button>
+</div>
+
+<!-- Wizard: Steps 5-8 - Text input sheet (enName/cnName/dimensions/weight) -->
+<div class="sheet-backdrop modal-style" id="wizard-text-sheet" style="z-index:550;">
+  <div class="sheet">
+    <div class="sheet-body">
+      <div id="wizard-text-progress" style="font-size:11px; color:var(--muted); font-weight:700; letter-spacing:0.06em; margin-bottom:4px;"></div>
+      <h3 id="wizard-text-title" style="margin-top:0; margin-bottom:12px;"></h3>
+      <input type="text" id="wizard-text-input" autocomplete="off" spellcheck="false" style="width:100%; padding:12px; border:2px solid var(--ink); border-radius:10px; font-size:16px; font-weight:600; background:#fff8d6; box-sizing:border-box; margin-bottom:12px;">
+      <div style="font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.04em;">语音输入</div>
+      <div class="input-methods" style="margin-bottom:8px;">
+        <button class="input-method-btn" id="wizard-text-voice-btn"><span class="imico">🎤</span><span>语音</span></button>
+      </div>
+      <div id="wizard-text-status" style="display:none; padding:8px; background:#fff8d6; border:1px solid var(--line); border-radius:8px; font-size:12px; font-weight:600; text-align:center; margin-top:8px;"></div>
+    </div>
+    <div class="sheet-footer">
+      <button class="sheet-confirm" id="wizard-text-confirm">下一步 →</button>
+      <button id="wizard-text-skip" class="sheet-cancel" style="background:#fff8e1; border-color:#f59e0b; color:#92400e; flex:0 0 auto;">⏭ 跳过</button>
+      <button id="wizard-text-cancel" class="sheet-cancel" style="color:var(--red);">✕ 取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Wizard: Step 10 - Sub-model preview overlay -->
+<div id="wizard-submodel-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:600; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
+  <div id="wizard-submodel-progress" style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:700; margin-bottom:12px; letter-spacing:0.1em;"></div>
+  <div id="wizard-submodel-loccode" style="color:#fff; font-size:28px; font-weight:900; font-family:'JetBrains Mono',monospace; margin-bottom:8px;"></div>
+  <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-bottom:28px;">1秒后自动进入下一格</div>
+  <button id="wizard-submodel-add" style="padding:14px 0; background:#4a9b3f; border:none; border-radius:12px; color:#fff; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px; width:260px;">+ 在此格添加附加型号</button>
+  <button id="wizard-submodel-next" style="padding:12px 0; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); border-radius:12px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; margin-bottom:10px; width:260px;">→ 下一格</button>
+  <button id="wizard-submodel-cancel" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.28); font-size:12px; cursor:pointer; margin-top:4px;">✕ 取消向导</button>
 </div>
 
 <!-- Color Alert Sheet: 无货(red) / 少量(yellow) 型号清单 -->
@@ -4603,12 +4660,17 @@ function commitQtyValue() {
     hideSheets();
     runRestockFlow(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, v);
   } else {
+    if (_wizardState?.step === 3 && _wizardState.addingSubModel) {
+      _wizardState.tempSubModel = _wizardState.tempSubModel || {};
+      _wizardState.tempSubModel.qty = v;
+      hideSheets();
+      setTimeout(() => _runWizardStep(4), 300);
+      return;
+    }
     s.qty = v;
     hideSheets(); render();
-    // Wizard: advance to next slot after qty is committed
-    if (_wizardState) {
-      _wizardState.idx++;
-      setTimeout(_fillNextWizardSlot, 500);
+    if (_wizardState?.step === 3) {
+      setTimeout(() => _runWizardStep(4), 400);
     }
   }
 }
@@ -4879,11 +4941,43 @@ function _applyRatioUnit(u) {
   document.getElementById('camera-sheet').classList.add('show');
 }
 
+function _wizardCommitUnit(u) {
+  if (_wizardState?.step === 4 && _wizardState.addingSubModel) {
+    _wizardState.tempSubModel = _wizardState.tempSubModel || {};
+    _wizardState.tempSubModel.unit = u || null;
+    // Commit sub-model to slot
+    const { slots, idx } = _wizardState;
+    const { ai, ci, si } = slots[idx];
+    const slot = getSlot(ai, ci, si);
+    if (slot) {
+      if (!slot.subModels) slot.subModels = [];
+      if (slot.subModels.length < 3) {
+        slot.subModels.push({ modelId: _wizardState.tempSubModel.modelId, qty: _wizardState.tempSubModel.qty || 0, unit: _wizardState.tempSubModel.unit, color: null, restock: 0 });
+        toast('✅ 附加型号已添加');
+      } else { toast('⚠️ 此库位已有3个附加型号，跳过'); }
+    }
+    _wizardState.tempSubModel = null;
+    saveState(); render(); hideSheets();
+    setTimeout(() => _runWizardStep(5), 300);
+    return true;
+  }
+  if (_wizardState?.step === 4) {
+    if (!pendingSlot) { hideSheets(); _runWizardStep(5); return true; }
+    const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
+    if (s) { s.unit = u || null; }
+    saveState(); hideSheets(); render();
+    setTimeout(() => _runWizardStep(5), 300);
+    return true;
+  }
+  return false;
+}
+
 document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
   btn.addEventListener('click', () => {
     const u = btn.dataset.unit;
     if (_ratioUnitMode) { _applyRatioUnit(u || '套'); return; }
     if (!pendingSlot) return;
+    if (_wizardCommitUnit(u)) return;
     const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
     if (s) { s.unit = u || null; }
     hideSheets(); render();
@@ -4892,6 +4986,7 @@ document.querySelectorAll('#unit-sheet .unit-quick').forEach(btn => {
 document.getElementById('unit-confirm').addEventListener('click', () => {
   const u = document.getElementById('unit-input').value.trim();
   if (_ratioUnitMode) { _applyRatioUnit(u || '套'); return; }
+  if (_wizardCommitUnit(u)) return;
   if (!pendingSlot) return;
   const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
   if (s) { s.unit = u || null; }
@@ -5757,7 +5852,9 @@ function commitModelChoice() {
   }
   const ratioUnitBtn = document.getElementById('ratio-unit-btn');
   if (ratioUnitBtn) model.boxToSetUnit = ratioUnitBtn.textContent.trim() || '套';
+  let _usedCallback = false;
   if (modelPickerCallback) {
+    _usedCallback = true;
     try { modelPickerCallback(model); } catch(e) { console.error(e); }
     modelPickerCallback = null;
   } else if (pendingModelTarget) {
@@ -5773,7 +5870,6 @@ function commitModelChoice() {
   try {
     const resultBox = document.getElementById('barcode-result');
     if (resultBox && resultBox.style.display !== 'none' && resultBox.textContent) {
-      // Extract the code from the displayed result
       const codeEl = resultBox.querySelector('div:last-child');
       if (codeEl) {
         const code = codeEl.textContent.trim();
@@ -5789,16 +5885,17 @@ function commitModelChoice() {
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
   hideSheets();
   render();
-  // If wizard is active, open qty editor for this slot right after
-  if (_wizardState && _wizardState.awaitingModel) {
-    _wizardState.awaitingModel = false;
-    const { ai, ci, si } = _wizardState.slots[_wizardState.idx];
-    setTimeout(() => openQtyMultiInput(ai, ci, si, 'qty'), 400);
+  // Wizard step 2 advance (not sub-model mode — sub-model callback handles its own advance)
+  if (_wizardState && _wizardState.step === 2 && !_usedCallback) {
+    _wizardState.currentModelId = model.id;
+    setTimeout(() => _runWizardStep(3), 400);
   }
 }
 
-// ===== 连续填型号向导 =====
+// ===== 连续填型号向导 (10步) =====
 let _wizardState = null;
+// _wizardState = { zoneId, slots, idx, step, addingSubModel, tempSubModel, currentModelId, autoTimer, _textField }
+
 function _startFillWizard(zoneId) {
   if (!_user) { _pulseLoginBtn(); return; }
   const zone = state.zones.find(z => z.id === zoneId);
@@ -5810,53 +5907,279 @@ function _startFillWizard(zoneId) {
     zone.aisles.forEach((a,ai) => a.pallets.forEach((p,ci) => p.layers.forEach((_,si) => slots.push({ai,ci,si}))));
   }
   if (!slots.length) { toast('⚠️ 此区域没有格位'); return; }
-  _wizardState = { zoneId, slots, idx: 0, awaitingModel: false };
-  toast(`📝 填型号向导：共 ${slots.length} 格 — 点"关闭"可随时停止`);
-  setTimeout(_fillNextWizardSlot, 300);
+  _wizardState = { zoneId, slots, idx: 0, step: 0, addingSubModel: false, tempSubModel: null, currentModelId: null, autoTimer: null };
+  toast(`📝 填型号向导：共 ${slots.length} 格`);
+  setTimeout(() => _runWizardStep(1), 300);
 }
-function _fillNextWizardSlot() {
+
+function _wizardClearTimer() {
+  if (_wizardState?.autoTimer) { clearTimeout(_wizardState.autoTimer); _wizardState.autoTimer = null; }
+}
+
+function _wizardHideAll() {
+  document.getElementById('wizard-loc-overlay').style.display = 'none';
+  document.getElementById('wizard-submodel-overlay').style.display = 'none';
+  document.getElementById('wizard-skip-btn').style.display = 'none';
+  document.getElementById('wizard-qty-skip').style.display = 'none';
+  document.getElementById('wizard-unit-skip').style.display = 'none';
+  document.getElementById('wizard-img-next').style.display = 'none';
+}
+
+function _wizardCancel() {
+  _wizardClearTimer();
+  _wizardState = null;
+  document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
+  _wizardHideAll();
+  hideSheets();
+}
+
+function _wizardNextSlot() {
   if (!_wizardState) return;
+  _wizardClearTimer();
+  _wizardState.addingSubModel = false;
+  _wizardState.tempSubModel = null;
+  _wizardState.idx++;
+  _wizardState.step = 0;
+  document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
+  _wizardHideAll();
+  hideSheets();
+  setTimeout(() => {
+    if (!_wizardState || _wizardState.idx >= _wizardState.slots.length) {
+      _wizardState = null;
+      toast('✅ 全部格位已填写完！');
+      return;
+    }
+    _runWizardStep(1);
+  }, 300);
+}
+
+function _runWizardStep(step) {
+  if (!_wizardState) return;
+  _wizardState.step = step;
+  _wizardClearTimer();
+  _wizardHideAll();
+
   const { slots, idx, zoneId } = _wizardState;
   if (idx >= slots.length) {
     _wizardState = null;
-    const skipBtn = document.getElementById('wizard-skip-btn');
-    if (skipBtn) skipBtn.style.display = 'none';
+    document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
     toast('✅ 全部格位已填写完！');
     return;
   }
+
   const { ai, ci, si } = slots[idx];
   const total = slots.length, cur = idx + 1;
+  const locCode = makeLocationCode(zoneId, ai, ci, si);
 
-  // Highlight the target slot
+  // Highlight slot
   document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
-  const zone = state.zones.find(z => z.id === zoneId);
-  const colName = zone?.type === 'pallet'
-    ? (zone.aisles[ai]?.pallets[ci]?.name || `列${ci+1}`)
-    : (zone?.aisles[ai]?.shelves[ci]?.name || `列${ci+1}`);
   const slotEl = document.querySelector(`[data-table-pane="${zoneId}"] .model-cell[data-ai="${ai}"][data-ci="${ci}"][data-si="${si}"]:not(.sub-model-cell)`);
-  if (slotEl) {
-    slotEl.classList.add('wizard-highlight');
-    slotEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (slotEl) { slotEl.classList.add('wizard-highlight'); slotEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+
+  switch (step) {
+    case 1: {
+      // Location code preview — auto-advance after 1s
+      document.getElementById('wizard-loc-progress').textContent = `格位 ${cur} / ${total}${_wizardState.addingSubModel ? ' · 附加型号' : ''}`;
+      document.getElementById('wizard-loc-code').textContent = locCode;
+      document.getElementById('wizard-loc-overlay').style.display = 'flex';
+      _wizardState.autoTimer = setTimeout(() => {
+        if (_wizardState?.step === 1) { document.getElementById('wizard-loc-overlay').style.display = 'none'; _runWizardStep(2); }
+      }, 1000);
+      break;
+    }
+    case 2: {
+      // Model name
+      document.getElementById('wizard-skip-btn').style.display = '';
+      document.getElementById('camera-title').textContent = `📝 格位 ${cur}/${total} · ${locCode}${_wizardState.addingSubModel ? ' · 附加' : ''}`;
+      if (_wizardState.addingSubModel) {
+        openModelPicker(null, null, null, false, (model) => {
+          _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
+          _wizardState.currentModelId = model.id;
+          hideSheets(); render();
+          setTimeout(() => _runWizardStep(3), 300);
+        });
+      } else {
+        openModelPicker(ai, ci, si, false, null);
+      }
+      break;
+    }
+    case 3: {
+      // Quantity
+      document.getElementById('wizard-qty-skip').style.display = '';
+      const _s3 = _wizardState.addingSubModel ? { qty: 0 } : (getSlot(ai, ci, si) || { qty: 0 });
+      const _m3 = _s3.modelId ? getModel(_s3.modelId) : (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null);
+      pendingSlot = { ai, ci, si, smi: null };
+      pendingQtyField = 'qty';
+      document.getElementById('qty-title').textContent = _m3 ? `${_m3.name} · 数量` : '数量';
+      const _qinp = document.getElementById('qty-input');
+      _qinp.value = _wizardState.addingSubModel ? 1 : Math.max(1, _s3.qty || 1);
+      const _qst = document.getElementById('qty-method-status');
+      if (_qst) { _qst.style.display = 'none'; _qst.textContent = ''; }
+      document.querySelectorAll('[data-qty-method]').forEach(b => b.classList.remove('active'));
+      showSheet('qty-sheet');
+      setTimeout(() => { _qinp.focus(); _qinp.select(); }, 300);
+      break;
+    }
+    case 4: {
+      // Unit
+      document.getElementById('wizard-unit-skip').style.display = '';
+      const _s4 = getSlot(ai, ci, si) || {};
+      const _m4 = _s4.modelId ? getModel(_s4.modelId) : (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null);
+      pendingSlot = { ai, ci, si, smi: null };
+      document.getElementById('unit-title').textContent = _m4 ? `${_m4.name} · 单位` : '单位';
+      document.getElementById('unit-input').value = _wizardState.addingSubModel ? '' : (_s4.unit || '');
+      showSheet('unit-sheet');
+      break;
+    }
+    case 5: _wizardOpenTextField('enName', '英文名称 (English Name)', cur, total, locCode); break;
+    case 6: _wizardOpenTextField('cnName', '中文名称', cur, total, locCode); break;
+    case 7: _wizardOpenTextField('dimensions', '尺寸规格 (如: 12×8×6 IN)', cur, total, locCode); break;
+    case 8: _wizardOpenTextField('weight', '重量 (如: 2.5 LB)', cur, total, locCode); break;
+    case 9: {
+      // Image upload
+      const _mid9 = _wizardState.currentModelId;
+      if (_mid9 && getModel(_mid9)) {
+        document.getElementById('wizard-img-next').style.display = '';
+        openProductImageUpload(_mid9);
+      } else {
+        setTimeout(() => _runWizardStep(10), 100);
+      }
+      break;
+    }
+    case 10: {
+      // Sub-model preview — auto-advance after 1s
+      document.getElementById('wizard-submodel-progress').textContent = `格位 ${cur} / ${total}`;
+      document.getElementById('wizard-submodel-loccode').textContent = locCode;
+      document.getElementById('wizard-submodel-overlay').style.display = 'flex';
+      _wizardState.autoTimer = setTimeout(() => {
+        if (_wizardState?.step === 10) { document.getElementById('wizard-submodel-overlay').style.display = 'none'; _wizardNextSlot(); }
+      }, 1000);
+      break;
+    }
   }
-
-  // Show skip button, update title with coordinates
-  const skipBtn = document.getElementById('wizard-skip-btn');
-  if (skipBtn) skipBtn.style.display = '';
-  document.getElementById('camera-title').textContent = `填型号 ${cur}/${total}｜${colName}-格${si+1}`;
-
-  _wizardState.awaitingModel = true;
-  setTimeout(() => openModelPicker(ai, ci, si, false, null), 200);
 }
 
-// Wizard skip button
+function _wizardOpenTextField(field, label, cur, total, locCode) {
+  document.getElementById('wizard-text-progress').textContent = `格位 ${cur} / ${total} · ${locCode}`;
+  document.getElementById('wizard-text-title').textContent = label;
+  const { slots, idx } = _wizardState;
+  const { ai, ci, si } = slots[idx];
+  const s = getSlot(ai, ci, si);
+  const m = (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null) || (s?.modelId ? getModel(s.modelId) : null);
+  let pre = '';
+  if (m) {
+    if (field === 'enName') pre = m.enName || '';
+    else if (field === 'cnName') pre = m.cnName || '';
+    else if (field === 'dimensions') pre = m.dimensions ? m.dimensions + (m.dimensionUnit ? ' ' + m.dimensionUnit : '') : '';
+    else if (field === 'weight') pre = m.weight ? m.weight + (m.weightUnit ? ' ' + m.weightUnit : '') : '';
+  }
+  document.getElementById('wizard-text-input').value = pre;
+  _wizardState._textField = field;
+  document.getElementById('wizard-text-status').style.display = 'none';
+  showSheet('wizard-text-sheet');
+  setTimeout(() => { const inp = document.getElementById('wizard-text-input'); if (inp) { inp.focus(); if (pre) inp.select(); } }, 300);
+}
+
+function _wizardCommitTextField() {
+  if (!_wizardState) return;
+  const val = document.getElementById('wizard-text-input').value.trim();
+  const field = _wizardState._textField;
+  const m = _wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null;
+  if (m && val) {
+    if (field === 'enName') m.enName = val;
+    else if (field === 'cnName') m.cnName = val;
+    else if (field === 'dimensions') {
+      const parts = val.trim().split(/\s+/);
+      if (parts.length >= 2) { m.dimensionUnit = parts[parts.length-1].toUpperCase(); m.dimensions = parts.slice(0,-1).join(' '); }
+      else m.dimensions = val;
+    }
+    else if (field === 'weight') {
+      const parts = val.trim().split(/\s+/);
+      if (parts.length >= 2) { m.weightUnit = parts[parts.length-1].toUpperCase(); m.weight = parts[0]; }
+      else m.weight = val;
+    }
+    saveState();
+  }
+  const nextStep = _wizardState.step + 1;
+  hideSheets();
+  setTimeout(() => _runWizardStep(nextStep), 300);
+}
+
+// Wizard model-picker skip button (step 2)
 document.getElementById('wizard-skip-btn').addEventListener('click', () => {
   if (!_wizardState) return;
-  document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
-  _wizardState.awaitingModel = false;
-  _wizardState.idx++;
+  stopCamera(); stopVoice();
+  if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
   hideSheets();
-  setTimeout(_fillNextWizardSlot, 300);
+  if (_wizardState.addingSubModel) {
+    _wizardState.addingSubModel = false; _wizardState.tempSubModel = null;
+    _wizardNextSlot();
+  } else {
+    _wizardNextSlot();
+  }
 });
+
+// Wizard qty skip button (step 3)
+document.getElementById('wizard-qty-skip').addEventListener('click', () => {
+  if (!_wizardState) return;
+  hideSheets();
+  setTimeout(() => _runWizardStep(4), 300);
+});
+
+// Wizard unit skip button (step 4)
+document.getElementById('wizard-unit-skip').addEventListener('click', () => {
+  if (!_wizardState) return;
+  hideSheets();
+  setTimeout(() => _runWizardStep(5), 300);
+});
+
+// Wizard image next button (step 9)
+document.getElementById('wizard-img-next').addEventListener('click', () => {
+  if (!_wizardState) return;
+  hideSheets();
+  setTimeout(() => _runWizardStep(10), 300);
+});
+
+// Wizard text sheet buttons
+document.getElementById('wizard-text-confirm').addEventListener('click', _wizardCommitTextField);
+document.getElementById('wizard-text-skip').addEventListener('click', () => {
+  if (!_wizardState) return;
+  const nextStep = _wizardState.step + 1;
+  hideSheets();
+  setTimeout(() => _runWizardStep(nextStep), 300);
+});
+document.getElementById('wizard-text-cancel').addEventListener('click', _wizardCancel);
+
+// Wizard location overlay buttons
+document.getElementById('wizard-loc-go').addEventListener('click', () => {
+  if (!_wizardState) return;
+  _wizardClearTimer();
+  document.getElementById('wizard-loc-overlay').style.display = 'none';
+  _runWizardStep(2);
+});
+document.getElementById('wizard-loc-skip').addEventListener('click', () => {
+  if (!_wizardState) return;
+  _wizardClearTimer();
+  document.getElementById('wizard-loc-overlay').style.display = 'none';
+  _wizardNextSlot();
+});
+document.getElementById('wizard-loc-cancel').addEventListener('click', _wizardCancel);
+
+// Wizard sub-model overlay buttons
+document.getElementById('wizard-submodel-add').addEventListener('click', () => {
+  if (!_wizardState) return;
+  _wizardClearTimer();
+  document.getElementById('wizard-submodel-overlay').style.display = 'none';
+  _wizardState.addingSubModel = true;
+  _wizardState.tempSubModel = {};
+  setTimeout(() => _runWizardStep(1), 200);
+});
+document.getElementById('wizard-submodel-next').addEventListener('click', () => {
+  if (!_wizardState) return;
+  _wizardClearTimer();
+  _wizardNextSlot();
+});
+document.getElementById('wizard-submodel-cancel').addEventListener('click', _wizardCancel);
 
 const _modelConfirmBtn = document.getElementById('model-confirm');
 _modelConfirmBtn.addEventListener('click', (e) => { e.preventDefault(); commitModelChoice(); });
@@ -6246,12 +6569,13 @@ document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click
     document.getElementById('camera-sheet').classList.add('show');
     return;
   }
-  // Cancel inside model picker or qty editor stops the wizard
-  if (b.closest('#camera-sheet') || b.closest('#qty-sheet')) {
-    _wizardState = null;
-    document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
-    const skipBtn = document.getElementById('wizard-skip-btn');
-    if (skipBtn) skipBtn.style.display = 'none';
+  // Cancel inside wizard sheets stops the wizard
+  if (b.closest('#camera-sheet') || b.closest('#qty-sheet') || b.closest('#unit-sheet') || b.closest('#product-img-sheet')) {
+    if (_wizardState) {
+      _wizardHideAll();
+      _wizardState = null;
+      document.querySelectorAll('.wizard-highlight').forEach(el => el.classList.remove('wizard-highlight'));
+    }
   }
   hideSheets();
 }));
@@ -6267,6 +6591,9 @@ function setProductImage(dataUrl) {
   hideSheets();
   render();
   toast(dataUrl ? '✅ 图片已保存' : '🗑️ 图片已移除');
+  if (_wizardState?.step === 9) {
+    setTimeout(() => _runWizardStep(10), 400);
+  }
 }
 
 function pickImageFile(useCamera) {
@@ -6327,7 +6654,12 @@ const _imgRemoveBtn = document.getElementById('img-remove');
 if (_imgRemoveBtn) _imgRemoveBtn.addEventListener('click', () => {
   if (confirm('确定移除此型号的图片?')) setProductImage(null);
 });
-document.querySelectorAll('.sheet-backdrop').forEach(s => s.addEventListener('click', e => { if (e.target === s) hideSheets(); }));
+document.querySelectorAll('.sheet-backdrop').forEach(s => s.addEventListener('click', e => {
+  if (e.target === s) {
+    if (s.id === 'wizard-text-sheet' && _wizardState) _wizardCancel();
+    else hideSheets();
+  }
+}));
 
 // === MODEL LIBRARY UI (upload sheet) ===
 let pendingImportLines = null; // when user picks a source, the parsed lines wait here for "mode" choice
@@ -9202,6 +9534,36 @@ function _openShopEntry() {
   if (!_warehouse?.id) { toast('请先创建或选择仓库'); return; }
   window.location.href = `/shop?mode=seller&wh=${_warehouse.id}`;
 }
+
+// Auto-scroll focused inputs to viewport center (important for mobile where keyboard covers bottom)
+document.addEventListener('focusin', (e) => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') {
+    setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 350);
+  }
+}, true);
+
+// Wizard text sheet — voice input
+document.getElementById('wizard-text-voice-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('wizard-text-voice-btn');
+  const status = document.getElementById('wizard-text-status');
+  btn.classList.add('active');
+  status.style.display = '';
+  status.textContent = '🎤 正在录音... 请说出内容';
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { status.textContent = '⚠️ 此浏览器不支持语音识别'; btn.classList.remove('active'); return; }
+  const rec = new SpeechRecognition();
+  rec.lang = 'zh-CN'; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.onresult = (e) => {
+    const txt = e.results[0][0].transcript;
+    document.getElementById('wizard-text-input').value = txt;
+    status.textContent = `✅ 识别: ${txt}`;
+    btn.classList.remove('active');
+  };
+  rec.onerror = (e) => { status.textContent = `⚠️ 语音错误: ${e.error}`; btn.classList.remove('active'); };
+  rec.onend = () => btn.classList.remove('active');
+  rec.start();
+});
 </script>
 <!-- ZEHEM.AI brand footer -->
 <div id="zehem-footer">
