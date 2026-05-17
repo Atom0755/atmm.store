@@ -945,7 +945,7 @@
     -webkit-appearance: none;
   }
   .model-search-input:focus { outline: 3px solid rgba(214,51,64,0.3); outline-offset: -1px; }
-  .model-suggestions { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: var(--bg); }
+  .model-suggestions { max-height: 126px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: var(--bg); }
   .suggestion { padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.08); cursor: pointer; font-size: 13px; }
   .suggestion:last-child { border-bottom: 0; }
   .suggestion.selected { background: var(--ink); color: var(--paper); }
@@ -1229,7 +1229,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2275,7 +2275,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.0</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.1</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>型号选择弹窗右上角新增「批量填」按钮，可从任意格位开始连续批量填写</li>
+            <li>单格填写型号后自动进入10步向导（数量→单位→英文名→中文名→尺寸→重量→图片→附加型号）</li>
+            <li>型号建议列表默认显示3行，弹窗更紧凑，一眼看完</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2284,6 +2294,7 @@
             <li>支持在同一格位添加附加型号（循环向导流程），自动附加至库位</li>
             <li>点击任意输入框自动滚动至屏幕中央（手机键盘遮挡问题修复）</li>
           </ul>
+          </div>
         </div>
 
         <div style="border-top:1px solid var(--line); padding-top:14px;">
@@ -2844,7 +2855,10 @@
 <div class="sheet-backdrop modal-style" id="camera-sheet">
   <div class="sheet">
     <div class="sheet-body">
-      <h3 id="camera-title">添加 / 修改型号</h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <h3 id="camera-title" style="margin:0;">添加 / 修改型号</h3>
+        <button id="model-picker-batch-btn" style="padding:5px 10px; font-size:11px; font-weight:700; background:#fff8e1; border:1.5px solid #f59e0b; border-radius:8px; color:#92400e; cursor:pointer; white-space:nowrap; flex-shrink:0;">批量填</button>
+      </div>
 
       <!-- Input method selector -->
       <div class="input-methods" style="grid-template-columns: repeat(5, 1fr);">
@@ -5853,11 +5867,13 @@ function commitModelChoice() {
   const ratioUnitBtn = document.getElementById('ratio-unit-btn');
   if (ratioUnitBtn) model.boxToSetUnit = ratioUnitBtn.textContent.trim() || '套';
   let _usedCallback = false;
+  let _pendingTarget = null;
   if (modelPickerCallback) {
     _usedCallback = true;
     try { modelPickerCallback(model); } catch(e) { console.error(e); }
     modelPickerCallback = null;
   } else if (pendingModelTarget) {
+    _pendingTarget = pendingModelTarget;
     const s = getSlot(pendingModelTarget.ai, pendingModelTarget.ci, pendingModelTarget.si);
     s.modelId = model.id;
     s.color = null; s.qty = 0; s.unit = null;
@@ -5885,12 +5901,40 @@ function commitModelChoice() {
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
   hideSheets();
   render();
-  // Wizard step 2 advance (not sub-model mode — sub-model callback handles its own advance)
   if (_wizardState && _wizardState.step === 2 && !_usedCallback) {
+    // 批量向导：step 2 已完成，继续 step 3
     _wizardState.currentModelId = model.id;
+    setTimeout(() => _runWizardStep(3), 400);
+  } else if (!_usedCallback && !_wizardState && _pendingTarget) {
+    // 单格编辑：自动开启单格10步向导（从 step 3 开始，model 已选完）
+    const { ai, ci, si } = _pendingTarget;
+    _wizardState = { zoneId: currentTable, slots: [{ ai, ci, si }], idx: 0, step: 3, addingSubModel: false, tempSubModel: null, currentModelId: model.id, autoTimer: null };
     setTimeout(() => _runWizardStep(3), 400);
   }
 }
+
+// 批量填按钮：从当前格位开始向导（model picker 已打开，直接接管）
+document.getElementById('model-picker-batch-btn').addEventListener('click', () => {
+  if (!pendingModelTarget) { toast('⚠️ 请先点击一个格位再开始批量填'); return; }
+  const { ai, ci, si } = pendingModelTarget;
+  const zoneId = currentTable;
+  const zone = state.zones.find(z => z.id === zoneId);
+  if (!zone) return;
+  const allSlots = [];
+  if (zone.type === 'shelf') {
+    zone.aisles.forEach((a,_ai) => a.shelves.forEach((_s,_ci) => _s.slots.forEach((_,_si) => allSlots.push({ai:_ai,ci:_ci,si:_si}))));
+  } else {
+    zone.aisles.forEach((a,_ai) => a.pallets.forEach((_p,_ci) => _p.layers.forEach((_,_si) => allSlots.push({ai:_ai,ci:_ci,si:_si}))));
+  }
+  const startIdx = allSlots.findIndex(s => s.ai === ai && s.ci === ci && s.si === si);
+  const slots = startIdx >= 0 ? allSlots.slice(startIdx) : allSlots;
+  _wizardState = { zoneId, slots, idx: 0, step: 2, addingSubModel: false, tempSubModel: null, currentModelId: null, autoTimer: null };
+  // 已经在 model picker (step 2)，直接更新 UI 即可
+  const locCode = makeLocationCode(zoneId, ai, ci, si);
+  document.getElementById('wizard-skip-btn').style.display = '';
+  document.getElementById('camera-title').textContent = `📝 格位 1/${slots.length} · ${locCode}`;
+  toast(`📋 批量填：从 ${locCode} 起共 ${slots.length} 格`);
+});
 
 // ===== 连续填型号向导 (10步) =====
 let _wizardState = null;
