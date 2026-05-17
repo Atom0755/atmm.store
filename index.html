@@ -1229,7 +1229,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2275,7 +2275,16 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.2</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.3</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>「⚙ 步骤」按钮：可自由调整自动填写步骤顺序，也可关闭不需要的步骤</li>
+            <li>提示音：每步确认 + 扫码成功时响清脆"叮"声，音量可滑动调节</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.2</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2739,6 +2748,46 @@
   <button id="wizard-loc-cancel" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.28); font-size:12px; cursor:pointer; margin-top:4px;">✕ 取消向导</button>
 </div>
 
+<!-- Wizard Step Config Sheet -->
+<div class="sheet-backdrop modal-style" id="wizard-step-cfg-sheet" style="z-index:560;">
+  <div class="sheet">
+    <div class="sheet-body" style="overflow-y:auto; max-height:70vh;">
+      <h3 style="margin:0 0 14px; font-size:16px; font-weight:800;">⚙ 自动填写步骤设置</h3>
+
+      <!-- Ding sound section -->
+      <div style="background:var(--bg); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div>
+            <div style="font-size:13px; font-weight:700;">🔔 步骤提示音</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">每步确认 · 扫码成功时响"叮"一声</div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <span id="ding-test-btn" style="font-size:12px; color:#1a73e8; cursor:pointer; text-decoration:underline; white-space:nowrap;">测试音效</span>
+            <label style="display:flex; align-items:center; cursor:pointer;">
+              <input type="checkbox" id="ding-toggle" style="width:18px; height:18px; accent-color:var(--green); cursor:pointer;">
+            </label>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0;">音量</span>
+          <input type="range" id="ding-volume-slider" min="0" max="100" step="5" style="flex:1; accent-color:var(--ink); cursor:pointer;">
+          <span id="ding-vol-label" style="font-size:12px; font-weight:700; min-width:32px; text-align:right;">100</span>
+        </div>
+      </div>
+
+      <!-- Step list -->
+      <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:4px; letter-spacing:0.06em; text-transform:uppercase;">步骤顺序（可上下调整）</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">型号选择步骤固定在最前，关闭的步骤自动跳过</div>
+      <div id="wizard-step-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+    </div>
+    <div class="sheet-footer">
+      <button id="wizard-step-cfg-save" style="flex:2; padding:13px; background:var(--ink); color:var(--paper); border:none; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer;">保存设置</button>
+      <button id="wizard-step-cfg-reset" style="flex:1; padding:13px; background:var(--bg); border:1.5px solid var(--line); border-radius:12px; font-size:13px; font-weight:600; cursor:pointer;">恢复默认</button>
+      <button data-close style="flex:1; padding:13px; background:transparent; border:1.5px solid var(--line); border-radius:12px; font-size:13px; cursor:pointer;">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- Wizard: Steps 5-8 - Text input sheet (enName/cnName/dimensions/weight) -->
 <div class="sheet-backdrop modal-style" id="wizard-text-sheet" style="z-index:550;">
   <div class="sheet">
@@ -2901,8 +2950,11 @@
   <div class="sheet">
     <div class="sheet-body">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-        <h3 id="camera-title" style="margin:0;">添加 / 修改型号</h3>
-        <button id="model-picker-batch-btn" style="padding:5px 10px; font-size:11px; font-weight:700; background:#fff8e1; border:1.5px solid #f59e0b; border-radius:8px; color:#92400e; cursor:pointer; white-space:nowrap; flex-shrink:0;">批量填</button>
+        <h3 id="camera-title" style="margin:0; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">添加 / 修改型号</h3>
+        <div style="display:flex; gap:5px; align-items:center; flex-shrink:0; margin-left:8px;">
+          <button id="wizard-step-cfg-btn" style="padding:5px 9px; font-size:11px; font-weight:700; background:#e8f4fe; border:1.5px solid #1a73e8; border-radius:8px; color:#1a4080; cursor:pointer; white-space:nowrap;">⚙ 步骤</button>
+          <button id="model-picker-batch-btn" style="padding:5px 10px; font-size:11px; font-weight:700; background:#fff8e1; border:1.5px solid #f59e0b; border-radius:8px; color:#92400e; cursor:pointer; white-space:nowrap;">批量填</button>
+        </div>
       </div>
 
       <!-- Input method selector -->
@@ -4715,17 +4767,19 @@ function commitQtyValue() {
     hideSheets();
     runRestockFlow(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, v);
   } else {
-    if (_wizardState?.step === 3 && _wizardState.addingSubModel) {
+    if (_wizardCurrentStepId() === 'qty' && _wizardState?.addingSubModel) {
       _wizardState.tempSubModel = _wizardState.tempSubModel || {};
       _wizardState.tempSubModel.qty = v;
+      playDing();
       hideSheets();
-      setTimeout(() => _runWizardStep(4), 300);
+      setTimeout(() => _runWizardStep(_wizardState.step + 1), 300);
       return;
     }
     s.qty = v;
     hideSheets(); render();
-    if (_wizardState?.step === 3) {
-      setTimeout(() => _runWizardStep(4), 400);
+    if (_wizardCurrentStepId() === 'qty') {
+      playDing();
+      setTimeout(() => _runWizardStep(_wizardState.step + 1), 400);
     }
   }
 }
@@ -4997,7 +5051,8 @@ function _applyRatioUnit(u) {
 }
 
 function _wizardCommitUnit(u) {
-  if (_wizardState?.step === 4 && _wizardState.addingSubModel) {
+  const _cid = _wizardCurrentStepId();
+  if (_cid === 'unit' && _wizardState?.addingSubModel) {
     _wizardState.tempSubModel = _wizardState.tempSubModel || {};
     _wizardState.tempSubModel.unit = u || null;
     const { slots, idx } = _wizardState;
@@ -5005,14 +5060,12 @@ function _wizardCommitUnit(u) {
     const slot = getSlot(ai, ci, si);
     if (slot) {
       if (curSmi !== undefined) {
-        // UPDATE the specific existing sub-model entry
         if (slot.subModels?.[curSmi] !== undefined) {
           slot.subModels[curSmi].qty = _wizardState.tempSubModel.qty || 0;
           slot.subModels[curSmi].unit = _wizardState.tempSubModel.unit;
           toast('✅ 附加型号已更新');
         }
       } else {
-        // PUSH a new sub-model entry (main wizard step 10 loop)
         if (!slot.subModels) slot.subModels = [];
         if (slot.subModels.length < 3) {
           slot.subModels.push({ modelId: _wizardState.tempSubModel.modelId, qty: _wizardState.tempSubModel.qty || 0, unit: _wizardState.tempSubModel.unit, color: null, restock: 0 });
@@ -5021,16 +5074,19 @@ function _wizardCommitUnit(u) {
       }
     }
     _wizardState.tempSubModel = null;
+    playDing();
     saveState(); render(); hideSheets();
-    setTimeout(() => _runWizardStep(5), 300);
+    setTimeout(() => _runWizardStep(_wizardState.step + 1), 300);
     return true;
   }
-  if (_wizardState?.step === 4) {
-    if (!pendingSlot) { hideSheets(); _runWizardStep(5); return true; }
+  if (_cid === 'unit') {
+    const nextStep = _wizardState.step + 1;
+    if (!pendingSlot) { hideSheets(); _runWizardStep(nextStep); return true; }
     const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
     if (s) { s.unit = u || null; }
+    playDing();
     saveState(); hideSheets(); render();
-    setTimeout(() => _runWizardStep(5), 300);
+    setTimeout(() => _runWizardStep(nextStep), 300);
     return true;
   }
   return false;
@@ -5765,6 +5821,7 @@ function handleBarcodeFound(code, format) {
   setTimeout(() => { window._lastBarcodeHandled = null; }, 1500);
 
   if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+  playDing();
   toast('✅ 扫到: ' + code);
 
   const status = document.getElementById('barcode-status');
@@ -6024,7 +6081,50 @@ document.getElementById('model-picker-batch-btn').addEventListener('click', () =
   toast(`📋 批量填：从 ${locCode} 起共 ${slots.length} 格`);
 });
 
-// ===== 连续填型号向导 (10步) =====
+// ===== 提示音系统 =====
+let _dingVolume = (function(){ const v = parseFloat(localStorage.getItem('atmm_ding_volume')); return isNaN(v) ? 1.0 : Math.max(0, Math.min(1, v)); })();
+let _dingEnabled = localStorage.getItem('atmm_ding_enabled') !== '0';
+let _audioCtx = null;
+function playDing(vol) {
+  if (!_dingEnabled) return;
+  const v = vol !== undefined ? vol : _dingVolume;
+  if (v <= 0) return;
+  try {
+    if (!_audioCtx || _audioCtx.state === 'closed') _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    const ctx = _audioCtx, t = ctx.currentTime;
+    [[880, 0.7], [1760, 0.25], [2640, 0.08]].forEach(([freq, gain]) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(v * gain, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+      osc.start(t); osc.stop(t + 1.1);
+    });
+  } catch(e) { console.warn('playDing:', e); }
+}
+
+// ===== 向导步骤配置系统 =====
+const DEFAULT_WIZARD_STEP_CONFIG = [
+  { id: 'qty',        label: '数量',     icon: '🔢', enabled: true },
+  { id: 'unit',       label: '单位',     icon: '📦', enabled: true },
+  { id: 'en_name',    label: '英文名称', icon: '🔤', enabled: true },
+  { id: 'cn_name',    label: '中文名称', icon: '📝', enabled: true },
+  { id: 'dimensions', label: '尺寸规格', icon: '📐', enabled: true },
+  { id: 'weight',     label: '重量',     icon: '⚖️', enabled: true },
+  { id: 'image',      label: '商品照片', icon: '📷', enabled: true },
+];
+let _wizardStepConfig = (function() {
+  try { const s = JSON.parse(localStorage.getItem('atmm_wizard_step_config')); if (Array.isArray(s) && s.length) return s; } catch(e) {}
+  return DEFAULT_WIZARD_STEP_CONFIG.map(s => ({...s}));
+})();
+function _getWizardStepIds() {
+  return ['loc_preview', 'model_picker', ..._wizardStepConfig.filter(s => s.enabled).map(s => s.id), 'sub_model'];
+}
+function _getStepId(n) { return _getWizardStepIds()[n - 1] || null; }
+function _wizardCurrentStepId() { return _wizardState ? _getStepId(_wizardState.step) : null; }
+
+// ===== 连续填型号向导 =====
 let _wizardState = null;
 // _wizardState = { zoneId, slots, idx, step, addingSubModel, tempSubModel, currentModelId, autoTimer, _textField }
 
@@ -6112,23 +6212,24 @@ function _runWizardStep(step) {
   const slotEl = document.querySelector(`[data-table-pane="${zoneId}"] .model-cell[data-ai="${ai}"][data-ci="${ci}"][data-si="${si}"]:not(.sub-model-cell)`);
   if (slotEl) { slotEl.classList.add('wizard-highlight'); slotEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 
-  switch (step) {
-    case 1: {
-      // Location code preview — auto-advance after 1s
+  // Resolve step ID from config (supports user-customized order)
+  const _stepId = _getStepId(step);
+  if (!_stepId) { _wizardNextSlot(); return; }
+
+  switch (_stepId) {
+    case 'loc_preview': {
       document.getElementById('wizard-loc-progress').textContent = `${isSubModelSlot ? '附加型号' : '格位'} ${cur} / ${total}`;
       document.getElementById('wizard-loc-code').textContent = locCode;
       document.getElementById('wizard-loc-overlay').style.display = 'flex';
       _wizardState.autoTimer = setTimeout(() => {
-        if (_wizardState?.step === 1) { document.getElementById('wizard-loc-overlay').style.display = 'none'; _runWizardStep(2); }
+        if (_wizardState?.step === step) { document.getElementById('wizard-loc-overlay').style.display = 'none'; _runWizardStep(step + 1); }
       }, 1000);
       break;
     }
-    case 2: {
-      // Model name
+    case 'model_picker': {
       document.getElementById('wizard-skip-btn').style.display = '';
       document.getElementById('camera-title').textContent = `📝 ${isSubModelSlot ? '附加' : '格位'} ${cur}/${total} · ${locCode}`;
       if (isSubModelSlot) {
-        // Filling a specific existing sub-model slot
         openModelPicker(null, null, null, false, (model) => {
           _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
           _wizardState.currentModelId = model.id;
@@ -6137,31 +6238,29 @@ function _runWizardStep(step) {
           const slot = t.aisles[ai][ck][ci][sk][si];
           if (slot?.subModels?.[curSmi] !== undefined) slot.subModels[curSmi].modelId = model.id;
           saveState(); render(); hideSheets();
-          setTimeout(() => _runWizardStep(3), 300);
+          setTimeout(() => _runWizardStep(step + 1), 300);
         });
       } else if (_wizardState.addingSubModel) {
-        // Adding a brand-new sub-model via main wizard flow (step 10 loop)
         openModelPicker(null, null, null, false, (model) => {
           _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
           _wizardState.currentModelId = model.id;
           hideSheets(); render();
-          setTimeout(() => _runWizardStep(3), 300);
+          setTimeout(() => _runWizardStep(step + 1), 300);
         });
       } else {
         openModelPicker(ai, ci, si, false, null);
       }
       break;
     }
-    case 3: {
-      // Quantity
+    case 'qty': {
       document.getElementById('wizard-qty-skip').style.display = '';
-      const _s3 = _wizardState.addingSubModel ? { qty: 0 } : (getSlot(ai, ci, si) || { qty: 0 });
-      const _m3 = _s3.modelId ? getModel(_s3.modelId) : (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null);
+      const _sq = _wizardState.addingSubModel ? { qty: 0 } : (getSlot(ai, ci, si) || { qty: 0 });
+      const _mq = _sq.modelId ? getModel(_sq.modelId) : (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null);
       pendingSlot = { ai, ci, si, smi: null };
       pendingQtyField = 'qty';
-      document.getElementById('qty-title').textContent = _m3 ? `${_m3.name} · 数量` : '数量';
+      document.getElementById('qty-title').textContent = _mq ? `${_mq.name} · 数量` : '数量';
       const _qinp = document.getElementById('qty-input');
-      _qinp.value = _wizardState.addingSubModel ? 1 : Math.max(1, _s3.qty || 1);
+      _qinp.value = _wizardState.addingSubModel ? 1 : Math.max(1, _sq.qty || 1);
       const _qst = document.getElementById('qty-method-status');
       if (_qst) { _qst.style.display = 'none'; _qst.textContent = ''; }
       document.querySelectorAll('[data-qty-method]').forEach(b => b.classList.remove('active'));
@@ -6169,43 +6268,39 @@ function _runWizardStep(step) {
       setTimeout(() => { _qinp.focus(); _qinp.select(); }, 300);
       break;
     }
-    case 4: {
-      // Unit
+    case 'unit': {
       document.getElementById('wizard-unit-skip').style.display = '';
-      const _s4 = getSlot(ai, ci, si) || {};
-      const _m4 = _s4.modelId ? getModel(_s4.modelId) : (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null);
+      const _su = getSlot(ai, ci, si) || {};
+      const _mu = _su.modelId ? getModel(_su.modelId) : (_wizardState.currentModelId ? getModel(_wizardState.currentModelId) : null);
       pendingSlot = { ai, ci, si, smi: null };
-      document.getElementById('unit-title').textContent = _m4 ? `${_m4.name} · 单位` : '单位';
-      document.getElementById('unit-input').value = _wizardState.addingSubModel ? '' : (_s4.unit || '');
+      document.getElementById('unit-title').textContent = _mu ? `${_mu.name} · 单位` : '单位';
+      document.getElementById('unit-input').value = _wizardState.addingSubModel ? '' : (_su.unit || '');
       showSheet('unit-sheet');
       break;
     }
-    case 5: _wizardOpenTextField('enName', '英文名称 (English Name)', cur, total, locCode); break;
-    case 6: _wizardOpenTextField('cnName', '中文名称', cur, total, locCode); break;
-    case 7: _wizardOpenTextField('dimensions', '尺寸规格 (如: 12×8×6 IN)', cur, total, locCode); break;
-    case 8: _wizardOpenTextField('weight', '重量 (如: 2.5 LB)', cur, total, locCode); break;
-    case 9: {
-      // Image upload
-      const _mid9 = _wizardState.currentModelId;
-      if (_mid9 && getModel(_mid9)) {
+    case 'en_name': _wizardOpenTextField('enName', '英文名称 (English Name)', cur, total, locCode); break;
+    case 'cn_name': _wizardOpenTextField('cnName', '中文名称', cur, total, locCode); break;
+    case 'dimensions': _wizardOpenTextField('dimensions', '尺寸规格 (如: 12×8×6 IN)', cur, total, locCode); break;
+    case 'weight': _wizardOpenTextField('weight', '重量 (如: 2.5 LB)', cur, total, locCode); break;
+    case 'image': {
+      const _midI = _wizardState.currentModelId;
+      if (_midI && getModel(_midI)) {
         document.getElementById('wizard-img-next').style.display = '';
-        openProductImageUpload(_mid9);
+        openProductImageUpload(_midI);
       } else {
-        setTimeout(() => _runWizardStep(10), 100);
+        setTimeout(() => _runWizardStep(step + 1), 100);
       }
       break;
     }
-    case 10: {
+    case 'sub_model': {
       if (isSubModelSlot) {
-        // In sub-model wizard: no "add sub-model" prompt, just advance
         setTimeout(() => _wizardNextSlot(), 400);
       } else {
-        // Main slot wizard: show sub-model add prompt, auto-advance after 1s
         document.getElementById('wizard-submodel-progress').textContent = `格位 ${cur} / ${total}`;
         document.getElementById('wizard-submodel-loccode').textContent = locCode;
         document.getElementById('wizard-submodel-overlay').style.display = 'flex';
         _wizardState.autoTimer = setTimeout(() => {
-          if (_wizardState?.step === 10) { document.getElementById('wizard-submodel-overlay').style.display = 'none'; _wizardNextSlot(); }
+          if (_wizardState?.step === step) { document.getElementById('wizard-submodel-overlay').style.display = 'none'; _wizardNextSlot(); }
         }, 1000);
       }
       break;
@@ -6281,6 +6376,7 @@ function _wizardCommitTextField() {
     }
     saveState();
   }
+  playDing();
   const nextStep = _wizardState.step + 1;
   hideSheets();
   setTimeout(() => _runWizardStep(nextStep), 300);
@@ -6300,25 +6396,26 @@ document.getElementById('wizard-skip-btn').addEventListener('click', () => {
   }
 });
 
-// Wizard qty skip button (step 3)
+// Wizard qty skip button
 document.getElementById('wizard-qty-skip').addEventListener('click', () => {
   if (!_wizardState) return;
   hideSheets();
-  setTimeout(() => _runWizardStep(4), 300);
+  setTimeout(() => _runWizardStep(_wizardState.step + 1), 300);
 });
 
-// Wizard unit skip button (step 4)
+// Wizard unit skip button
 document.getElementById('wizard-unit-skip').addEventListener('click', () => {
   if (!_wizardState) return;
   hideSheets();
-  setTimeout(() => _runWizardStep(5), 300);
+  setTimeout(() => _runWizardStep(_wizardState.step + 1), 300);
 });
 
-// Wizard image next button (step 9)
+// Wizard image next button
 document.getElementById('wizard-img-next').addEventListener('click', () => {
   if (!_wizardState) return;
+  playDing();
   hideSheets();
-  setTimeout(() => _runWizardStep(10), 300);
+  setTimeout(() => _runWizardStep(_wizardState.step + 1), 300);
 });
 
 // Wizard text sheet buttons
@@ -9797,6 +9894,83 @@ document.getElementById('wizard-weight-unit').addEventListener('click', () => {
   const cur = btn.textContent;
   const idx = _wgtUnits.indexOf(cur);
   btn.textContent = _wgtUnits[(idx + 1) % _wgtUnits.length];
+});
+
+// ===== 向导步骤配置弹窗 =====
+let _tempStepConfig = null;
+
+document.getElementById('wizard-step-cfg-btn').addEventListener('click', () => {
+  _tempStepConfig = _wizardStepConfig.map(s => ({...s}));
+  document.getElementById('ding-toggle').checked = _dingEnabled;
+  const vol = Math.round(_dingVolume * 100);
+  document.getElementById('ding-volume-slider').value = vol;
+  document.getElementById('ding-vol-label').textContent = vol;
+  _renderStepCfgList();
+  showSheet('wizard-step-cfg-sheet');
+});
+
+document.getElementById('ding-test-btn').addEventListener('click', () => {
+  const vol = parseInt(document.getElementById('ding-volume-slider').value) / 100;
+  playDing(vol);
+});
+
+document.getElementById('ding-toggle').addEventListener('change', function() {
+  if (this.checked) playDing(parseInt(document.getElementById('ding-volume-slider').value) / 100);
+});
+
+document.getElementById('ding-volume-slider').addEventListener('input', function() {
+  document.getElementById('ding-vol-label').textContent = this.value;
+});
+
+function _renderStepCfgList() {
+  const list = document.getElementById('wizard-step-list');
+  list.innerHTML = '';
+  _tempStepConfig.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.style.cssText = `display:flex; align-items:center; gap:10px; padding:10px 12px; background:${s.enabled ? 'var(--paper)' : 'rgba(0,0,0,0.035)'}; border:1.5px solid ${s.enabled ? 'var(--line)' : 'rgba(0,0,0,0.1)'}; border-radius:10px; opacity:${s.enabled ? '1' : '0.55'};`;
+    const upDis = i === 0 ? 'opacity:.28; pointer-events:none;' : '';
+    const dnDis = i === _tempStepConfig.length - 1 ? 'opacity:.28; pointer-events:none;' : '';
+    item.innerHTML = `
+      <span style="font-size:18px; width:22px; text-align:center; flex-shrink:0;">${s.icon}</span>
+      <span style="flex:1; font-size:13px; font-weight:600;">${s.label}</span>
+      <div style="display:flex; gap:3px; align-items:center; flex-shrink:0;">
+        <button onclick="_moveCfgStep(${i},-1)" style="width:28px; height:28px; border:1.5px solid var(--line); border-radius:7px; background:var(--bg); font-size:14px; line-height:1; cursor:pointer; ${upDis}">↑</button>
+        <button onclick="_moveCfgStep(${i},1)"  style="width:28px; height:28px; border:1.5px solid var(--line); border-radius:7px; background:var(--bg); font-size:14px; line-height:1; cursor:pointer; ${dnDis}">↓</button>
+        <label style="display:flex; align-items:center; cursor:pointer; margin-left:4px;">
+          <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="_toggleCfgStep(${i})" style="width:17px; height:17px; accent-color:var(--green); cursor:pointer;">
+        </label>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+
+function _moveCfgStep(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= _tempStepConfig.length) return;
+  [_tempStepConfig[i], _tempStepConfig[j]] = [_tempStepConfig[j], _tempStepConfig[i]];
+  _renderStepCfgList();
+}
+
+function _toggleCfgStep(i) {
+  _tempStepConfig[i].enabled = !_tempStepConfig[i].enabled;
+  _renderStepCfgList();
+}
+
+document.getElementById('wizard-step-cfg-save').addEventListener('click', () => {
+  _wizardStepConfig = _tempStepConfig;
+  _dingEnabled = document.getElementById('ding-toggle').checked;
+  _dingVolume = parseInt(document.getElementById('ding-volume-slider').value) / 100;
+  localStorage.setItem('atmm_wizard_step_config', JSON.stringify(_wizardStepConfig));
+  localStorage.setItem('atmm_ding_enabled', _dingEnabled ? '1' : '0');
+  localStorage.setItem('atmm_ding_volume', _dingVolume.toString());
+  hideSheets();
+  toast('✅ 步骤设置已保存');
+});
+
+document.getElementById('wizard-step-cfg-reset').addEventListener('click', () => {
+  _tempStepConfig = DEFAULT_WIZARD_STEP_CONFIG.map(s => ({...s}));
+  _renderStepCfgList();
+  toast('已恢复默认顺序与全开');
 });
 </script>
 <!-- ZEHEM.AI brand footer -->
