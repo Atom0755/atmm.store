@@ -6407,7 +6407,7 @@ function addAisleAfter(ai) {
     newAisle = { name: nextName, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: '列.'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) };
     toast(`✅ 已添加排 · ${nextName}`);
   }
-  t.aisles.splice(ai + 1, 0, newAisle);
+  t.aisles.push(newAisle);
   saveState(); render();
 }
 
