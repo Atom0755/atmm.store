@@ -1234,7 +1234,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2280,12 +2280,22 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.7</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复："⚙ 调整步骤顺序"弹窗 z-index 提升至 620，不再被向导覆盖层遮挡，点击后立即弹出</li>
+            <li>调整：步骤设置弹窗缩小约一半，内容更紧凑</li>
+            <li>调整："批量填型号"按钮移至左侧，"⚙ 调整步骤顺序"移至右侧</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.7</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
             <li>修复："批量填型号"按钮点击前先关闭所有已开弹窗，防止旧弹窗遮挡向导</li>
-            <li>修复："⚙ 调整步骤顺序"按钮先关闭所有弹窗再打开步骤设置，不再被向导遮挡或互相干扰</li>
+            <li>修复："⚙ 调整步骤顺序"按钮先关闭所有弹窗再打开步骤设置</li>
             <li>修复：点击空格子先关闭所有弹窗，再正常启动型号选择向导</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
@@ -2784,41 +2794,37 @@
 </div>
 
 <!-- Wizard Step Config Sheet -->
-<div class="sheet-backdrop modal-style" id="wizard-step-cfg-sheet" style="z-index:560;">
+<div class="sheet-backdrop modal-style" id="wizard-step-cfg-sheet" style="z-index:620;">
   <div class="sheet">
-    <div class="sheet-body" style="overflow-y:auto; max-height:70vh;">
-      <h3 style="margin:0 0 14px; font-size:16px; font-weight:800;">⚙ 自动填写步骤设置</h3>
+    <div class="sheet-body" style="overflow-y:auto; max-height:48vh; padding:10px 14px 6px;">
+      <h3 style="margin:0 0 8px; font-size:13px; font-weight:800;">⚙ 自动填写步骤设置</h3>
 
       <!-- Ding sound section -->
-      <div style="background:var(--bg); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-          <div>
-            <div style="font-size:13px; font-weight:700;">🔔 步骤提示音</div>
-            <div style="font-size:11px; color:var(--muted); margin-top:2px;">每步确认 · 扫码成功时响"叮"一声</div>
-          </div>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <span id="ding-test-btn" style="font-size:12px; color:#1a73e8; cursor:pointer; text-decoration:underline; white-space:nowrap;">测试音效</span>
+      <div style="background:var(--bg); border-radius:8px; padding:7px 10px; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+          <div style="font-size:12px; font-weight:700;">🔔 步骤提示音</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span id="ding-test-btn" style="font-size:11px; color:#1a73e8; cursor:pointer; text-decoration:underline; white-space:nowrap;">测试音效</span>
             <label style="display:flex; align-items:center; cursor:pointer;">
-              <input type="checkbox" id="ding-toggle" style="width:18px; height:18px; accent-color:var(--green); cursor:pointer;">
+              <input type="checkbox" id="ding-toggle" style="width:15px; height:15px; accent-color:var(--green); cursor:pointer;">
             </label>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0;">音量</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; color:var(--muted); white-space:nowrap; flex-shrink:0;">音量</span>
           <input type="range" id="ding-volume-slider" min="0" max="100" step="5" style="flex:1; accent-color:var(--ink); cursor:pointer;">
-          <span id="ding-vol-label" style="font-size:12px; font-weight:700; min-width:32px; text-align:right;">100</span>
+          <span id="ding-vol-label" style="font-size:11px; font-weight:700; min-width:28px; text-align:right;">100</span>
         </div>
       </div>
 
       <!-- Step list -->
-      <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:4px; letter-spacing:0.06em; text-transform:uppercase;">步骤顺序（可上下调整）</div>
-      <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">型号选择步骤固定在最前，关闭的步骤自动跳过</div>
-      <div id="wizard-step-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+      <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:6px; letter-spacing:0.06em;">步骤顺序（可上下调整，关闭的步骤自动跳过）</div>
+      <div id="wizard-step-list" style="display:flex; flex-direction:column; gap:3px;"></div>
     </div>
-    <div class="sheet-footer">
-      <button id="wizard-step-cfg-save" style="flex:2; padding:13px; background:var(--ink); color:var(--paper); border:none; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer;">保存设置</button>
-      <button id="wizard-step-cfg-reset" style="flex:1; padding:13px; background:var(--bg); border:1.5px solid var(--line); border-radius:12px; font-size:13px; font-weight:600; cursor:pointer;">恢复默认</button>
-      <button data-close style="flex:1; padding:13px; background:transparent; border:1.5px solid var(--line); border-radius:12px; font-size:13px; cursor:pointer;">取消</button>
+    <div class="sheet-footer" style="padding:8px 14px;">
+      <button id="wizard-step-cfg-save" style="flex:2; padding:9px; background:var(--ink); color:var(--paper); border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer;">保存设置</button>
+      <button id="wizard-step-cfg-reset" style="flex:1; padding:9px; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer;">恢复默认</button>
+      <button data-close style="flex:1; padding:9px; background:transparent; border:1.5px solid var(--line); border-radius:10px; font-size:12px; cursor:pointer;">取消</button>
     </div>
   </div>
 </div>
@@ -8332,8 +8338,8 @@ function renderPanes() {
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="red">🔴 <span class="cal-cnt">0</span></button>
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="yellow">🟡 <span class="cal-cnt">0</span></button>
             </div>
-            <button class="meta-step-cfg-btn" data-step-cfg="${z.id}">⚙ 调整<br>步骤顺序</button>
             <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 批量填型号</button>
+            <button class="meta-step-cfg-btn" data-step-cfg="${z.id}">⚙ 调整<br>步骤顺序</button>
           </div>
           <div class="meta-fields">
             <label>填表人 <input type="text" data-meta="filler" data-table-meta="${z.id}" placeholder="姓名"></label>
@@ -9995,17 +10001,17 @@ function _renderStepCfgList() {
   list.innerHTML = '';
   _tempStepConfig.forEach((s, i) => {
     const item = document.createElement('div');
-    item.style.cssText = `display:flex; align-items:center; gap:10px; padding:10px 12px; background:${s.enabled ? 'var(--paper)' : 'rgba(0,0,0,0.035)'}; border:1.5px solid ${s.enabled ? 'var(--line)' : 'rgba(0,0,0,0.1)'}; border-radius:10px; opacity:${s.enabled ? '1' : '0.55'};`;
+    item.style.cssText = `display:flex; align-items:center; gap:6px; padding:5px 8px; background:${s.enabled ? 'var(--paper)' : 'rgba(0,0,0,0.035)'}; border:1.5px solid ${s.enabled ? 'var(--line)' : 'rgba(0,0,0,0.1)'}; border-radius:7px; opacity:${s.enabled ? '1' : '0.55'};`;
     const upDis = i === 0 ? 'opacity:.28; pointer-events:none;' : '';
     const dnDis = i === _tempStepConfig.length - 1 ? 'opacity:.28; pointer-events:none;' : '';
     item.innerHTML = `
-      <span style="font-size:18px; width:22px; text-align:center; flex-shrink:0;">${s.icon}</span>
-      <span style="flex:1; font-size:13px; font-weight:600;">${s.label}</span>
-      <div style="display:flex; gap:3px; align-items:center; flex-shrink:0;">
-        <button onclick="_moveCfgStep(${i},-1)" style="width:28px; height:28px; border:1.5px solid var(--line); border-radius:7px; background:var(--bg); font-size:14px; line-height:1; cursor:pointer; ${upDis}">↑</button>
-        <button onclick="_moveCfgStep(${i},1)"  style="width:28px; height:28px; border:1.5px solid var(--line); border-radius:7px; background:var(--bg); font-size:14px; line-height:1; cursor:pointer; ${dnDis}">↓</button>
-        <label style="display:flex; align-items:center; cursor:pointer; margin-left:4px;">
-          <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="_toggleCfgStep(${i})" style="width:17px; height:17px; accent-color:var(--green); cursor:pointer;">
+      <span style="font-size:14px; width:17px; text-align:center; flex-shrink:0;">${s.icon}</span>
+      <span style="flex:1; font-size:11px; font-weight:600;">${s.label}</span>
+      <div style="display:flex; gap:2px; align-items:center; flex-shrink:0;">
+        <button onclick="_moveCfgStep(${i},-1)" style="width:22px; height:22px; border:1.5px solid var(--line); border-radius:5px; background:var(--bg); font-size:11px; line-height:1; cursor:pointer; ${upDis}">↑</button>
+        <button onclick="_moveCfgStep(${i},1)"  style="width:22px; height:22px; border:1.5px solid var(--line); border-radius:5px; background:var(--bg); font-size:11px; line-height:1; cursor:pointer; ${dnDis}">↓</button>
+        <label style="display:flex; align-items:center; cursor:pointer; margin-left:3px;">
+          <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="_toggleCfgStep(${i})" style="width:14px; height:14px; accent-color:var(--green); cursor:pointer;">
         </label>
       </div>`;
     list.appendChild(item);
