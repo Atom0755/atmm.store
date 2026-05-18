@@ -1234,7 +1234,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2280,7 +2280,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复："批量填型号"按钮点击前先关闭所有已开弹窗，防止旧弹窗遮挡向导</li>
+            <li>修复："⚙ 调整步骤顺序"按钮先关闭所有弹窗再打开步骤设置，不再被向导遮挡或互相干扰</li>
+            <li>修复：点击空格子先关闭所有弹窗，再正常启动型号选择向导</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -3322,10 +3332,11 @@ document.getElementById('main-panes').addEventListener('input', e => {
 });
 document.getElementById('main-panes').addEventListener('click', e => {
   const fillBtn = e.target.closest('[data-fill-wizard]');
-  if (fillBtn) { e.preventDefault(); e.stopPropagation(); _startFillWizard(fillBtn.dataset.fillWizard); return; }
+  if (fillBtn) { e.preventDefault(); e.stopPropagation(); hideSheets(); _startFillWizard(fillBtn.dataset.fillWizard); return; }
   const stepCfgBtn = e.target.closest('[data-step-cfg]');
   if (stepCfgBtn) {
     e.preventDefault(); e.stopPropagation();
+    hideSheets(); _wizardHideAll();
     _tempStepConfig = _wizardStepConfig.map(s => ({...s}));
     document.getElementById('ding-toggle').checked = _dingEnabled;
     const vol = Math.round(_dingVolume * 100);
@@ -3678,7 +3689,7 @@ function attachListHandlers(root) {
     attachModelDoubleTap(el);
   });
   root.querySelectorAll('.model-cell.empty-clickable:not(.sub-model-cell)').forEach(el => {
-    el.addEventListener('click', () => { openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true); });
+    el.addEventListener('click', () => { hideSheets(); openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true); });
   });
   root.querySelectorAll('.slot').forEach(el => {
     el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
