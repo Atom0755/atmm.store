@@ -251,12 +251,12 @@
 
   .list-view { padding: 10px 14px 100px; }
   .aisle-block { margin-bottom: 20px; }
-  .aisle-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; font-weight: 700; font-size: 14px; }
+  .aisle-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; font-weight: 700; font-size: 14px; position: relative; }
   .aisle-drag-handle { cursor: grab; padding: 0 6px 0 0; font-size: 14px; color: var(--muted); -webkit-touch-callout: none; }
   .aisle-drag-handle:active { cursor: grabbing; color: var(--ink); }
   .aisle-block.aisle-dragging { opacity: 0.4; }
   .aisle-block.aisle-drop-target > .aisle-header { outline: 2px solid var(--ink); border-radius: 10px; }
-  .aisle-header .add-child { background: var(--ink); color: var(--paper); border: 0; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  .aisle-header .add-child { background: var(--ink); color: var(--paper); border: 0; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; position: absolute; left: 50%; transform: translateX(-50%); }
   .container-block { background: var(--shelf-bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 5px; overflow: hidden; }
   .container-block.pallet { background: var(--pallet-bg); }
   .container-name { padding: 5px 10px; background: rgba(0,0,0,0.05); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -1234,7 +1234,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2280,11 +2280,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.8</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.9</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>修复："⚙ 调整步骤顺序"弹窗 z-index 提升至 620，不再被向导覆盖层遮挡，点击后立即弹出</li>
+            <li>修复："⚙ 调整步骤顺序"点击后弹窗不再被手机 ghost click 立即关闭（setTimeout 50ms 绕开）</li>
+            <li>调整：货架/托盘排行的"+"按钮移至行居中位置</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复："⚙ 调整步骤顺序"弹窗 z-index 提升至 620，不再被向导覆盖层遮挡</li>
             <li>调整：步骤设置弹窗缩小约一半，内容更紧凑</li>
             <li>调整："批量填型号"按钮移至左侧，"⚙ 调整步骤顺序"移至右侧</li>
           </ul>
@@ -3349,7 +3358,7 @@ document.getElementById('main-panes').addEventListener('click', e => {
     document.getElementById('ding-volume-slider').value = vol;
     document.getElementById('ding-vol-label').textContent = vol;
     _renderStepCfgList();
-    showSheet('wizard-step-cfg-sheet');
+    setTimeout(() => showSheet('wizard-step-cfg-sheet'), 50);
     return;
   }
   const alertBtn = e.target.closest('[data-alert-zone][data-alert-color]');
