@@ -3290,7 +3290,7 @@ function renderListView() {
     ablock.innerHTML = `<div class="aisle-header">
       ${canMgr ? `<span class="aisle-drag-handle" data-ai="${ai}" title="按住拖动整排/货架">⠿</span>` : ''}
       <span class="aisle-name editable" data-ai="${ai}" style="flex:1;">${isShelf ? '货架 · ' : '排 · '}${escapeHtml(aisle.name)}</span>
-      ${canMgr ? `<button class="add-child" data-ai="${ai}" title="新增${containerLabel}">+</button>` : ''}
+      ${canMgr ? `<button class="add-child" data-ai="${ai}" title="新增${isShelf?'货架':'排'}">+</button>` : ''}
       ${canMgr ? `<button class="mini-btn delete-btn" data-act="del-aisle" data-ai="${ai}" title="删除此${isShelf?'货架':'排'}" style="margin-left:4px;">✕</button>` : ''}</div>`;
     aisle[ck].forEach((container, ci) => {
       const cblock = document.createElement('div');
@@ -3611,7 +3611,7 @@ function attachListHandlers(root) {
   // NEW: restock-cell (pallets only) — double-tap opens restock input + flow
   root.querySelectorAll('.restock-cell[data-ai]').forEach(el => attachRestockCellHandlers(el));
   root.querySelectorAll('.editable').forEach(el => makeEditable(el));
-  root.querySelectorAll('.add-child').forEach(el => { el.addEventListener('click', (e) => { e.stopPropagation(); addContainerToAisle(+el.dataset.ai); }); });
+  root.querySelectorAll('.add-child').forEach(el => { el.addEventListener('click', (e) => { e.stopPropagation(); addAisleAfter(+el.dataset.ai); }); });
   // FIX (二): Bottom-divider "+" buttons → duplicate the current layer (with all data) and insert below
   root.querySelectorAll('.add-divider-btn').forEach(el => {
     el.addEventListener('click', (e) => {
@@ -6388,6 +6388,27 @@ function addContainerToAisle(ai) {
     toast('已加托盘');
   }
   render();
+}
+
+function addAisleAfter(ai) {
+  const t = getActiveTable();
+  const usedNames = t.aisles.map(a => a.name);
+  let nextName = '';
+  for (let i = 0; i < 26; i++) {
+    const c = String.fromCharCode(65 + i);
+    if (!usedNames.includes(c)) { nextName = c; break; }
+  }
+  if (!nextName) nextName = String(t.aisles.length + 1);
+  let newAisle;
+  if (isShelfTable(currentTable)) {
+    newAisle = { name: nextName, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) };
+    toast(`✅ 已添加货架 · ${nextName}`);
+  } else {
+    newAisle = { name: nextName, pallets: Array.from({length: PALLETS_PER_AISLE}, (_, pi) => ({ name: '列.'+(pi+1), layers: Array.from({length: LAYERS_PER_PALLET}, () => newSlot()) })) };
+    toast(`✅ 已添加排 · ${nextName}`);
+  }
+  t.aisles.splice(ai + 1, 0, newAisle);
+  saveState(); render();
 }
 
 function addShelfAfter(ai, ci) {
