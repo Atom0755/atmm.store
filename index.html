@@ -1234,7 +1234,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2280,14 +2280,13 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.5</span>
-            <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>修复：批量填型号 / 空格子向导现在始终显示"填写型号"步骤（步骤2）</li>
-            <li>修复：单格单击向导（已有型号）自动跳过型号选择，直接进入数量等后续步骤</li>
-            <li>修复："⚙ 调整步骤顺序"按钮改为直接绑定事件，点击必定打开步骤设置</li>
-            <li>修复：点击空格子的向导启动延迟从50ms调至200ms，避免覆盖层被其他事件遮盖</li>
+            <li>修复：还原空格子单击逻辑——先选型号，再自动进入向导第1步显示库位编号，再依次填数量等</li>
+            <li>修复："⚙ 调整步骤顺序"按钮事件委托，去除可能引起冲突的直接绑定</li>
+            <li>修复：批量填型号从步骤1（库位编号预览）正常开始，逐格推进</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -3679,12 +3678,7 @@ function attachListHandlers(root) {
     attachModelDoubleTap(el);
   });
   root.querySelectorAll('.model-cell.empty-clickable:not(.sub-model-cell)').forEach(el => {
-    el.addEventListener('click', () => {
-      if (_wizardState) return;
-      const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si;
-      _wizardState = { zoneId: currentTable, slots: [{ai, ci, si}], idx: 0, step: 0, addingSubModel: false, tempSubModel: null, currentModelId: null, autoTimer: null };
-      setTimeout(() => _runWizardStep(1), 200);
-    });
+    el.addEventListener('click', () => { openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true); });
   });
   root.querySelectorAll('.slot').forEach(el => {
     el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
@@ -6068,6 +6062,11 @@ function commitModelChoice() {
   if (_wizardState && _wizardCurrentStepId() === 'model_picker' && !_usedCallback) {
     _wizardState.currentModelId = model.id;
     setTimeout(() => _runWizardStep(_wizardState.step + 1), 400);
+  } else if (!_usedCallback && !_wizardState && _pendingTarget) {
+    // 空格子单击：openModelPicker 已选型号，启动向导从步骤1开始
+    const { ai, ci, si } = _pendingTarget;
+    _wizardState = { zoneId: currentTable, slots: [{ ai, ci, si }], idx: 0, step: 0, addingSubModel: false, tempSubModel: null, currentModelId: model.id, autoTimer: null };
+    setTimeout(() => _runWizardStep(1), 400);
   }
 }
 
@@ -8348,19 +8347,6 @@ function renderPanes() {
           const now = Date.now();
           if (now - lastTap < 350) { e.preventDefault(); startEditMetaTitle(titleEl); }
           lastTap = now;
-        });
-      }
-      const stepCfgBtnEl = pane.querySelector('.meta-step-cfg-btn');
-      if (stepCfgBtnEl) {
-        stepCfgBtnEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          _tempStepConfig = _wizardStepConfig.map(s => ({...s}));
-          document.getElementById('ding-toggle').checked = _dingEnabled;
-          const vol = Math.round(_dingVolume * 100);
-          document.getElementById('ding-volume-slider').value = vol;
-          document.getElementById('ding-vol-label').textContent = vol;
-          _renderStepCfgList();
-          showSheet('wizard-step-cfg-sheet');
         });
       }
     }
