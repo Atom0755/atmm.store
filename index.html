@@ -76,6 +76,9 @@
     background: var(--paper);
     border-bottom: 1px solid var(--line);
     padding: 10px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 12;
   }
   .meta-title-row {
     display: flex;
@@ -151,6 +154,8 @@
     letter-spacing: 0.02em;
   }
   .meta-save-btn:active { transform: scale(0.94); background: #b8232f; }
+  .meta-step-cfg-btn { flex-shrink:0; background:#f0f4ff; color:#3a4a80; border:1.5px solid #b0bdf0; border-radius:8px; padding:4px 8px; font-size:10px; font-weight:700; cursor:pointer; line-height:1.3; text-align:center; }
+  .meta-step-cfg-btn:active { transform:scale(0.94); background:#dde4f8; }
   .meta-fill-btn { flex-shrink:0; background:#1a73e8; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:0.02em; white-space:nowrap; }
   .meta-fill-btn:active { transform:scale(0.94); background:#1558b0; }
   .color-alert-btns { display:flex; gap:5px; flex-shrink:0; }
@@ -187,7 +192,7 @@
     border-bottom: 1px solid var(--line);
     position: sticky;
     top: 0;
-    z-index: 5;
+    z-index: 4;
   }
   .search-bar input {
     flex: 1;
@@ -1229,7 +1234,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2275,7 +2280,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.3</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.4</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复：点击空格子现可正常启动向导，从第1步库位编号预览开始</li>
+            <li>修复：库位编号预览覆盖层延长至2.5秒，点击"立即开始填写"可手动跳过</li>
+            <li>修复：向导各步跳转改用步骤名匹配，不再依赖硬编码数字，步骤顺序调整后仍正常运作</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.3</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2742,7 +2757,7 @@
 <div id="wizard-loc-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:600; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
   <div id="wizard-loc-progress" style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:700; margin-bottom:16px; letter-spacing:0.1em;"></div>
   <div id="wizard-loc-code" style="color:#fff; font-size:52px; font-weight:900; letter-spacing:0.06em; font-family:'JetBrains Mono',monospace; margin-bottom:8px;"></div>
-  <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-bottom:32px;">库位编号 · 1秒后自动开始填写</div>
+  <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-bottom:32px;">库位编号 · 点击下方按钮开始填写</div>
   <button id="wizard-loc-go" style="padding:14px 40px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); border-radius:12px; color:#fff; font-size:16px; font-weight:700; cursor:pointer; margin-bottom:12px;">立即开始填写 →</button>
   <button id="wizard-loc-skip" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.45); font-size:13px; cursor:pointer;">⏭ 跳过此格</button>
   <button id="wizard-loc-cancel" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.28); font-size:12px; cursor:pointer; margin-top:4px;">✕ 取消向导</button>
@@ -3298,6 +3313,18 @@ document.getElementById('main-panes').addEventListener('input', e => {
 document.getElementById('main-panes').addEventListener('click', e => {
   const fillBtn = e.target.closest('[data-fill-wizard]');
   if (fillBtn) { e.preventDefault(); e.stopPropagation(); _startFillWizard(fillBtn.dataset.fillWizard); return; }
+  const stepCfgBtn = e.target.closest('[data-step-cfg]');
+  if (stepCfgBtn) {
+    e.preventDefault(); e.stopPropagation();
+    _tempStepConfig = _wizardStepConfig.map(s => ({...s}));
+    document.getElementById('ding-toggle').checked = _dingEnabled;
+    const vol = Math.round(_dingVolume * 100);
+    document.getElementById('ding-volume-slider').value = vol;
+    document.getElementById('ding-vol-label').textContent = vol;
+    _renderStepCfgList();
+    showSheet('wizard-step-cfg-sheet');
+    return;
+  }
   const alertBtn = e.target.closest('[data-alert-zone][data-alert-color]');
   if (alertBtn) { e.preventDefault(); e.stopPropagation(); _openColorAlert(alertBtn.dataset.alertZone, alertBtn.dataset.alertColor); return; }
   const btn = e.target.closest('[data-meta-save]');
@@ -3641,7 +3668,12 @@ function attachListHandlers(root) {
     attachModelDoubleTap(el);
   });
   root.querySelectorAll('.model-cell.empty-clickable:not(.sub-model-cell)').forEach(el => {
-    el.addEventListener('click', () => { openModelPicker(+el.dataset.ai, +el.dataset.ci, +el.dataset.si, true); });
+    el.addEventListener('click', () => {
+      if (_wizardState) return;
+      const ai = +el.dataset.ai, ci = +el.dataset.ci, si = +el.dataset.si;
+      _wizardState = { zoneId: currentTable, slots: [{ai, ci, si}], idx: 0, step: 0, addingSubModel: false, tempSubModel: null, currentModelId: null, autoTimer: null };
+      setTimeout(() => _runWizardStep(1), 50);
+    });
   });
   root.querySelectorAll('.slot').forEach(el => {
     el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
@@ -6022,15 +6054,9 @@ function commitModelChoice() {
   if (typeof stopBarcodeScanner === 'function') stopBarcodeScanner();
   hideSheets();
   render();
-  if (_wizardState && _wizardState.step === 2 && !_usedCallback) {
-    // 批量向导：step 2 已完成，继续 step 3
+  if (_wizardState && _wizardCurrentStepId() === 'model_picker' && !_usedCallback) {
     _wizardState.currentModelId = model.id;
-    setTimeout(() => _runWizardStep(3), 400);
-  } else if (!_usedCallback && !_wizardState && _pendingTarget) {
-    // 单格编辑：自动开启单格10步向导（从 step 3 开始，model 已选完）
-    const { ai, ci, si } = _pendingTarget;
-    _wizardState = { zoneId: currentTable, slots: [{ ai, ci, si }], idx: 0, step: 3, addingSubModel: false, tempSubModel: null, currentModelId: model.id, autoTimer: null };
-    setTimeout(() => _runWizardStep(3), 400);
+    setTimeout(() => _runWizardStep(_wizardState.step + 1), 400);
   }
 }
 
@@ -6237,7 +6263,7 @@ function _runWizardStep(step) {
       document.getElementById('wizard-loc-overlay').style.display = 'flex';
       _wizardState.autoTimer = setTimeout(() => {
         if (_wizardState?.step === step) { document.getElementById('wizard-loc-overlay').style.display = 'none'; _runWizardStep(step + 1); }
-      }, 1000);
+      }, 2500);
       break;
     }
     case 'model_picker': {
@@ -6454,7 +6480,7 @@ document.getElementById('wizard-loc-go').addEventListener('click', () => {
   if (!_wizardState) return;
   _wizardClearTimer();
   document.getElementById('wizard-loc-overlay').style.display = 'none';
-  _runWizardStep(2);
+  _runWizardStep(_wizardState.step + 1);
 });
 document.getElementById('wizard-loc-skip').addEventListener('click', () => {
   if (!_wizardState) return;
@@ -8286,6 +8312,7 @@ function renderPanes() {
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="red">🔴 <span class="cal-cnt">0</span></button>
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="yellow">🟡 <span class="cal-cnt">0</span></button>
             </div>
+            <button class="meta-step-cfg-btn" data-step-cfg="${z.id}">⚙ 调整<br>步骤顺序</button>
             <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 批量填型号</button>
           </div>
           <div class="meta-fields">
