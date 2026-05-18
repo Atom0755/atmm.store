@@ -1234,7 +1234,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2280,12 +2280,21 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>修复："⚙ 调整步骤顺序"点击后弹窗不再被手机 ghost click 立即关闭（setTimeout 50ms 绕开）</li>
-            <li>调整：货架/托盘排行的"+"按钮移至行居中位置</li>
+            <li>彻底修复：_openChangelog() 打开前先关闭所有弹窗，不再与步骤设置弹窗叠加</li>
+            <li>所有弹窗入口均已补全 hideSheets()，多弹窗叠加问题全部解决</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-18</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>修复："⚙ 调整步骤顺序"点击后弹窗不再被 ghost click 立即关闭</li>
+            <li>调整：货架/排行"+"按钮移至行居中位置</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2804,7 +2813,7 @@
 
 <!-- Wizard Step Config Sheet -->
 <div class="sheet-backdrop modal-style" id="wizard-step-cfg-sheet" style="z-index:620;">
-  <div class="sheet" style="max-width:300px; width:calc(100% - 80px);">
+  <div class="sheet">
     <div class="sheet-body" style="overflow-y:auto; max-height:48vh; padding:10px 14px 6px;">
       <h3 style="margin:0 0 8px; font-size:13px; font-weight:800;">⚙ 自动填写步骤设置</h3>
 
@@ -4443,7 +4452,7 @@ async function openLocCodeSheet(code) {
   }
 }
 
-function _openChangelog() { showSheet('changelog-sheet'); }
+function _openChangelog() { hideSheets(); showSheet('changelog-sheet'); }
 
 function _copyLocCode() {
   copyToClipboard(_currentLocCode);
