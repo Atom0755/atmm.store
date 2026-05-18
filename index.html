@@ -246,12 +246,12 @@
 
   .list-view { padding: 10px 14px 100px; }
   .aisle-block { margin-bottom: 20px; }
-  .aisle-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; font-weight: 700; font-size: 14px; }
+  .aisle-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; font-weight: 700; font-size: 14px; position: relative; }
   .aisle-drag-handle { cursor: grab; padding: 0 6px 0 0; font-size: 14px; color: var(--muted); -webkit-touch-callout: none; }
   .aisle-drag-handle:active { cursor: grabbing; color: var(--ink); }
   .aisle-block.aisle-dragging { opacity: 0.4; }
   .aisle-block.aisle-drop-target > .aisle-header { outline: 2px solid var(--ink); border-radius: 10px; }
-  .aisle-header .add-child { background: var(--ink); color: var(--paper); border: 0; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  .aisle-header .add-child { background: var(--ink); color: var(--paper); border: 0; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; position: absolute; left: 50%; transform: translateX(-50%); }
   .container-block { background: var(--shelf-bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 5px; overflow: hidden; }
   .container-block.pallet { background: var(--pallet-bg); }
   .container-name { padding: 5px 10px; background: rgba(0,0,0,0.05); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
