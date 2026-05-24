@@ -153,6 +153,8 @@
   .meta-save-btn:active { transform: scale(0.94); background: #b8232f; }
   .meta-fill-btn { flex-shrink:0; background:#1a73e8; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:0.02em; white-space:nowrap; }
   .meta-fill-btn:active { transform:scale(0.94); background:#1558b0; }
+  .meta-step-cfg-btn { flex-shrink:0; background:#f0f4ff; color:#3a4a80; border:1.5px solid #b0bdf0; border-radius:8px; padding:4px 8px; font-size:10px; font-weight:700; cursor:pointer; line-height:1.3; text-align:center; white-space:nowrap; }
+  .meta-step-cfg-btn:active { transform:scale(0.94); background:#dde4f8; }
   .color-alert-btns { display:flex; gap:5px; flex-shrink:0; }
   .color-alert-btn { border:none; border-radius:20px; padding:4px 9px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:2px; transition:transform .12s, opacity .15s; white-space:nowrap; }
   .color-alert-btn:active { transform:scale(0.88); }
@@ -1229,7 +1231,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2275,7 +2277,16 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.2</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.3</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>货架/排标题行「+」号按钮居中显示，点击后追加新货架/排到末尾</li>
+            <li>新增「⚙ 步骤顺序」按钮：可自由调整批量填写向导的步骤顺序，支持勾选跳过，保存后长期生效，可一键恢复默认</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.2</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2308,6 +2319,7 @@
             <li>支持在同一格位添加附加型号（循环向导流程），自动附加至库位</li>
             <li>点击任意输入框自动滚动至屏幕中央（手机键盘遮挡问题修复）</li>
           </ul>
+          </div>
           </div>
         </div>
 
@@ -2799,6 +2811,22 @@
   <button id="wizard-submodel-add" style="padding:14px 0; background:#4a9b3f; border:none; border-radius:12px; color:#fff; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px; width:260px;">+ 在此格添加附加型号</button>
   <button id="wizard-submodel-next" style="padding:12px 0; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); border-radius:12px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; margin-bottom:10px; width:260px;">→ 下一格</button>
   <button id="wizard-submodel-cancel" style="padding:8px 24px; background:transparent; border:none; color:rgba(255,255,255,0.28); font-size:12px; cursor:pointer; margin-top:4px;">✕ 取消向导</button>
+</div>
+
+<!-- Wizard Step Config Sheet -->
+<div class="sheet-backdrop modal-style" id="wizard-step-cfg-sheet" style="z-index:620;">
+  <div class="sheet">
+    <div class="sheet-body" style="overflow-y:auto; max-height:60vh; padding:14px 16px 8px;">
+      <h3 style="margin:0 0 6px; font-size:15px; font-weight:800;">⚙ 填写步骤顺序</h3>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">型号选择固定最前，可上下调整其余步骤，取消勾选则跳过</div>
+      <div id="wizard-step-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+    </div>
+    <div class="sheet-footer">
+      <button id="wizard-step-cfg-save" style="flex:2; padding:12px; background:var(--ink); color:var(--paper); border:none; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer;">保存设置</button>
+      <button id="wizard-step-cfg-reset" style="flex:1; padding:12px; background:var(--bg); border:1.5px solid var(--line); border-radius:12px; font-size:13px; font-weight:600; cursor:pointer;">恢复默认</button>
+      <button data-close style="flex:1; padding:12px; background:transparent; border:1.5px solid var(--line); border-radius:12px; font-size:13px; cursor:pointer;">取消</button>
+    </div>
+  </div>
 </div>
 
 <!-- Color Alert Sheet: 无货(red) / 少量(yellow) 型号清单 -->
@@ -4314,7 +4342,7 @@ async function openLocCodeSheet(code) {
   }
 }
 
-function _openChangelog() { showSheet('changelog-sheet'); }
+function _openChangelog() { hideSheets(); showSheet('changelog-sheet'); }
 
 function _copyLocCode() {
   copyToClipboard(_currentLocCode);
@@ -4719,13 +4747,13 @@ function commitQtyValue() {
       _wizardState.tempSubModel = _wizardState.tempSubModel || {};
       _wizardState.tempSubModel.qty = v;
       hideSheets();
-      setTimeout(() => _runWizardStep(4), 300);
+      setTimeout(() => _runWizardStep(_wizardNextStep(3)), 300);
       return;
     }
     s.qty = v;
     hideSheets(); render();
     if (_wizardState?.step === 3) {
-      setTimeout(() => _runWizardStep(4), 400);
+      setTimeout(() => _runWizardStep(_wizardNextStep(3)), 400);
     }
   }
 }
@@ -5022,15 +5050,15 @@ function _wizardCommitUnit(u) {
     }
     _wizardState.tempSubModel = null;
     saveState(); render(); hideSheets();
-    setTimeout(() => _runWizardStep(5), 300);
+    setTimeout(() => _runWizardStep(_wizardNextStep(4)), 300);
     return true;
   }
   if (_wizardState?.step === 4) {
-    if (!pendingSlot) { hideSheets(); _runWizardStep(5); return true; }
+    if (!pendingSlot) { hideSheets(); _runWizardStep(_wizardNextStep(4)); return true; }
     const s = getSlot(pendingSlot.ai, pendingSlot.ci, pendingSlot.si, pendingSlot.smi);
     if (s) { s.unit = u || null; }
     saveState(); hideSheets(); render();
-    setTimeout(() => _runWizardStep(5), 300);
+    setTimeout(() => _runWizardStep(_wizardNextStep(4)), 300);
     return true;
   }
   return false;
@@ -5952,14 +5980,14 @@ function commitModelChoice() {
   hideSheets();
   render();
   if (_wizardState && _wizardState.step === 2 && !_usedCallback) {
-    // 批量向导：step 2 已完成，继续 step 3
+    // 批量向导：step 2 已完成，继续第一个可配置步骤
     _wizardState.currentModelId = model.id;
-    setTimeout(() => _runWizardStep(3), 400);
+    setTimeout(() => _runWizardStep(_wizardFirstConfigStep()), 400);
   } else if (!_usedCallback && !_wizardState && _pendingTarget) {
-    // 单格编辑：自动开启单格10步向导（从 step 3 开始，model 已选完）
+    // 单格编辑：自动开启单格10步向导（从第一个可配置步骤开始，model 已选完）
     const { ai, ci, si } = _pendingTarget;
-    _wizardState = { zoneId: currentTable, slots: [{ ai, ci, si }], idx: 0, step: 3, addingSubModel: false, tempSubModel: null, currentModelId: model.id, autoTimer: null };
-    setTimeout(() => _runWizardStep(3), 400);
+    _wizardState = { zoneId: currentTable, slots: [{ ai, ci, si }], idx: 0, step: _wizardFirstConfigStep(), addingSubModel: false, tempSubModel: null, currentModelId: model.id, autoTimer: null };
+    setTimeout(() => _runWizardStep(_wizardFirstConfigStep()), 400);
   }
 }
 
@@ -6000,7 +6028,7 @@ document.getElementById('model-picker-batch-btn').addEventListener('click', () =
       const slot = t.aisles[f.ai][ck][f.ci][sk][f.si];
       if (slot?.subModels?.[f.smi] !== undefined) slot.subModels[f.smi].modelId = model.id;
       saveState(); render(); hideSheets();
-      setTimeout(() => _runWizardStep(3), 300);
+      setTimeout(() => _runWizardStep(_wizardFirstConfigStep()), 300);
     });
     toast(`📋 附加批量填：从 ${firstLoc} 起共 ${slots.length} 格`);
     return;
@@ -6087,6 +6115,70 @@ function _wizardNextSlot() {
   }, 300);
 }
 
+// === Wizard step config ===
+const _WIZARD_STEP_DEFAULT = [
+  { id:'qty',        icon:'🔢', label:'数量',    enabled:true },
+  { id:'unit',       icon:'📦', label:'单位',    enabled:true },
+  { id:'enName',     icon:'🔤', label:'英文名称', enabled:true },
+  { id:'cnName',     icon:'📝', label:'中文名称', enabled:true },
+  { id:'dimensions', icon:'📐', label:'尺寸规格', enabled:true },
+  { id:'weight',     icon:'⚖️', label:'重量',    enabled:true },
+  { id:'photo',      icon:'📷', label:'商品照片', enabled:true },
+];
+const _STEP_ID_TO_NUM = { qty:3, unit:4, enName:5, cnName:6, dimensions:7, weight:8, photo:9 };
+const _STEP_NUM_TO_ID = { 3:'qty', 4:'unit', 5:'enName', 6:'cnName', 7:'dimensions', 8:'weight', 9:'photo' };
+let _wizardStepConfig = (() => {
+  try { const s = localStorage.getItem('atmm_wizard_step_cfg'); if (s) return JSON.parse(s); } catch(e) {}
+  return _WIZARD_STEP_DEFAULT.map(s => ({...s}));
+})();
+let _tempStepConfig = [];
+
+function _wizardFirstConfigStep() {
+  for (const s of _wizardStepConfig) { if (s.enabled) return _STEP_ID_TO_NUM[s.id]; }
+  return 10;
+}
+function _wizardNextStep(currentNum) {
+  const currentId = _STEP_NUM_TO_ID[currentNum];
+  if (!currentId) return 10;
+  const idx = _wizardStepConfig.findIndex(s => s.id === currentId);
+  for (let i = idx + 1; i < _wizardStepConfig.length; i++) {
+    if (_wizardStepConfig[i].enabled) return _STEP_ID_TO_NUM[_wizardStepConfig[i].id];
+  }
+  return 10;
+}
+function _renderStepCfgList() {
+  const list = document.getElementById('wizard-step-list');
+  if (!list) return;
+  list.innerHTML = '';
+  _tempStepConfig.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.style.cssText = `display:flex;align-items:center;gap:8px;padding:8px 10px;background:${s.enabled?'var(--paper)':'rgba(0,0,0,0.035)'};border:1.5px solid ${s.enabled?'var(--line)':'rgba(0,0,0,0.1)'};border-radius:9px;opacity:${s.enabled?'1':'0.55'};`;
+    const upDis = i===0?'opacity:.28;pointer-events:none;':'';
+    const dnDis = i===_tempStepConfig.length-1?'opacity:.28;pointer-events:none;':'';
+    item.innerHTML = `
+      <span style="font-size:17px;width:22px;text-align:center;flex-shrink:0">${s.icon}</span>
+      <span style="flex:1;font-size:13px;font-weight:600">${s.label}</span>
+      <div style="display:flex;gap:3px;align-items:center;flex-shrink:0">
+        <button onclick="_moveCfgStep(${i},-1)" style="width:28px;height:28px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg);font-size:13px;cursor:pointer;${upDis}">↑</button>
+        <button onclick="_moveCfgStep(${i},1)"  style="width:28px;height:28px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg);font-size:13px;cursor:pointer;${dnDis}">↓</button>
+        <label style="display:flex;align-items:center;cursor:pointer;margin-left:4px">
+          <input type="checkbox" ${s.enabled?'checked':''} onchange="_toggleCfgStep(${i})" style="width:17px;height:17px;accent-color:var(--green);cursor:pointer">
+        </label>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+function _moveCfgStep(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= _tempStepConfig.length) return;
+  [_tempStepConfig[i], _tempStepConfig[j]] = [_tempStepConfig[j], _tempStepConfig[i]];
+  _renderStepCfgList();
+}
+function _toggleCfgStep(i) {
+  _tempStepConfig[i].enabled = !_tempStepConfig[i].enabled;
+  _renderStepCfgList();
+}
+
 function _runWizardStep(step) {
   if (!_wizardState) return;
   _wizardState.step = step;
@@ -6137,7 +6229,7 @@ function _runWizardStep(step) {
           const slot = t.aisles[ai][ck][ci][sk][si];
           if (slot?.subModels?.[curSmi] !== undefined) slot.subModels[curSmi].modelId = model.id;
           saveState(); render(); hideSheets();
-          setTimeout(() => _runWizardStep(3), 300);
+          setTimeout(() => _runWizardStep(_wizardFirstConfigStep()), 300);
         });
       } else if (_wizardState.addingSubModel) {
         // Adding a brand-new sub-model via main wizard flow (step 10 loop)
@@ -6145,7 +6237,7 @@ function _runWizardStep(step) {
           _wizardState.tempSubModel = { modelId: model.id, qty: 0, unit: null };
           _wizardState.currentModelId = model.id;
           hideSheets(); render();
-          setTimeout(() => _runWizardStep(3), 300);
+          setTimeout(() => _runWizardStep(_wizardFirstConfigStep()), 300);
         });
       } else {
         openModelPicker(ai, ci, si, false, null);
@@ -6281,7 +6373,7 @@ function _wizardCommitTextField() {
     }
     saveState();
   }
-  const nextStep = _wizardState.step + 1;
+  const nextStep = _wizardNextStep(_wizardState.step);
   hideSheets();
   setTimeout(() => _runWizardStep(nextStep), 300);
 }
@@ -6304,14 +6396,26 @@ document.getElementById('wizard-skip-btn').addEventListener('click', () => {
 document.getElementById('wizard-qty-skip').addEventListener('click', () => {
   if (!_wizardState) return;
   hideSheets();
-  setTimeout(() => _runWizardStep(4), 300);
+  setTimeout(() => _runWizardStep(_wizardNextStep(3)), 300);
 });
 
 // Wizard unit skip button (step 4)
 document.getElementById('wizard-unit-skip').addEventListener('click', () => {
   if (!_wizardState) return;
   hideSheets();
-  setTimeout(() => _runWizardStep(5), 300);
+  setTimeout(() => _runWizardStep(_wizardNextStep(4)), 300);
+});
+
+// Wizard step-cfg sheet: save & reset
+document.getElementById('wizard-step-cfg-save').addEventListener('click', () => {
+  _wizardStepConfig = _tempStepConfig.map(s => ({...s}));
+  try { localStorage.setItem('atmm_wizard_step_cfg', JSON.stringify(_wizardStepConfig)); } catch(e) {}
+  hideSheets();
+  toast('✅ 步骤设置已保存');
+});
+document.getElementById('wizard-step-cfg-reset').addEventListener('click', () => {
+  _tempStepConfig = _WIZARD_STEP_DEFAULT.map(s => ({...s}));
+  _renderStepCfgList();
 });
 
 // Wizard image next button (step 9)
@@ -6325,7 +6429,7 @@ document.getElementById('wizard-img-next').addEventListener('click', () => {
 document.getElementById('wizard-text-confirm').addEventListener('click', _wizardCommitTextField);
 document.getElementById('wizard-text-skip').addEventListener('click', () => {
   if (!_wizardState) return;
-  const nextStep = _wizardState.step + 1;
+  const nextStep = _wizardNextStep(_wizardState.step);
   hideSheets();
   setTimeout(() => _runWizardStep(nextStep), 300);
 });
@@ -8189,6 +8293,7 @@ function renderPanes() {
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="red">🔴 <span class="cal-cnt">0</span></button>
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="yellow">🟡 <span class="cal-cnt">0</span></button>
             </div>
+            <button class="meta-step-cfg-btn" id="meta-step-cfg-btn-${z.id}" onclick="(function(e){e.stopPropagation();hideSheets();_tempStepConfig=_wizardStepConfig.map(s=>({...s}));_renderStepCfgList();setTimeout(()=>showSheet('wizard-step-cfg-sheet'),50);})(event)">⚙ 步骤<br>顺序</button>
             <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 批量填型号</button>
           </div>
           <div class="meta-fields">
