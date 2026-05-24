@@ -8293,7 +8293,7 @@ function renderPanes() {
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="red">🔴 <span class="cal-cnt">0</span></button>
               <button class="color-alert-btn no-items" data-alert-zone="${z.id}" data-alert-color="yellow">🟡 <span class="cal-cnt">0</span></button>
             </div>
-            <button class="meta-step-cfg-btn" id="meta-step-cfg-btn-${z.id}" onclick="(function(e){e.stopPropagation();hideSheets();_tempStepConfig=_wizardStepConfig.map(s=>({...s}));_renderStepCfgList();setTimeout(()=>showSheet('wizard-step-cfg-sheet'),50);})(event)">⚙ 步骤<br>顺序</button>
+            <button class="meta-step-cfg-btn" id="meta-step-cfg-btn-${z.id}" onclick="(function(e){e.stopPropagation();hideSheets();_tempStepConfig=_wizardStepConfig.map(s=>({...s}));_renderStepCfgList();setTimeout(()=>showSheet('wizard-step-cfg-sheet'),50);})(event)">更改<br>步骤顺序</button>
             <button class="meta-fill-btn" data-fill-wizard="${z.id}">✏️ 批量填型号</button>
           </div>
           <div class="meta-fields">
