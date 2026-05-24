@@ -1231,7 +1231,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1454,10 +1454,26 @@
       <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 12px;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
           <div style="font-size: 13px; font-weight: 700; color: var(--ink);">📚 当前型号库 <span id="lib-count" style="color: var(--red); font-family: 'JetBrains Mono', monospace;">0</span> 个型号</div>
-          <button id="lib-export" onclick="openExportSheet()" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:600;">📤 导出</button>
+          <div style="display:flex; gap:5px;">
+            <button id="lib-batch-btn" onclick="_enterLibBatchMode()" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #b0bdf0; background:#f0f4ff; color:#3a4a80; cursor:pointer; font-weight:600;">🔲 批量追加</button>
+            <button id="lib-export" onclick="openExportSheet()" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:600;">📤 导出</button>
+          </div>
         </div>
         <input type="text" id="lib-search" placeholder="🔍 搜索型号库..." autocomplete="off" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; margin-bottom:6px; background:var(--paper); -webkit-user-select:text; user-select:text;">
         <div id="lib-list" style="max-height: 96px; overflow-y: auto; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: var(--paper); -webkit-overflow-scrolling: touch;"></div>
+        <!-- 批量追加操作栏（默认隐藏） -->
+        <div id="lib-batch-bar" style="display:none; flex-direction:column; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--line);">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button id="lib-select-all-btn" onclick="_libToggleSelectAll()" style="font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:600; white-space:nowrap;">✓ 全选</button>
+            <span id="lib-selected-count" style="font-size:11px; color:var(--muted);">已选 0 个</span>
+          </div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <button onclick="_appendLibToZones(['pallet'])" style="flex:1; min-width:80px; padding:8px 6px; border-radius:8px; border:1.5px solid #f59e0b; background:#fff8e1; color:#92400e; font-size:11px; font-weight:700; cursor:pointer;">📦 追加到<br>堆货区</button>
+            <button onclick="_appendLibToZones(['shelf'])" style="flex:1; min-width:80px; padding:8px 6px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink); font-size:11px; font-weight:700; cursor:pointer;">🗂️ 追加到<br>货架区</button>
+            <button onclick="_appendLibToZones(['pallet','shelf'])" style="flex:1; min-width:80px; padding:8px 6px; border-radius:8px; border:1.5px solid var(--green); background:#e8f5e8; color:#1b5e20; font-size:11px; font-weight:700; cursor:pointer;">⚡ 两区<br>都追加</button>
+            <button onclick="_exitLibBatchMode()" style="flex:0 0 auto; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--muted); font-size:11px; cursor:pointer;">取消</button>
+          </div>
+        </div>
       </div>
 
       <!-- Upload sources -->
@@ -2277,12 +2293,21 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.3</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.4</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>型号库新增「批量追加」功能：勾选任意型号，一键追加到堆货区、货架区或两区同时追加</li>
+            <li>空格位不足时自动扩充列/排，确保所选型号全部填入</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.3</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
             <li>货架/排标题行「+」号按钮居中显示，点击后追加新货架/排到末尾</li>
-            <li>新增「⚙ 步骤顺序」按钮：可自由调整批量填写向导的步骤顺序，支持勾选跳过，保存后长期生效，可一键恢复默认</li>
+            <li>新增「更改步骤顺序」按钮：可自由调整批量填写向导的步骤顺序，支持勾选跳过，保存后长期生效，可一键恢复默认</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2319,6 +2344,7 @@
             <li>支持在同一格位添加附加型号（循环向导流程），自动附加至库位</li>
             <li>点击任意输入框自动滚动至屏幕中央（手机键盘遮挡问题修复）</li>
           </ul>
+          </div>
           </div>
           </div>
         </div>
@@ -6970,6 +6996,10 @@ document.querySelectorAll('.sheet-backdrop').forEach(s => s.addEventListener('cl
 // === MODEL LIBRARY UI (upload sheet) ===
 let pendingImportLines = null; // when user picks a source, the parsed lines wait here for "mode" choice
 
+let _libBatchMode = false;
+let _libSelectedIds = new Set();
+let _libCurrentShownIds = [];
+
 function refreshLibList(filter) {
   const listEl = document.getElementById('lib-list');
   const countEl = document.getElementById('lib-count');
@@ -6979,17 +7009,158 @@ function refreshLibList(filter) {
     ? state.models.filter(m => m.name.toLowerCase().includes(q))
     : state.models.slice();
   countEl.textContent = state.models.length + (q ? ` (匹配 ${matches.length})` : '');
+
+  if (_libBatchMode) {
+    _libCurrentShownIds = matches.map(m => m.id);
+    const selCountEl = document.getElementById('lib-selected-count');
+    if (selCountEl) selCountEl.textContent = `已选 ${_libSelectedIds.size} 个`;
+    const selAllBtn = document.getElementById('lib-select-all-btn');
+    if (selAllBtn) {
+      const allSel = _libCurrentShownIds.length > 0 && _libCurrentShownIds.every(id => _libSelectedIds.has(id));
+      selAllBtn.textContent = allSel ? '取消全选' : '✓ 全选';
+    }
+  }
+
   if (!matches.length) {
     listEl.innerHTML = `<div style="padding:14px; text-align:center; color:var(--muted); font-size:12px; font-style:italic;">${q ? '没有匹配的型号' : '型号库为空,请上传清单'}</div>`;
     return;
   }
-  // Sort alphabetically for easier scanning
   matches.sort((a,b) => a.name.localeCompare(b.name));
-  listEl.innerHTML = matches.map((m,i) => `<div style="padding:5px 8px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; align-items:center; gap:6px;">
-    <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}${m.boxToSetRatio && m.boxToSetRatio !== 1 ? ` <span style="color:var(--muted); font-size:10px;">(1箱=${m.boxToSetRatio}${m.boxToSetUnit||`套`})</span>` : ''}</span>
-    <button onclick="openModelCodeSheet('${m.id}')" style="flex-shrink:0; background:none; border:1px solid var(--line); border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:var(--muted);" title="生成条形码/二维码">🔲</button>
-    <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); flex-shrink:0;">#${i+1}</span>
-  </div>`).join('');
+
+  if (_libBatchMode) {
+    listEl.innerHTML = matches.map((m,i) => {
+      const ck = _libSelectedIds.has(m.id);
+      return `<label style="padding:5px 8px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer; background:${ck ? '#eef4ff' : 'transparent'};">
+        <input type="checkbox" ${ck ? 'checked' : ''} onchange="_libToggleId('${m.id}')" style="width:16px;height:16px;flex-shrink:0;accent-color:#1a73e8;cursor:pointer;">
+        <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}</span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); flex-shrink:0;">#${i+1}</span>
+      </label>`;
+    }).join('');
+  } else {
+    listEl.innerHTML = matches.map((m,i) => `<div style="padding:5px 8px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; display:flex; align-items:center; gap:6px;">
+      <span style="flex:1; min-width:0; word-break:break-word;">${escapeHtml(m.name)}${m.boxToSetRatio && m.boxToSetRatio !== 1 ? ` <span style="color:var(--muted); font-size:10px;">(1箱=${m.boxToSetRatio}${m.boxToSetUnit||`套`})</span>` : ''}</span>
+      <button onclick="openModelCodeSheet('${m.id}')" style="flex-shrink:0; background:none; border:1px solid var(--line); border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:var(--muted);" title="生成条形码/二维码">🔲</button>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); flex-shrink:0;">#${i+1}</span>
+    </div>`).join('');
+  }
+}
+
+function _enterLibBatchMode() {
+  _libBatchMode = true;
+  _libSelectedIds = new Set(state.models.map(m => m.id));
+  document.getElementById('lib-list').style.maxHeight = '200px';
+  document.getElementById('lib-batch-bar').style.display = 'flex';
+  document.getElementById('lib-export').style.display = 'none';
+  const btn = document.getElementById('lib-batch-btn');
+  btn.textContent = '✗ 退出选择';
+  btn.onclick = () => _exitLibBatchMode();
+  refreshLibList(document.getElementById('lib-search').value);
+}
+
+function _exitLibBatchMode() {
+  _libBatchMode = false;
+  _libSelectedIds = new Set();
+  _libCurrentShownIds = [];
+  document.getElementById('lib-list').style.maxHeight = '96px';
+  document.getElementById('lib-batch-bar').style.display = 'none';
+  document.getElementById('lib-export').style.display = '';
+  const btn = document.getElementById('lib-batch-btn');
+  btn.textContent = '🔲 批量追加';
+  btn.onclick = () => _enterLibBatchMode();
+  refreshLibList(document.getElementById('lib-search').value);
+}
+
+function _libToggleSelectAll() {
+  const allSel = _libCurrentShownIds.length > 0 && _libCurrentShownIds.every(id => _libSelectedIds.has(id));
+  if (allSel) {
+    _libCurrentShownIds.forEach(id => _libSelectedIds.delete(id));
+  } else {
+    _libCurrentShownIds.forEach(id => _libSelectedIds.add(id));
+  }
+  refreshLibList(document.getElementById('lib-search').value);
+}
+
+function _libToggleId(id) {
+  if (_libSelectedIds.has(id)) _libSelectedIds.delete(id);
+  else _libSelectedIds.add(id);
+  // Update count and select-all button without re-rendering full list
+  const selCountEl = document.getElementById('lib-selected-count');
+  if (selCountEl) selCountEl.textContent = `已选 ${_libSelectedIds.size} 个`;
+  const selAllBtn = document.getElementById('lib-select-all-btn');
+  if (selAllBtn) {
+    const allSel = _libCurrentShownIds.length > 0 && _libCurrentShownIds.every(i => _libSelectedIds.has(i));
+    selAllBtn.textContent = allSel ? '取消全选' : '✓ 全选';
+  }
+}
+
+function _appendLibToZones(targets) {
+  const selectedIds = [..._libSelectedIds];
+  if (!selectedIds.length) { toast('⚠️ 请先勾选型号'); return; }
+
+  const results = [];
+
+  for (const target of targets) {
+    const zones = state.zones.filter(z => z.type === target);
+    if (!zones.length) { results.push(`找不到${target === 'pallet' ? '堆货区' : '货架区'}`); continue; }
+
+    let mi = 0;
+
+    if (target === 'shelf') {
+      // 填现有空格位（跨所有货架区）
+      outerS: for (const zone of zones) {
+        for (const a of zone.aisles) for (const s of a.shelves) for (let i = 0; i < s.slots.length; i++) {
+          if (!s.slots[i].modelId) { s.slots[i].modelId = selectedIds[mi]; mi++; if (mi >= selectedIds.length) break outerS; }
+        }
+      }
+      // 空格不足时自动扩充：向最后一个货架区的最后一条通道追加新列
+      if (mi < selectedIds.length) {
+        const zone = zones[zones.length - 1];
+        const la = zone.aisles[zone.aisles.length - 1];
+        while (mi < selectedIds.length) {
+          const idx = la.shelves.length;
+          const slots = Array.from({length: SLOTS_PER_SHELF}, () => newSlot());
+          for (let i = 0; i < SLOTS_PER_SHELF && mi < selectedIds.length; i++) { slots[i].modelId = selectedIds[mi]; mi++; }
+          la.shelves.push({ name: SHELF_NAMES[idx] || ('列.' + (idx + 1)), slots });
+        }
+      }
+      results.push(`货架区已追加 ${mi} 个`);
+
+    } else if (target === 'pallet') {
+      // 填现有空格位（跨所有堆货区）
+      outerP: for (const zone of zones) {
+        for (const a of zone.aisles) for (const p of a.pallets) for (const layer of p.layers) {
+          if (!layer.modelId) { layer.modelId = selectedIds[mi]; layer.unit = '箱'; mi++; if (mi >= selectedIds.length) break outerP; }
+        }
+      }
+      // 空格不足时自动扩充：向最后一个堆货区追加新列/新排
+      if (mi < selectedIds.length) {
+        const zone = zones[zones.length - 1];
+        while (mi < selectedIds.length) {
+          const la = zone.aisles[zone.aisles.length - 1];
+          if (la.pallets.length < PALLETS_PER_AISLE) {
+            const pi = la.pallets.length;
+            const layers = Array.from({length: LAYERS_PER_PALLET}, () => newSlot());
+            for (let li = 0; li < layers.length && mi < selectedIds.length; li++) {
+              layers[li].modelId = selectedIds[mi]; layers[li].unit = '箱'; mi++;
+            }
+            la.pallets.push({ name: '列.' + (pi + 1), layers });
+          } else {
+            // 当前排已满，新增一排
+            const usedNames = zone.aisles.map(a => a.name);
+            let nextName = '';
+            for (let i = 0; i < 26; i++) { const c = String.fromCharCode(65 + i); if (!usedNames.includes(c)) { nextName = c; break; } }
+            if (!nextName) nextName = String(zone.aisles.length + 1);
+            zone.aisles.push({ name: nextName, pallets: [] });
+          }
+        }
+      }
+      results.push(`堆货区已追加 ${mi} 个`);
+    }
+  }
+
+  saveState(); render();
+  toast('✅ ' + results.join('，'));
+  _exitLibBatchMode();
 }
 
 function _refreshModelSnapshot() {
