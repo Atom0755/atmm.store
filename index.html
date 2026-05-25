@@ -5610,7 +5610,11 @@ async function startBarcodeScanner() {
     if (frame) frame.style.display = '';
     startBtn.style.display = 'none';
     stopBtn.style.display = '';
-    if (status) status.textContent = '🔍 扫描中... 请将条码/二维码对准框内';
+    if (status) status.textContent = '🔍 扫描中... 对准条码，点击画面可触发对焦';
+    // 点击/触摸视频画面 → 触发定点对焦
+    video._tapFocusHandler = (e) => _barcodeTapFocus(e, video);
+    video.addEventListener('touchstart', video._tapFocusHandler, { passive: true });
+    video.addEventListener('click', video._tapFocusHandler);
     // Torch: show button; default ON unless user explicitly saved OFF
     const torchBtn = document.getElementById('barcode-torch');
     if (torchBtn) torchBtn.style.display = '';
@@ -5824,6 +5828,55 @@ function startContinuousZxingScan() {
   tick();
 }
 
+function _barcodeTapFocus(e, video) {
+  if (!barcodeStream) return;
+  const track = barcodeStream.getVideoTracks()[0];
+  if (!track) return;
+
+  // 计算点击位置（归一化到 0~1）
+  const rect = video.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  const x = Math.max(0, Math.min(1, (src.clientX - rect.left) / rect.width));
+  const y = Math.max(0, Math.min(1, (src.clientY - rect.top) / rect.height));
+
+  // 显示对焦圆圈动画
+  const ring = document.createElement('div');
+  Object.assign(ring.style, {
+    position: 'fixed',
+    left: src.clientX - 22 + 'px',
+    top:  src.clientY - 22 + 'px',
+    width: '44px', height: '44px',
+    border: '2px solid #4aff6e',
+    borderRadius: '50%',
+    pointerEvents: 'none',
+    zIndex: '9999',
+    opacity: '1',
+    transition: 'opacity 0.4s, transform 0.4s',
+    transform: 'scale(1.4)',
+  });
+  document.body.appendChild(ring);
+  requestAnimationFrame(() => {
+    ring.style.transform = 'scale(1)';
+    setTimeout(() => { ring.style.opacity = '0'; setTimeout(() => ring.remove(), 400); }, 500);
+  });
+
+  // 发起定点对焦（支持的设备才生效）
+  const cap = track.getCapabilities?.() || {};
+  const adv = {};
+  if (cap.pointsOfInterest) adv.pointsOfInterest = [{ x, y }];
+  if (cap.focusMode?.includes('single-shot')) adv.focusMode = 'single-shot';
+  if (Object.keys(adv).length) {
+    track.applyConstraints({ advanced: [adv] }).then(() => {
+      // 定点对焦完成后恢复持续对焦
+      if (cap.focusMode?.includes('continuous')) {
+        setTimeout(() => {
+          track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+        }, 800);
+      }
+    }).catch(() => {});
+  }
+}
+
 function _playScanBeep() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -5927,7 +5980,15 @@ function stopBarcodeScanner() {
     barcodeStream = null;
   }
   const video = document.getElementById('barcode-video');
-  if (video) { video.srcObject = null; video.style.display = 'none'; }
+  if (video) {
+    if (video._tapFocusHandler) {
+      video.removeEventListener('touchstart', video._tapFocusHandler);
+      video.removeEventListener('click', video._tapFocusHandler);
+      video._tapFocusHandler = null;
+    }
+    video.srcObject = null;
+    video.style.display = 'none';
+  }
   const frame = document.getElementById('barcode-frame');
   if (frame) frame.style.display = 'none';
   const startBtn = document.getElementById('barcode-start');
