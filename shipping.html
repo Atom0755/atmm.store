@@ -145,6 +145,13 @@
   .empty-state h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
   .empty-state p { font-size: 13px; line-height: 1.7; }
 
+  /* ── SHIP SCANNER ── */
+  @keyframes shipLaser {
+    0%, 100% { top: 22%; }
+    50% { top: 74%; }
+  }
+  #ship-scan-laser { animation: shipLaser 2s ease-in-out infinite; }
+
   /* ── PRINT ── */
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -242,7 +249,7 @@
 
   <div style="display:flex; gap:8px; margin-bottom:16px;">
     <button class="out-btn-hero" onclick="switchTab('outbound')" style="background:#065f46; flex:4; margin-bottom:0; display:flex; align-items:center; justify-content:center; gap:6px;">📤 出货扣库存</button>
-    <button id="scan-entry-btn" onclick="alert('扫码出货功能即将推出')" style="flex:1; background:#065f46; color:#fff; border:none; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; min-width:0; padding:0; active-opacity:.8;" ontouchstart="" onmousedown="this.style.opacity='.75'" onmouseup="this.style.opacity='1'" ontouchend="this.style.opacity='1'" title="扫码出货">
+    <button id="scan-entry-btn" onclick="shipOpenScanner()" style="flex:1; background:#065f46; color:#fff; border:none; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; min-width:0; padding:0; active-opacity:.8;" ontouchstart="" onmousedown="this.style.opacity='.75'" onmouseup="this.style.opacity='1'" ontouchend="this.style.opacity='1'" title="扫码出货">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2 7V2h5"/>
         <path d="M22 7V2h-5"/>
@@ -1349,11 +1356,255 @@ function clearOutHistory() {
 }
 
 // ═══════════════════════════════════════════════════
+// SHIP SCANNER
+// ═══════════════════════════════════════════════════
+let _shipStream = null, _shipDetector = null, _shipRafId = null;
+let _shipZxingReader = null, _shipZxingControls = null;
+let _shipTorchOn = false, _shipLastCode = null, _shipCurrentCode = '';
+let _shipBeepAudio = null;
+
+function _shipBuildBeepAudio() {
+  const rate = 22050, dur = 0.14, freq = 1800, n = Math.floor(rate * dur);
+  const buf = new ArrayBuffer(44 + n * 2), dv = new DataView(buf);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4,36+n*2,true); ws(8,'WAVE');
+  ws(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,rate,true); dv.setUint32(28,rate*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  ws(36,'data'); dv.setUint32(40,n*2,true);
+  for (let i = 0; i < n; i++) {
+    dv.setInt16(44+i*2, Math.round(Math.sin(2*Math.PI*freq*i/rate)*0.75*(1-i/n)*32767), true);
+  }
+  const bytes = new Uint8Array(buf); let b64 = '';
+  for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i]);
+  const a = new Audio('data:audio/wav;base64,' + btoa(b64));
+  a.volume = 1.0; a.preload = 'auto'; return a;
+}
+function _shipUnlockAudio() {
+  if (!_shipBeepAudio) _shipBeepAudio = _shipBuildBeepAudio();
+  const p = _shipBeepAudio.play();
+  if (p instanceof Promise) p.then(() => { _shipBeepAudio.pause(); _shipBeepAudio.currentTime = 0; }).catch(() => {});
+}
+function _shipPlayBeep() {
+  if (!_shipBeepAudio) return;
+  _shipBeepAudio.currentTime = 0; _shipBeepAudio.play().catch(() => {});
+}
+
+function shipOpenScanner() {
+  _shipUnlockAudio();
+  const ov = document.getElementById('ship-scan-ov');
+  ov.style.display = 'flex';
+  document.getElementById('ship-scan-result').style.display = 'none';
+  document.getElementById('ship-scan-status').textContent = '⏳ 启动摄像头...';
+  setTimeout(shipStartScan, 100);
+}
+
+async function shipStartScan() {
+  try {
+    _shipStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:960}, focusMode:{ideal:'continuous'} },
+      audio: false
+    });
+    const track = _shipStream.getVideoTracks()[0];
+    if (track) {
+      const cap = track.getCapabilities?.() || {};
+      if (cap.focusMode?.includes('continuous'))
+        try { await track.applyConstraints({ advanced:[{focusMode:'continuous'}] }); } catch(e) {}
+    }
+    const video = document.getElementById('ship-scan-video');
+    video.srcObject = _shipStream;
+    video._th = (e) => _shipTapFocus(e, video);
+    video.addEventListener('touchstart', video._th, { passive:true });
+    video.addEventListener('click', video._th);
+    document.getElementById('ship-torch-btn').style.display = '';
+    document.getElementById('ship-scan-status').textContent = '🔍 扫描中... 对准条码/二维码，点画面可对焦';
+    if ('BarcodeDetector' in window) {
+      try {
+        const fmts = await window.BarcodeDetector.getSupportedFormats();
+        _shipDetector = new window.BarcodeDetector({ formats: fmts });
+        _shipNativeLoop(); return;
+      } catch(e) {}
+    }
+    _shipLoadZxingAndScan();
+  } catch(e) {
+    document.getElementById('ship-scan-status').textContent = '❌ 摄像头启动失败: ' + (e.message || e.name || '请授权摄像头');
+  }
+}
+
+function _shipNativeLoop() {
+  const video = document.getElementById('ship-scan-video');
+  const tick = async () => {
+    if (!_shipStream || !_shipDetector) return;
+    if (video.readyState >= 2) {
+      try {
+        const codes = await _shipDetector.detect(video);
+        if (codes?.length) { _shipHandleFound(codes[0].rawValue, codes[0].format); return; }
+      } catch(e) {}
+    }
+    _shipRafId = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+async function _shipLoadZxingAndScan() {
+  const status = document.getElementById('ship-scan-status');
+  status.textContent = '⏳ 加载扫码库（首次需联网）...';
+  if (!window.ZXing && !window.ZXingBrowser) {
+    for (const url of [
+      'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
+      'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
+      'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js',
+    ]) {
+      try {
+        await new Promise((res,rej) => {
+          const s = document.createElement('script'); s.src = url;
+          const t = setTimeout(() => rej(), 10000);
+          s.onload = () => { clearTimeout(t); res(); };
+          s.onerror = () => { s.remove(); rej(); };
+          document.head.appendChild(s);
+        });
+        if (window.ZXing || window.ZXingBrowser) break;
+      } catch(e) { continue; }
+    }
+  }
+  if (!window.ZXing && !window.ZXingBrowser) { status.textContent = '❌ 扫码库加载失败，请检查网络'; return; }
+  status.textContent = '🔍 扫描中...';
+  const video = document.getElementById('ship-scan-video');
+  const ZXB = window.ZXingBrowser, ZX = window.ZXing;
+  try {
+    if (ZXB?.BrowserMultiFormatReader) {
+      _shipZxingReader = new ZXB.BrowserMultiFormatReader();
+      _shipZxingControls = await _shipZxingReader.decodeFromVideoDevice(undefined, video, (r) => {
+        if (r) { const t = r.getText ? r.getText() : (r.text || String(r)); if (t) _shipHandleFound(t,'scan'); }
+      });
+      return;
+    }
+    if (ZX?.BrowserMultiFormatReader) {
+      _shipZxingReader = new ZX.BrowserMultiFormatReader();
+      await _shipZxingReader.decodeFromVideoElementContinuously(video, (r) => {
+        if (r) { const t = r.getText ? r.getText() : String(r); if (t) _shipHandleFound(t,'scan'); }
+      });
+    }
+  } catch(e) { status.textContent = '❌ 扫描器初始化失败'; }
+}
+
+function _shipHandleFound(code, format) {
+  if (!code || _shipLastCode === code) return;
+  _shipLastCode = code; setTimeout(() => { _shipLastCode = null; }, 2000);
+  _shipCurrentCode = code;
+  _shipPlayBeep();
+  if (navigator.vibrate) navigator.vibrate([60,40,60]);
+  _shipStopDetection();
+  document.getElementById('ship-scan-status').textContent = '';
+  document.getElementById('ship-scan-code').textContent = code;
+  document.getElementById('ship-scan-fmt').textContent = format ? '格式: ' + format : '';
+  document.getElementById('ship-scan-result').style.display = '';
+}
+
+function _shipStopDetection() {
+  if (_shipRafId) { cancelAnimationFrame(_shipRafId); _shipRafId = null; }
+  _shipDetector = null;
+  try { _shipZxingControls?.stop?.(); } catch(e) {}
+  try { _shipZxingReader?.reset?.(); } catch(e) {}
+  _shipZxingControls = null; _shipZxingReader = null;
+}
+
+function shipStopScan() {
+  _shipStopDetection(); _shipTorchOn = false;
+  if (_shipStream) { try { _shipStream.getTracks().forEach(t => t.stop()); } catch(e) {} _shipStream = null; }
+  const v = document.getElementById('ship-scan-video');
+  if (v) { if (v._th) { v.removeEventListener('touchstart',v._th); v.removeEventListener('click',v._th); v._th=null; } v.srcObject=null; }
+  document.getElementById('ship-torch-btn').style.display = 'none';
+  document.getElementById('ship-scan-ov').style.display = 'none';
+}
+
+function shipRescan() {
+  document.getElementById('ship-scan-result').style.display = 'none';
+  document.getElementById('ship-scan-status').textContent = '⏳ 重新启动...';
+  _shipLastCode = null; shipStartScan();
+}
+
+function shipCopyCode() {
+  if (!_shipCurrentCode) return;
+  navigator.clipboard?.writeText(_shipCurrentCode).then(() => alert('✅ 已复制')).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = _shipCurrentCode;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('✅ 已复制');
+  });
+}
+
+async function shipToggleTorch() {
+  if (!_shipStream) return;
+  _shipTorchOn = !_shipTorchOn;
+  try { await _shipStream.getVideoTracks()[0]?.applyConstraints({ advanced:[{torch:_shipTorchOn}] }); }
+  catch(e) { _shipTorchOn = false; }
+  const btn = document.getElementById('ship-torch-btn');
+  btn.textContent = _shipTorchOn ? '🔦 关闭手电筒' : '🔦 手电筒';
+  btn.style.background = _shipTorchOn ? '#065f46' : '#1a1a1a';
+}
+
+function _shipTapFocus(e, video) {
+  if (!_shipStream) return;
+  const track = _shipStream.getVideoTracks()[0]; if (!track) return;
+  const rect = video.getBoundingClientRect(), src = e.touches ? e.touches[0] : e;
+  const x = Math.max(0,Math.min(1,(src.clientX-rect.left)/rect.width));
+  const y = Math.max(0,Math.min(1,(src.clientY-rect.top)/rect.height));
+  const ring = document.createElement('div');
+  Object.assign(ring.style,{ position:'fixed', left:src.clientX-22+'px', top:src.clientY-22+'px',
+    width:'44px', height:'44px', border:'2px solid #4aff6e', borderRadius:'50%',
+    pointerEvents:'none', zIndex:'9999', transition:'opacity 0.4s,transform 0.4s', transform:'scale(1.4)' });
+  document.body.appendChild(ring);
+  requestAnimationFrame(() => { ring.style.transform='scale(1)';
+    setTimeout(() => { ring.style.opacity='0'; setTimeout(()=>ring.remove(),400); }, 500); });
+  const cap = track.getCapabilities?.() || {}, adv = {};
+  if (cap.pointsOfInterest) adv.pointsOfInterest = [{x,y}];
+  if (cap.focusMode?.includes('single-shot')) adv.focusMode = 'single-shot';
+  if (Object.keys(adv).length) track.applyConstraints({advanced:[adv]}).then(() => {
+    if (cap.focusMode?.includes('continuous'))
+      setTimeout(() => track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}), 800);
+  }).catch(()=>{});
+}
+
+// ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 loadSettings();
 const _initTab = new URLSearchParams(location.search).get('tab');
 if (_initTab) switchTab(_initTab);
 </script>
+
+<!-- ═══ 扫码浮层 ═══ -->
+<div id="ship-scan-ov" style="display:none; position:fixed; inset:0; z-index:500; background:#000; flex-direction:column;">
+  <!-- 顶栏 -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:rgba(0,0,0,0.75); flex-shrink:0;">
+    <span style="color:#fff; font-size:16px; font-weight:800;">📷 扫码识别</span>
+    <button onclick="shipStopScan()" style="background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:8px; padding:6px 16px; font-size:13px; font-weight:700; cursor:pointer;">✕ 关闭</button>
+  </div>
+  <!-- 摄像头区域 -->
+  <div style="flex:1; position:relative; overflow:hidden; background:#111;">
+    <video id="ship-scan-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+    <!-- 对准框 -->
+    <div style="position:absolute; inset:0; pointer-events:none;">
+      <div style="position:absolute; top:20%; left:12%; width:32px; height:32px; border-top:3px solid #4aff6e; border-left:3px solid #4aff6e; border-radius:3px 0 0 0;"></div>
+      <div style="position:absolute; top:20%; right:12%; width:32px; height:32px; border-top:3px solid #4aff6e; border-right:3px solid #4aff6e; border-radius:0 3px 0 0;"></div>
+      <div style="position:absolute; bottom:20%; left:12%; width:32px; height:32px; border-bottom:3px solid #4aff6e; border-left:3px solid #4aff6e; border-radius:0 0 0 3px;"></div>
+      <div style="position:absolute; bottom:20%; right:12%; width:32px; height:32px; border-bottom:3px solid #4aff6e; border-right:3px solid #4aff6e; border-radius:0 0 3px 0;"></div>
+      <div id="ship-scan-laser" style="position:absolute; left:12%; right:12%; height:2px; background:linear-gradient(90deg,transparent,#4aff6e,transparent); top:50%;"></div>
+    </div>
+    <div style="position:absolute; bottom:10px; width:100%; text-align:center; color:rgba(255,255,255,0.45); font-size:11px; pointer-events:none;">点击画面可触发对焦</div>
+  </div>
+  <!-- 底栏 -->
+  <div style="background:#111; padding:14px 16px; flex-shrink:0;">
+    <div id="ship-scan-status" style="color:#aaa; font-size:12px; text-align:center; margin-bottom:10px;"></div>
+    <div id="ship-scan-result" style="display:none; background:#0d1f0d; border:1.5px solid #4aff6e; border-radius:10px; padding:12px 14px; margin-bottom:10px;">
+      <div style="font-size:11px; color:#4aff6e; font-weight:700; margin-bottom:5px;">✅ 扫码成功</div>
+      <div id="ship-scan-code" style="font-family:monospace; font-size:15px; font-weight:700; color:#fff; word-break:break-all;"></div>
+      <div id="ship-scan-fmt" style="font-size:10px; color:#666; margin-top:3px;"></div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button onclick="shipCopyCode()" style="flex:1; padding:9px; background:#065f46; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">📋 复制</button>
+        <button onclick="shipRescan()" style="flex:1; padding:9px; background:#1a1a1a; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">🔄 再扫一个</button>
+      </div>
+    </div>
+    <button id="ship-torch-btn" onclick="shipToggleTorch()" style="display:none; width:100%; padding:10px; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:10px; font-size:13px; cursor:pointer;">🔦 手电筒</button>
+  </div>
+</div>
 </body>
 </html>
