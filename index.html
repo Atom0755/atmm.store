@@ -5580,6 +5580,7 @@ function saveBarcodeBinding(code, modelId) {
 }
 
 async function startBarcodeScanner() {
+  _unlockScanAudio(); // 在用户手势中预解锁 AudioContext（iOS 18 要求）
   const video = document.getElementById('barcode-video');
   const startBtn = document.getElementById('barcode-start');
   const stopBtn = document.getElementById('barcode-stop');
@@ -5888,9 +5889,22 @@ function _barcodeTapFocus(e, video) {
   }
 }
 
+// 全局 AudioContext — 必须在用户手势中创建/解锁，扫码结果回调里直接复用
+let _scanAudioCtx = null;
+function _unlockScanAudio() {
+  try {
+    if (!_scanAudioCtx || _scanAudioCtx.state === 'closed') {
+      _scanAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    // iOS 需要在手势中显式 resume 才能解锁
+    if (_scanAudioCtx.state === 'suspended') _scanAudioCtx.resume().catch(() => {});
+  } catch(e) {}
+}
 function _playScanBeep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _scanAudioCtx;
+    if (!ctx || ctx.state === 'closed') return;
+    if (ctx.state === 'suspended') { ctx.resume().catch(() => {}); return; }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -5901,7 +5915,6 @@ function _playScanBeep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.13);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.13);
-    setTimeout(() => { try { ctx.close(); } catch(e) {} }, 300);
   } catch(e) {}
 }
 
