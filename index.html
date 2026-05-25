@@ -5589,9 +5589,22 @@ async function startBarcodeScanner() {
     } catch(e) { /* not supported, no-op */ }
 
     barcodeStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+        focusMode: { ideal: 'continuous' },
+      },
       audio: false
     });
+    // 强制持续自动对焦（支持的设备上才生效）
+    const _bTrack = barcodeStream.getVideoTracks()[0];
+    if (_bTrack) {
+      const _cap = _bTrack.getCapabilities?.() || {};
+      if (_cap.focusMode?.includes('continuous')) {
+        try { await _bTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch(e) {}
+      }
+    }
     video.srcObject = barcodeStream;
     video.style.display = '';
     if (frame) frame.style.display = '';
@@ -5811,6 +5824,23 @@ function startContinuousZxingScan() {
   tick();
 }
 
+function _playScanBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 1800;
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.13);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.13);
+    setTimeout(() => { try { ctx.close(); } catch(e) {} }, 300);
+  } catch(e) {}
+}
+
 function handleBarcodeFound(code, format) {
   if (!code) return;
   // Already scanned? avoid duplicate firing
@@ -5818,6 +5848,7 @@ function handleBarcodeFound(code, format) {
   window._lastBarcodeHandled = code;
   setTimeout(() => { window._lastBarcodeHandled = null; }, 1500);
 
+  _playScanBeep();
   if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
   toast('✅ 扫到: ' + code);
 
