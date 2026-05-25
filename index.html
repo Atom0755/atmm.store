@@ -5565,6 +5565,7 @@ let barcodeDetector = null;
 let barcodeRafId = null;
 let barcodeZxingReader = null;
 let barcodeZxingControls = null;
+let _barcodeHandled = false;
 
 // Get barcode-to-model bindings from localStorage (so scanning same code re-matches the chosen model)
 function getBarcodeBindings() {
@@ -5580,6 +5581,7 @@ function saveBarcodeBinding(code, modelId) {
 }
 
 async function startBarcodeScanner() {
+  _barcodeHandled = false;
   _unlockScanAudio(); // 在用户手势中预解锁 AudioContext（iOS 18 要求）
   const video = document.getElementById('barcode-video');
   const startBtn = document.getElementById('barcode-start');
@@ -5928,11 +5930,8 @@ function _playScanBeep() {
 }
 
 function handleBarcodeFound(code, format) {
-  if (!code) return;
-  // Already scanned? avoid duplicate firing
-  if (window._lastBarcodeHandled === code) return;
-  window._lastBarcodeHandled = code;
-  setTimeout(() => { window._lastBarcodeHandled = null; }, 1500);
+  if (!code || _barcodeHandled) return;
+  _barcodeHandled = true;
 
   _playScanBeep();
   if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
