@@ -1361,6 +1361,7 @@ function clearOutHistory() {
 let _shipStream = null, _shipDetector = null, _shipRafId = null;
 let _shipZxingReader = null, _shipZxingControls = null;
 let _shipTorchOn = false, _shipLastCode = null, _shipCurrentCode = '';
+let _shipHandled = false; // 防止连续触发：扫到一次后锁住，直到重新扫码
 let _shipBeepAudio = null;
 
 function _shipBuildBeepAudio() {
@@ -1399,6 +1400,7 @@ function shipOpenScanner() {
 }
 
 async function shipStartScan() {
+  _shipHandled = false;
   try {
     _shipStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:960}, focusMode:{ideal:'continuous'} },
@@ -1488,8 +1490,8 @@ async function _shipLoadZxingAndScan() {
 }
 
 function _shipHandleFound(code, format) {
-  if (!code || _shipLastCode === code) return;
-  _shipLastCode = code; setTimeout(() => { _shipLastCode = null; }, 2000);
+  if (!code || _shipHandled) return;
+  _shipHandled = true;
   _shipCurrentCode = code;
   _shipPlayBeep();
   if (navigator.vibrate) navigator.vibrate([60,40,60]);
@@ -1520,7 +1522,9 @@ function shipStopScan() {
 function shipRescan() {
   document.getElementById('ship-scan-result').style.display = 'none';
   document.getElementById('ship-scan-status').textContent = '⏳ 重新启动...';
-  _shipLastCode = null; shipStartScan();
+  _shipLastCode = null;
+  _shipHandled = false;
+  shipStartScan();
 }
 
 function shipCopyCode() {
