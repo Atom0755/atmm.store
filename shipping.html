@@ -240,7 +240,23 @@
 <!-- ═══════════════════════════════════════════════════ -->
 <div class="panel" id="panel-labels">
 
-  <button class="out-btn-hero" onclick="switchTab('outbound')" style="background:#065f46;">📤 出货扣库存</button>
+  <div style="display:flex; gap:8px; margin-bottom:16px;">
+    <button class="out-btn-hero" onclick="switchTab('outbound')" style="background:#065f46; flex:4; margin-bottom:0; display:flex; align-items:center; justify-content:center; gap:6px;">📤 出货扣库存</button>
+    <button id="scan-entry-btn" onclick="alert('扫码出货功能即将推出')" style="flex:1; background:#065f46; color:#fff; border:none; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; min-width:0; padding:0; active-opacity:.8;" ontouchstart="" onmousedown="this.style.opacity='.75'" onmouseup="this.style.opacity='1'" ontouchend="this.style.opacity='1'" title="扫码出货">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 7V2h5"/>
+        <path d="M22 7V2h-5"/>
+        <path d="M2 17v5h5"/>
+        <path d="M22 17v5h-5"/>
+        <line x1="6"  y1="7" x2="6"  y2="17"/>
+        <line x1="9"  y1="7" x2="9"  y2="17"/>
+        <line x1="11" y1="7" x2="11" y2="17"/>
+        <line x1="14" y1="7" x2="14" y2="17"/>
+        <line x1="16" y1="7" x2="16" y2="17"/>
+        <line x1="18" y1="7" x2="18" y2="17"/>
+      </svg>
+    </button>
+  </div>
 
   <div class="api-notice">
     <h4>⚠️ 真实打单需要快递公司 API 账号</h4>
