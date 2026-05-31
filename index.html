@@ -4951,7 +4951,7 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   const ratio = m.boxToSetRatio || 1;
   const sets = boxes * ratio;
 
-  // 找出所有货架区中该型号的库位
+  // 优先找货架区中已有该型号的库位；没有则列出所有空格让用户分配
   const targets = [];
   state.zones.filter(z => z.type === 'shelf').forEach(zone => {
     zone.aisles.forEach((aisle, ai) => {
@@ -4959,19 +4959,32 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
         shelf.slots.forEach((slot, si) => {
           if (slot.modelId === m.id) {
             targets.push({ zoneId: zone.id, zoneName: zone.name, ai, ci, si,
-              location: `${aisle.name}-${shelf.name}` });
+              location: `${aisle.name}-${shelf.name}`, isEmpty: false });
           }
         });
       });
     });
   });
 
+  // 没有匹配型号的槽 → 改为列出所有空格供用户选择新位置
   if (targets.length === 0) {
-    palletSlot.qty = Math.max(0, currentPalletQty - boxes);
-    palletSlot.restock = 0;
-    toast(`⚠️ "${m.name}" 在零散表中未找到 — 整箱已扣 ${boxes},但无处可补`);
-    render();
-    return;
+    state.zones.filter(z => z.type === 'shelf').forEach(zone => {
+      zone.aisles.forEach((aisle, ai) => {
+        aisle.shelves.forEach((shelf, ci) => {
+          shelf.slots.forEach((slot, si) => {
+            if (!slot.modelId) {
+              targets.push({ zoneId: zone.id, zoneName: zone.name, ai, ci, si,
+                location: `${aisle.name}-${shelf.name}`, isEmpty: true });
+            }
+          });
+        });
+      });
+    });
+  }
+
+  if (targets.length === 0) {
+    toast(`⚠️ 零散区无任何可用格位，请先添加货架格位`);
+    palletSlot.restock = 0; render(); return;
   }
 
   pendingRestock = { palletAi, palletCi, palletSi, modelId: m.id, modelName: m.name, boxes, sets, ratio, targets };
@@ -4988,9 +5001,12 @@ function showRestockSlotChoice() {
     const zone = state.zones.find(z => z.id === t.zoneId);
     const slot = zone?.aisles[t.ai]?.shelves[t.ci]?.slots[t.si];
     const locLabel = `${t.zoneName || ''} · ${t.location}`;
-    const qtyInfo = slot ? (slot.qty > 0 ? `当前 ${slot.qty}${slot.unit ? ' '+slot.unit : ''}` : '当前空') : '';
+    const ico = t.isEmpty ? '📋' : '📍';
+    const qtyInfo = t.isEmpty
+      ? '空格 — 补货后自动分配型号到此格'
+      : (slot?.qty > 0 ? `当前 ${slot.qty}${slot.unit ? ' '+slot.unit : ''}` : '当前空');
     return `<button class="action-row" data-restock-idx="${idx}">
-      <span class="ico">📍</span>
+      <span class="ico">${ico}</span>
       <div>
         <div style="font-weight:700;">${escapeHtml(locLabel)}</div>
         <div style="font-size:11px; color:var(--muted);">${escapeHtml(qtyInfo)}</div>
@@ -5014,8 +5030,15 @@ function doConfirmRestock(targetIdx) {
   const tgt = targets[targetIdx];
   const tgtZone = state.zones.find(z => z.id === tgt.zoneId);
   const tgtSlot = tgtZone.aisles[tgt.ai].shelves[tgt.ci].slots[tgt.si];
-  tgtSlot.qty = (tgtSlot.qty || 0) + sets;
-  if (!tgtSlot.unit) tgtSlot.unit = '套';
+  if (tgt.isEmpty) {
+    // 空格：先分配型号，再写入数量
+    tgtSlot.modelId = pendingRestock.modelId;
+    tgtSlot.qty = sets;
+    tgtSlot.unit = '套';
+  } else {
+    tgtSlot.qty = (tgtSlot.qty || 0) + sets;
+    if (!tgtSlot.unit) tgtSlot.unit = '套';
+  }
 
   palletSlot.qty = Math.max(0, (palletSlot.qty || 0) - boxes);
   palletSlot.restock = 0;
