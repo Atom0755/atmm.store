@@ -1231,7 +1231,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2293,7 +2293,16 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.5</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-05-30</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>整箱堆货区升级为动态库位：整箱补到货架区后，该格位自动消失，不留空格等补货</li>
+            <li>扫码声音修复：货架区和堆货区扫码成功后仅响一声，不再连续响</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.5</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-25</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2354,6 +2363,7 @@
             <li>支持在同一格位添加附加型号（循环向导流程），自动附加至库位</li>
             <li>点击任意输入框自动滚动至屏幕中央（手机键盘遮挡问题修复）</li>
           </ul>
+          </div>
           </div>
           </div>
           </div>
@@ -5021,8 +5031,8 @@ function confirmRestock(zoneId) {
   palletSlot.qty = Math.max(0, (palletSlot.qty || 0) - boxes);
   palletSlot.restock = 0;
   if (!palletSlot.unit) palletSlot.unit = '箱';
-  // 整箱移走后若库存归零，自动清空格位（腾出位置）
-  if (palletSlot.qty <= 0) { palletSlot.modelId = null; palletSlot.color = null; palletSlot.unit = null; palletSlot.qty = 0; }
+  // 动态库位：整箱移走后库存归零，直接删除该格位（箱在位在，箱走位消）
+  if (palletSlot.qty <= 0) { palletZone.aisles[palletAi].pallets[palletCi].layers.splice(palletSi, 1); }
 
   const zoneName = tgtZone?.name || zoneId;
   toast(`✅ 整箱 -${boxes}箱 → ${zoneName} ${tgt.location} +${sets}套`);
