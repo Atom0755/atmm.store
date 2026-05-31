@@ -1544,7 +1544,7 @@
 <div class="sheet-backdrop modal-style" id="restock-choose-sheet">
   <div class="sheet">
     <div class="sheet-body">
-      <h3>补货到哪张零散表?</h3>
+      <h3>选择接收库位</h3>
       <div id="restock-choose-info" style="background:#fff8d6; border:2px solid var(--ink); border-radius:10px; padding:12px; margin-bottom:14px; font-size:14px; line-height:1.5;"></div>
       <div class="actions-list" id="restock-zone-list">
         <!-- dynamically populated by showRestockTableChoice() -->
@@ -4927,14 +4927,9 @@ function chineseToNumber(text) {
 }
 
 // =============== RESTOCK FLOW ===============
-// When user enters a value in pallet's restock cell:
-//   1. Deduct that amount (in boxes) from pallet's qty
-//   2. Multiply by boxToSetRatio (model's "1 box = ? sets" ratio)
-//   3. Find the model in shelfBlack/shelfWhite tables
-//   4. If found in both → ask which to add to
-//   5. If found in one → add directly
-//   6. If found in neither → show toast warning
-let pendingRestock = null; // { palletAi, palletCi, palletSi, modelId, boxes, sets, targets: [{table, ai, ci, si}] }
+// 补货流程：用户在堆货区格位填写箱数后，弹出所有匹配的货架库位让用户手动选择，
+// 确认后才执行扣库存和加库存操作。
+let pendingRestock = null; // { palletAi, palletCi, palletSi, modelId, modelName, boxes, sets, ratio, targets }
 
 function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   const palletZone = state.zones.find(z => z.type === 'pallet');
@@ -4946,7 +4941,6 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   const m = getModel(palletSlot.modelId);
   if (!m) { palletSlot.restock = 0; render(); return; }
 
-  // Check pallet stock is enough
   const currentPalletQty = palletSlot.qty || 0;
   if (currentPalletQty < boxes) {
     if (!confirm(`⚠️ 整箱堆货区里 "${m.name}" 当前只有 ${currentPalletQty} 箱,补货 ${boxes} 箱会导致负库存。\n\n是否仍要继续?`)) {
@@ -4954,18 +4948,18 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
     }
   }
 
-  // Conversion ratio: 1 box = ? sets (default 1)
   const ratio = m.boxToSetRatio || 1;
   const sets = boxes * ratio;
 
-  // Find the model in all shelf zones
+  // 找出所有货架区中该型号的库位
   const targets = [];
   state.zones.filter(z => z.type === 'shelf').forEach(zone => {
     zone.aisles.forEach((aisle, ai) => {
       aisle.shelves.forEach((shelf, ci) => {
         shelf.slots.forEach((slot, si) => {
           if (slot.modelId === m.id) {
-            targets.push({ zoneId: zone.id, ai, ci, si, location: `${aisle.name}-${shelf.name}` });
+            targets.push({ zoneId: zone.id, zoneName: zone.name, ai, ci, si,
+              location: `${aisle.name}-${shelf.name}` });
           }
         });
       });
@@ -4973,7 +4967,6 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   });
 
   if (targets.length === 0) {
-    // Not found in any scattered shelf
     palletSlot.qty = Math.max(0, currentPalletQty - boxes);
     palletSlot.restock = 0;
     toast(`⚠️ "${m.name}" 在零散表中未找到 — 整箱已扣 ${boxes},但无处可补`);
@@ -4982,47 +4975,43 @@ function runRestockFlow(palletAi, palletCi, palletSi, boxes) {
   }
 
   pendingRestock = { palletAi, palletCi, palletSi, modelId: m.id, modelName: m.name, boxes, sets, ratio, targets };
-
-  // Group by zone
-  const byZone = {};
-  targets.forEach(t => { if (!byZone[t.zoneId]) byZone[t.zoneId] = []; byZone[t.zoneId].push(t); });
-  const zoneIds = Object.keys(byZone);
-  if (zoneIds.length === 1) {
-    confirmRestock(zoneIds[0]);
-  } else {
-    showRestockTableChoice(byZone);
-  }
+  showRestockSlotChoice();
 }
 
-function showRestockTableChoice(byZone) {
+function showRestockSlotChoice() {
+  const { modelName, boxes, sets, ratio, targets } = pendingRestock;
   document.getElementById('restock-choose-info').innerHTML =
-    `<b>${escapeHtml(pendingRestock.modelName)}</b> · 补货 <b style="color:var(--red);">${pendingRestock.boxes} 箱</b> = <b style="color:#2f7028;">${pendingRestock.sets} 套</b><br>
-     <span style="font-size:11px; color:var(--muted);">(换算 1 箱 = ${pendingRestock.ratio} 套)</span>`;
+    `<b>${escapeHtml(modelName)}</b> · 补 <b style="color:var(--red);">${boxes} 箱</b> = <b style="color:#2f7028;">${sets} 套</b>
+     <span style="font-size:11px; color:var(--muted);">&nbsp;(1箱=${ratio}套)，请选择接收库位：</span>`;
   const listEl = document.getElementById('restock-zone-list');
-  listEl.innerHTML = Object.entries(byZone).map(([zid, ts]) => {
-    const zone = state.zones.find(z => z.id === zid);
-    return `<button class="action-row" data-restock-zone="${escapeHtml(zid)}"><span class="ico">📦</span><div><div style="font-weight:700;">${escapeHtml(zone?.name||zid)}</div><div style="font-size:11px;color:var(--muted);">${ts.length} 个位置</div></div></button>`;
+  listEl.innerHTML = targets.map((t, idx) => {
+    const zone = state.zones.find(z => z.id === t.zoneId);
+    const slot = zone?.aisles[t.ai]?.shelves[t.ci]?.slots[t.si];
+    const locLabel = `${t.zoneName || ''} · ${t.location}`;
+    const qtyInfo = slot ? (slot.qty > 0 ? `当前 ${slot.qty}${slot.unit ? ' '+slot.unit : ''}` : '当前空') : '';
+    return `<button class="action-row" data-restock-idx="${idx}">
+      <span class="ico">📍</span>
+      <div>
+        <div style="font-weight:700;">${escapeHtml(locLabel)}</div>
+        <div style="font-size:11px; color:var(--muted);">${escapeHtml(qtyInfo)}</div>
+      </div>
+    </button>`;
   }).join('');
-  listEl.querySelectorAll('[data-restock-zone]').forEach(btn => {
-    btn.addEventListener('click', () => confirmRestock(btn.dataset.restockZone));
-    btn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); confirmRestock(btn.dataset.restockZone); }, { passive: false });
+  listEl.querySelectorAll('[data-restock-idx]').forEach(btn => {
+    const idx = +btn.dataset.restockIdx;
+    btn.addEventListener('click', () => doConfirmRestock(idx));
+    btn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); doConfirmRestock(idx); }, { passive: false });
   });
   showSheet('restock-choose-sheet');
 }
 
-function confirmRestock(zoneId) {
+function doConfirmRestock(targetIdx) {
   if (!pendingRestock) { hideSheets(); return; }
   const { palletAi, palletCi, palletSi, boxes, sets, targets } = pendingRestock;
   const palletZone = state.zones.find(z => z.type === 'pallet') || state.zones[state.zones.length-1];
   const palletSlot = palletZone.aisles[palletAi].pallets[palletCi].layers[palletSi];
-  const targetsInZone = targets.filter(t => t.zoneId === zoneId);
 
-  if (targetsInZone.length === 0) {
-    toast('⚠️ 该区中无此型号');
-    pendingRestock = null; hideSheets(); render(); return;
-  }
-
-  const tgt = targetsInZone[0];
+  const tgt = targets[targetIdx];
   const tgtZone = state.zones.find(z => z.id === tgt.zoneId);
   const tgtSlot = tgtZone.aisles[tgt.ai].shelves[tgt.ci].slots[tgt.si];
   tgtSlot.qty = (tgtSlot.qty || 0) + sets;
@@ -5031,11 +5020,10 @@ function confirmRestock(zoneId) {
   palletSlot.qty = Math.max(0, (palletSlot.qty || 0) - boxes);
   palletSlot.restock = 0;
   if (!palletSlot.unit) palletSlot.unit = '箱';
-  // 动态库位：整箱移走后库存归零，直接删除该格位（箱在位在，箱走位消）
+  // 动态库位：整箱移走后库存归零，直接删除该格位
   if (palletSlot.qty <= 0) { palletZone.aisles[palletAi].pallets[palletCi].layers.splice(palletSi, 1); }
 
-  const zoneName = tgtZone?.name || zoneId;
-  toast(`✅ 整箱 -${boxes}箱 → ${zoneName} ${tgt.location} +${sets}套`);
+  toast(`✅ 整箱 -${boxes}箱 → ${tgt.zoneName} ${tgt.location} +${sets}套`);
   pendingRestock = null;
   hideSheets();
   render();
