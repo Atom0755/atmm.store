@@ -10747,9 +10747,9 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
     const d2 = new T.Vector3().subVectors(pts[i+1], pts[i]  ).setY(0);
     if (d1.length() < 0.001 || d2.length() < 0.001) continue;
     d1.normalize(); d2.normalize();
-    // 叉积长度 ≈ |sin(夹角)|：>0.28 认为是显著转角（约16°以上）
+    // 叉积长度 ≈ |sin(夹角)|：>0.50 认为是显著转角（约30°以上）
     const cross = new T.Vector3().crossVectors(d1, d2);
-    const isCorner = cross.length() > 0.28;
+    const isCorner = cross.length() > 0.50;
     const isMark   = (i % markEvery === 0);
     if (!isCorner && !isMark) continue;
 
@@ -10778,23 +10778,29 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   _3dScene.add(sphere); _3dNavObjs.push(sphere);
   sGeo.dispose();
 
-  // ④ 终点竖向大箭头（指向目标格位）
+  // ④ 路径末端→目标格位列前的引导短线
   const tgtPos = WHC_slotPos(targetAi, targetCi, 0);
-  const vtGeo = new T.ConeGeometry(0.15, 0.45, 8);
-  const vtMat = new T.MeshBasicMaterial({ color: 0x00ffcc });
-  const vtCone = new T.Mesh(vtGeo, vtMat);
-  vtCone.position.set(tgtPos.x, 0.65, tgtPos.z);
-  _3dScene.add(vtCone); _3dNavObjs.push(vtCone);
-  vtGeo.dispose();
-
-  // ⑤ 路径末端→目标格位的引导短线
   const lastPt = smoothPts[smoothPts.length - 1];
   const finalGeo = new T.BufferGeometry().setFromPoints([
     lastPt.clone(),
     new T.Vector3(tgtPos.x, 0.05, tgtPos.z)
   ]);
-  const finalLine = new T.Line(finalGeo, new T.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.7 }));
+  const finalLine = new T.Line(finalGeo, new T.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.8 }));
   _3dScene.add(finalLine); _3dNavObjs.push(finalLine);
+
+  // ⑤ 终点 V 形箭头：在路径线末端（贴近货架那列前方），指向目标列
+  const finalDir = new T.Vector3(tgtPos.x - lastPt.x, 0, tgtPos.z - lastPt.z);
+  if (finalDir.length() > 0.05) {
+    finalDir.normalize();
+    const finalPerp = new T.Vector3(-finalDir.z, 0, finalDir.x);
+    const fBase = lastPt.clone().setY(0.07);
+    const fTip  = fBase.clone().add(finalDir.clone().multiplyScalar(arrowSz));
+    const fLw   = fBase.clone().sub(finalDir.clone().multiplyScalar(arrowSz * 0.35)).add(finalPerp.clone().multiplyScalar(arrowSz * 0.85));
+    const fRw   = fBase.clone().sub(finalDir.clone().multiplyScalar(arrowSz * 0.35)).sub(finalPerp.clone().multiplyScalar(arrowSz * 0.85));
+    const fGeo  = new T.BufferGeometry().setFromPoints([fLw, fTip, fRw]);
+    const fLine = new T.Line(fGeo, new T.LineBasicMaterial({ color: 0x00ffcc }));
+    _3dScene.add(fLine); _3dNavObjs.push(fLine);
+  }
 }
 
 function _3dApplySearch(term) {
