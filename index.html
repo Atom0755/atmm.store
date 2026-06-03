@@ -10223,10 +10223,7 @@ document.querySelectorAll('.auth-card').forEach(_makeDraggable);
 // Three.js 3D 货架视图  —  r152 UMD + OrbitControls
 // 渲染逻辑与坐标模块完全分离；坐标全部来自 WHC_slotPos()
 // ══════════════════════════════════════════════════════════
-const _3D_LIBS = [
-  'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js',
-  'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js',
-];
+const _3D_CDN = 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js';
 let _3dReady = false, _3dAnimId = null, _3dSearch = '';
 let _3dScene, _3dCam, _3dRdr, _3dCtrl;
 let _3dMeshMap = [];   // [{mesh, label, locCode, modelId, qty, pos}]
@@ -10235,25 +10232,82 @@ let _3dHit = [];       // highlighted entries
 let _3dLastTap = 0;
 let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
 
-async function _3dLoadLibs() {
-  for (const url of _3D_LIBS) {
-    if (document.querySelector(`script[src="${url}"]`)) continue;
-    await new Promise((res, rej) => {
-      const s = document.createElement('script'); s.src = url;
-      const t = setTimeout(() => rej('timeout'), 18000);
-      s.onload = () => { clearTimeout(t); res(); };
-      s.onerror = () => { clearTimeout(t); rej('load'); };
-      document.head.appendChild(s);
-    });
+// 内联轨道控制器 — 无需 OrbitControls CDN，支持鼠标+触摸
+function _3dMakeOrbit(camera, canvas) {
+  let drag = false, lastX = 0, lastY = 0;
+  let theta = 0.8, phi = Math.PI / 4, radius = 15;
+  const tgt = { x: 0, y: 0, z: 0 };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function sync() {
+    camera.position.set(
+      tgt.x + radius * Math.sin(phi) * Math.sin(theta),
+      tgt.y + radius * Math.cos(phi),
+      tgt.z + radius * Math.sin(phi) * Math.cos(theta)
+    );
+    camera.lookAt(tgt.x, tgt.y, tgt.z);
   }
+  canvas.addEventListener('mousedown', e => { drag = true; lastX = e.clientX; lastY = e.clientY; });
+  window.addEventListener('mouseup', () => { drag = false; });
+  canvas.addEventListener('mousemove', e => {
+    if (!drag) return;
+    theta -= (e.clientX - lastX) * 0.008;
+    phi = clamp(phi - (e.clientY - lastY) * 0.008, 0.06, Math.PI * 0.88);
+    lastX = e.clientX; lastY = e.clientY; sync();
+  });
+  canvas.addEventListener('wheel', e => {
+    radius = clamp(radius + e.deltaY * 0.04, 0.8, 60); sync();
+  }, { passive: true });
+  let tch = [], lp = 0;
+  canvas.addEventListener('touchstart', e => {
+    tch = [...e.touches];
+    if (tch.length === 1) { drag = true; lastX = tch[0].clientX; lastY = tch[0].clientY; }
+    else { drag = false; lp = Math.hypot(tch[0].clientX - tch[1].clientX, tch[0].clientY - tch[1].clientY); }
+  }, { passive: true });
+  canvas.addEventListener('touchend', e => {
+    tch = [...e.touches]; drag = tch.length === 1;
+    if (drag) { lastX = tch[0].clientX; lastY = tch[0].clientY; }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault(); tch = [...e.touches];
+    if (tch.length === 1 && drag) {
+      theta -= (tch[0].clientX - lastX) * 0.009;
+      phi = clamp(phi - (tch[0].clientY - lastY) * 0.009, 0.06, Math.PI * 0.88);
+      lastX = tch[0].clientX; lastY = tch[0].clientY; sync();
+    } else if (tch.length === 2) {
+      const d = Math.hypot(tch[0].clientX - tch[1].clientX, tch[0].clientY - tch[1].clientY);
+      radius = clamp(radius - (d - lp) * 0.04, 0.8, 60); lp = d; sync();
+    }
+  }, { passive: false });
+  sync();
+  return {
+    update() {},
+    setTarget(x, y, z) { tgt.x = x; tgt.y = y; tgt.z = z; sync(); },
+    fitToBox(box) {
+      const T = window.THREE;
+      const c = new T.Vector3(); box.getCenter(c);
+      const s = new T.Vector3(); box.getSize(s);
+      const maxD = Math.max(s.x, s.y, s.z);
+      radius = Math.max((maxD / 2) / Math.tan(camera.fov * Math.PI / 360) * 2.1, 3);
+      theta = 0.8; phi = Math.PI / 4;
+      tgt.x = c.x; tgt.y = c.y; tgt.z = c.z; sync();
+    }
+  };
 }
 
 async function _3dInit() {
   if (_3dReady) return true;
   try {
     toast('⏳ 加载3D引擎（首次需几秒）…');
-    await _3dLoadLibs();
-    if (!window.THREE?.OrbitControls) throw new Error('libs missing');
+    if (!window.THREE) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script'); s.src = _3D_CDN;
+        const t = setTimeout(() => rej('timeout'), 20000);
+        s.onload = () => { clearTimeout(t); res(); };
+        s.onerror = () => { clearTimeout(t); rej('load'); };
+        document.head.appendChild(s);
+      });
+    }
+    if (!window.THREE) throw new Error('THREE missing');
   } catch(e) { toast('❌ 3D引擎加载失败，请检查网络'); return false; }
 
   const T = window.THREE;
@@ -10279,11 +10333,7 @@ async function _3dInit() {
   fl.position.set(-4, -3, -4); _3dScene.add(fl);
   _3dScene.add(new T.GridHelper(40, 40, 0x1e293b, 0x1e293b));
 
-  _3dCtrl = new T.OrbitControls(_3dCam, canvas);
-  _3dCtrl.enableDamping = true; _3dCtrl.dampingFactor = 0.12;
-  _3dCtrl.screenSpacePanning = false;
-  _3dCtrl.minDistance = 0.8; _3dCtrl.maxDistance = 60;
-  _3dCtrl.maxPolarAngle = Math.PI * 0.88;
+  _3dCtrl = _3dMakeOrbit(_3dCam, canvas);
 
   _3dBoxGeo  = new T.BoxGeometry(WHC.sw, WHC.sh, WHC.sd);
   _3dEdgeGeo = new T.EdgesGeometry(_3dBoxGeo);
@@ -10329,7 +10379,7 @@ function _3dClearZone() {
   });
   _3dZoneObjs.forEach(o => {
     _3dScene.remove(o);
-    o.geometry?.dispose(); o.material?.dispose();
+    o.material?.dispose(); // geometry shared or small — let GC handle
   });
   _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
   document.getElementById('three-labels-ov').innerHTML = '';
@@ -10455,9 +10505,7 @@ function _3dFitCamera() {
   const maxD = Math.max(sz.x, sz.y, sz.z);
   const dist = Math.max((maxD / 2) / Math.tan(_3dCam.fov * Math.PI / 360) * 2.1, 3);
   _3dCam.position.set(ctr.x + dist*0.55, ctr.y + dist*0.5, ctr.z + dist);
-  _3dCam.lookAt(ctr);
-  _3dCtrl.target.copy(ctr);
-  _3dCtrl.update();
+  _3dCtrl.fitToBox(box);
 }
 function _3dResetCam() { _3dFitCamera(); }
 
@@ -10480,8 +10528,8 @@ function _3dApplySearch(term) {
   });
   if (first) {
     const { pos } = first;
+    _3dCtrl.setTarget(pos.x, pos.y, pos.z);
     _3dCam.position.set(pos.x+2.5, pos.y+2, pos.z+4);
-    _3dCtrl.target.set(pos.x, pos.y, pos.z); _3dCtrl.update();
     toast(`🔍 ${_3dHit.length} 个库位匹配`);
   } else { toast('未找到匹配型号'); }
 }
