@@ -700,6 +700,22 @@
   .grid-view { padding: 10px; padding-bottom: 100px; display: none; }
   .grid-view.active { display: block; }
   .list-view.hidden { display: none; }
+  /* ── 3D 货架视图 ── */
+  #three-canvas-host { display:none; flex:1; position:relative; background:#0f172a; overflow:hidden; min-height:0; }
+  #three-canvas { display:block; }
+  #three-labels-ov { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .tlbl { position:absolute; transform:translate(-50%,-110%); text-align:center; white-space:nowrap; pointer-events:none; line-height:1.25; }
+  .tlbl .tloc  { font-family:'JetBrains Mono',monospace; font-size:6px; color:rgba(255,255,255,.4); letter-spacing:.03em; }
+  .tlbl .tname { font-size:7.5px; font-weight:700; color:#e2e8f0; }
+  .tlbl .tqty  { font-size:8.5px; font-weight:800; }
+  #three-topbar { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:20;
+    display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.72); padding:7px 14px;
+    border-radius:999px; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    max-width:min(360px,92vw); width:92vw; box-sizing:border-box; }
+  #three-search-input { flex:1; background:transparent; border:none; color:#fff; font-size:13px; outline:none; font-family:inherit; min-width:0; }
+  #three-search-clear { background:none; border:none; color:#888; cursor:pointer; font-size:17px; padding:0; line-height:1; display:none; }
+  #three-hint { position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    color:rgba(255,255,255,.3); font-size:10px; pointer-events:none; white-space:nowrap; }
   .aisles-row { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 6px; }
   .grid-aisle { background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; padding: 5px; }
   .grid-aisle-name { font-weight: 700; font-size: 11px; text-align: center; padding: 3px 0 6px; }
@@ -1231,7 +1247,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1248,6 +1264,7 @@
   <div class="toolbar">
     <button class="tool active" data-view="list">列表</button>
     <button class="tool" data-view="grid">总览</button>
+    <button class="tool" data-view="three">3D</button>
     <button class="tool" id="legend-btn">图例</button>
     <button class="tool" id="reset-btn">重置</button>
     <button id="wh-switch-btn" class="tool" onclick="_openWhSwitch()">换仓 🏭 <span id="wh-name-label"></span> ▾</button>
@@ -1257,6 +1274,17 @@
   <main id="main-panes">
     <!-- dynamically rendered by renderPanes() -->
   </main>
+  <!-- 3D 货架视图容器 -->
+  <div id="three-canvas-host">
+    <div id="three-topbar">
+      <span style="color:#94a3b8;font-size:14px;flex-shrink:0;">🔍</span>
+      <input id="three-search-input" type="text" placeholder="输入型号名搜索高亮..." autocomplete="off" />
+      <button id="three-search-clear" onclick="_3dClearSearch()">✕</button>
+    </div>
+    <canvas id="three-canvas"></canvas>
+    <div id="three-labels-ov"></div>
+    <div id="three-hint">拖动旋转 · 双指缩放 · 双击重置视角</div>
+  </div>
   <div class="delete-zone" id="delete-zone">🗑️ 拖到这里删除整箱(已搬走)</div>
 </div>
 
@@ -2293,7 +2321,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-02</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>新增「3D」货架视图（工具栏切换）：当前区域货架以三维立体格子呈现，半透明蓝色=有货、红色=缺货、深色=空格</li>
+            <li>3D视图支持搜索型号高亮（橙色脉冲闪烁）并自动聚焦到对应格位，显示库位编号/型号名/数量标签</li>
+            <li>支持拖动旋转、双指缩放、双击重置视角；切换区域标签自动刷新3D画面</li>
+            <li>坐标模块 WHC_* 独立设计，为后续室内找货导航与路径规划预留接口</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-05-30</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -2363,6 +2402,7 @@
             <li>支持在同一格位添加附加型号（循环向导流程），自动附加至库位</li>
             <li>点击任意输入框自动滚动至屏幕中央（手机键盘遮挡问题修复）</li>
           </ul>
+          </div>
           </div>
           </div>
           </div>
@@ -3272,6 +3312,42 @@ function makeLocationCode(zoneId, ai, ci, si) {
 }
 function getActiveTable() { return getActiveZone(); }
 function getContainerKey() { return isShelfTable(currentTable) ? 'shelves' : 'pallets'; }
+
+// ══════════════════════════════════════════════════════════
+// 仓库坐标模块 WHC_*  —  独立于渲染，供3D视图/导航/路径规划共用
+// 所有 WHC_* 函数不依赖 Three.js，可在任何上下文调用
+// ══════════════════════════════════════════════════════════
+const WHC = {
+  sw: 0.72,  // slot width  (X, 沿列排列方向, ≈m)
+  sh: 0.33,  // slot height (Y, 垂直)
+  sd: 0.38,  // slot depth  (Z, 货架纵深)
+  cg: 0.06,  // 列间隙 (X)
+  lg: 0.05,  // 层间隙 (Y)
+  ag: 1.50,  // 排间距 (Z, 含走道宽度)
+};
+// 返回格位3D中心坐标。ai=排索引(A=0), ci=列索引, si=格位索引(0=底层)
+// 预留：3D显示 / 工人找货导航 / 机器人目标坐标
+function WHC_slotPos(ai, ci, si) {
+  return {
+    x: ci * (WHC.sw + WHC.cg),
+    y: si * (WHC.sh + WHC.lg) + WHC.sh / 2,
+    z: ai * (WHC.sd + WHC.ag),
+  };
+}
+// 解析库位编号 → 结构化索引。'J-1-A-2-03' → {type,zoneTypeIdx,ai,ci,si}
+// 预留：路径规划起/终点解析
+function WHC_parseLocCode(code) {
+  if (!code) return null;
+  const p = code.split('-');
+  if (p.length !== 5) return null;
+  const ai = p[2].charCodeAt(0) - 65;
+  const ci = parseInt(p[3], 10) - 1;
+  const si = parseInt(p[4], 10) - 1;
+  if (isNaN(ai) || isNaN(ci) || isNaN(si)) return null;
+  return { type: p[0], zoneTypeIdx: parseInt(p[1], 10) - 1, ai, ci, si };
+}
+// 预留：生成可通行格子图（货架=障碍，通道=可走），供未来A*路径规划
+function WHC_buildWalkGrid(zone) { return null; }
 function getSlotsKey() { return isShelfTable(currentTable) ? 'slots' : 'layers'; }
 function getSlot(ai, ci, si, smi) {
   const slot = getActiveTable().aisles[ai][getContainerKey()][ci][getSlotsKey()][si];
@@ -7022,6 +7098,7 @@ document.querySelectorAll('.tool[data-view]').forEach(b => {
     const v = b.dataset.view;
     document.querySelectorAll('.list-view').forEach(x => x.classList.toggle('hidden', v !== 'list'));
     document.querySelectorAll('.grid-view').forEach(x => x.classList.toggle('active', v === 'grid'));
+    if (v === 'three') { _3dOpen(); } else { _3dClose(); }
   });
 });
 
@@ -8650,6 +8727,7 @@ function switchZone(zid) {
   if (!state.zones.find(z => z.id === zid)) return;
   currentTable = zid;
   render();
+  _3dRefreshIfOpen();
 }
 
 function _showAddZoneSheet() {
@@ -10140,6 +10218,301 @@ function _makeDraggable(card) {
   document.addEventListener('touchend', onEnd);
 }
 document.querySelectorAll('.auth-card').forEach(_makeDraggable);
+
+// ══════════════════════════════════════════════════════════
+// Three.js 3D 货架视图  —  r152 UMD + OrbitControls
+// 渲染逻辑与坐标模块完全分离；坐标全部来自 WHC_slotPos()
+// ══════════════════════════════════════════════════════════
+const _3D_LIBS = [
+  'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js',
+  'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js',
+];
+let _3dReady = false, _3dAnimId = null, _3dSearch = '';
+let _3dScene, _3dCam, _3dRdr, _3dCtrl;
+let _3dMeshMap = [];   // [{mesh, label, locCode, modelId, qty, pos}]
+let _3dZoneObjs = [];  // frame/floor objects for the current zone
+let _3dHit = [];       // highlighted entries
+let _3dLastTap = 0;
+let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
+
+async function _3dLoadLibs() {
+  for (const url of _3D_LIBS) {
+    if (document.querySelector(`script[src="${url}"]`)) continue;
+    await new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = url;
+      const t = setTimeout(() => rej('timeout'), 18000);
+      s.onload = () => { clearTimeout(t); res(); };
+      s.onerror = () => { clearTimeout(t); rej('load'); };
+      document.head.appendChild(s);
+    });
+  }
+}
+
+async function _3dInit() {
+  if (_3dReady) return true;
+  try {
+    toast('⏳ 加载3D引擎（首次需几秒）…');
+    await _3dLoadLibs();
+    if (!window.THREE?.OrbitControls) throw new Error('libs missing');
+  } catch(e) { toast('❌ 3D引擎加载失败，请检查网络'); return false; }
+
+  const T = window.THREE;
+  const host   = document.getElementById('three-canvas-host');
+  const canvas = document.getElementById('three-canvas');
+  const W = host.clientWidth, H = host.clientHeight;
+
+  _3dScene = new T.Scene();
+  _3dScene.background = new T.Color(0x0f172a);
+  _3dScene.fog = new T.FogExp2(0x0f172a, 0.055);
+
+  _3dCam = new T.PerspectiveCamera(50, W / Math.max(H, 1), 0.05, 150);
+  _3dCam.position.set(5, 5, 12);
+
+  _3dRdr = new T.WebGLRenderer({ canvas, antialias: true });
+  _3dRdr.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  _3dRdr.setSize(W, H);
+
+  _3dScene.add(new T.AmbientLight(0xffffff, 0.65));
+  const dl = new T.DirectionalLight(0xffffff, 0.9);
+  dl.position.set(6, 10, 6); _3dScene.add(dl);
+  const fl = new T.DirectionalLight(0x7799ff, 0.28);
+  fl.position.set(-4, -3, -4); _3dScene.add(fl);
+  _3dScene.add(new T.GridHelper(40, 40, 0x1e293b, 0x1e293b));
+
+  _3dCtrl = new T.OrbitControls(_3dCam, canvas);
+  _3dCtrl.enableDamping = true; _3dCtrl.dampingFactor = 0.12;
+  _3dCtrl.screenSpacePanning = false;
+  _3dCtrl.minDistance = 0.8; _3dCtrl.maxDistance = 60;
+  _3dCtrl.maxPolarAngle = Math.PI * 0.88;
+
+  _3dBoxGeo  = new T.BoxGeometry(WHC.sw, WHC.sh, WHC.sd);
+  _3dEdgeGeo = new T.EdgesGeometry(_3dBoxGeo);
+
+  canvas.addEventListener('dblclick', _3dResetCam);
+  canvas.addEventListener('touchend', () => {
+    const now = Date.now();
+    if (now - _3dLastTap < 320) _3dResetCam();
+    _3dLastTap = now;
+  });
+  document.getElementById('three-search-input').addEventListener('input', e => {
+    _3dApplySearch(e.target.value.trim());
+  });
+  window.addEventListener('resize', _3dOnResize);
+  _3dReady = true;
+  return true;
+}
+
+function _3dOnResize() {
+  if (!_3dReady) return;
+  const host = document.getElementById('three-canvas-host');
+  const W = host.clientWidth, H = host.clientHeight;
+  if (!W || !H) return;
+  _3dCam.aspect = W / H;
+  _3dCam.updateProjectionMatrix();
+  _3dRdr.setSize(W, H);
+}
+
+function _3dAnimate() {
+  _3dAnimId = requestAnimationFrame(_3dAnimate);
+  const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(performance.now() * 0.003));
+  _3dHit.forEach(e => { if (e.mesh.material) e.mesh.material.emissiveIntensity = pulse; });
+  _3dUpdateLabels();
+  _3dCtrl.update();
+  _3dRdr.render(_3dScene, _3dCam);
+}
+
+function _3dClearZone() {
+  _3dMeshMap.forEach(({ mesh, label }) => {
+    _3dScene.remove(mesh);
+    mesh.material.dispose();
+    if (label?.parentNode) label.parentNode.removeChild(label);
+  });
+  _3dZoneObjs.forEach(o => {
+    _3dScene.remove(o);
+    o.geometry?.dispose(); o.material?.dispose();
+  });
+  _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
+  document.getElementById('three-labels-ov').innerHTML = '';
+}
+
+function _3dRenderZone(zone) {
+  if (!_3dReady || !zone) return;
+  _3dClearZone();
+  const T = window.THREE;
+  const isShelf = zone.type === 'shelf';
+  const ck = isShelf ? 'shelves' : 'pallets';
+  const sk = isShelf ? 'slots' : 'layers';
+
+  zone.aisles.forEach((aisle, ai) => {
+    aisle[ck].forEach((container, ci) => {
+      container[sk].forEach((slot, si) => {
+        const pos  = WHC_slotPos(ai, ci, si);
+        const hasMod = !!slot.modelId;
+        const m  = hasMod ? getModel(slot.modelId) : null;
+        const hasQty = (slot.qty || 0) > 0;
+        const faceColor = !hasMod ? 0x1e293b : hasQty ? 0x1e3a5f : 0x7f1d1d;
+        const faceAlpha = !hasMod ? 0.28 : hasQty ? 0.78 : 0.68;
+
+        const mat = new T.MeshStandardMaterial({
+          color: faceColor, opacity: faceAlpha, transparent: true,
+          roughness: 0.45, metalness: 0.12,
+          emissive: new T.Color(0x000000), emissiveIntensity: 0,
+        });
+        const mesh = new T.Mesh(_3dBoxGeo, mat);
+        mesh.position.set(pos.x, pos.y, pos.z);
+        _3dScene.add(mesh);
+
+        // Edge outline
+        const eMat = new T.LineBasicMaterial({ color: hasMod ? 0x475569 : 0x1e3a5f });
+        const edges = new T.LineSegments(_3dEdgeGeo, eMat);
+        edges.position.copy(mesh.position);
+        _3dScene.add(edges); _3dZoneObjs.push(edges);
+
+        const locCode = makeLocationCode(zone.id, ai, ci, si);
+        const label   = _3dMakeLabel(locCode, m?.name, slot.qty || 0);
+        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos });
+      });
+    });
+    _3dDrawFrame(aisle, ai, ck, sk);
+  });
+
+  _3dFitCamera();
+  if (_3dSearch) _3dApplySearch(_3dSearch);
+}
+
+function _3dMakeLabel(locCode, modelName, qty) {
+  const d = document.createElement('div');
+  d.className = 'tlbl';
+  d.innerHTML =
+    `<div class="tloc">${escapeHtml(locCode)}</div>` +
+    (modelName
+      ? `<div class="tname">${escapeHtml(modelName.length > 9 ? modelName.slice(0,8)+'…' : modelName)}</div>`+
+        `<div class="tqty" style="color:${qty>0?'#4ade80':'#f87171'}">${qty>0?qty:'—'}</div>`
+      : '');
+  document.getElementById('three-labels-ov').appendChild(d);
+  return d;
+}
+
+function _3dUpdateLabels() {
+  if (!_3dCam || !_3dRdr) return;
+  const host = document.getElementById('three-canvas-host');
+  const W = host.clientWidth, H = host.clientHeight;
+  const v  = new window.THREE.Vector3();
+  _3dMeshMap.forEach(({ label, pos }) => {
+    if (!label) return;
+    v.set(pos.x, pos.y + WHC.sh * 0.55, pos.z);
+    v.project(_3dCam);
+    const sx = (v.x * 0.5 + 0.5) * W;
+    const sy = (-v.y * 0.5 + 0.5) * H;
+    const vis = v.z < 1 && sx > -60 && sx < W+60 && sy > -40 && sy < H+40;
+    label.style.display = vis ? '' : 'none';
+    if (vis) { label.style.left = sx+'px'; label.style.top = sy+'px'; }
+  });
+}
+
+function _3dDrawFrame(aisle, ai, ck, sk) {
+  const T = window.THREE;
+  const mat = new T.LineBasicMaterial({ color: 0x334155 });
+  const cols  = aisle[ck].length;
+  const maxSi = cols ? Math.max(...aisle[ck].map(c => c[sk].length)) : 0;
+  if (!cols || !maxSi) return;
+  const zc   = ai * (WHC.sd + WHC.ag);
+  const totW = (cols - 1) * (WHC.sw + WHC.cg) + WHC.sw;
+  const totH = (maxSi - 1) * (WHC.sh + WHC.lg) + WHC.sh;
+  const x0 = -WHC.sw/2 - 0.04, x1 = totW - WHC.sw/2 + 0.04;
+  const y0 = -0.05, y1 = totH + 0.05;
+  const z0 = zc - WHC.sd/2 - 0.04, z1 = zc + WHC.sd/2 + 0.04;
+
+  // 4 vertical corner posts (front & back)
+  [[x0,z0],[x1,z0],[x0,z1],[x1,z1]].forEach(([x,z]) => {
+    const g = new T.BufferGeometry().setFromPoints([new T.Vector3(x,y0,z), new T.Vector3(x,y1,z)]);
+    const l = new T.Line(g, mat); _3dScene.add(l); _3dZoneObjs.push(l);
+  });
+  // Horizontal shelf beams (front & back, per layer)
+  for (let li = 0; li <= maxSi; li++) {
+    const y = li * (WHC.sh + WHC.lg) - WHC.lg/2;
+    [z0, z1].forEach(z => {
+      const g = new T.BufferGeometry().setFromPoints([new T.Vector3(x0,y,z), new T.Vector3(x1,y,z)]);
+      const l = new T.Line(g, mat); _3dScene.add(l); _3dZoneObjs.push(l);
+    });
+  }
+  // Floor plate
+  const fGeo = new T.PlaneGeometry(totW + 0.1, WHC.sd + 0.1);
+  const fMat = new T.MeshStandardMaterial({ color: 0x1e293b, opacity: 0.55, transparent: true });
+  const floor = new T.Mesh(fGeo, fMat);
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set((totW - WHC.sw)/2, y0 - 0.01, zc);
+  _3dScene.add(floor); _3dZoneObjs.push(floor);
+}
+
+function _3dFitCamera() {
+  if (!_3dMeshMap.length) return;
+  const T = window.THREE;
+  const box = new T.Box3();
+  _3dMeshMap.forEach(({ mesh }) => box.expandByObject(mesh));
+  const ctr = new T.Vector3(); box.getCenter(ctr);
+  const sz  = new T.Vector3(); box.getSize(sz);
+  const maxD = Math.max(sz.x, sz.y, sz.z);
+  const dist = Math.max((maxD / 2) / Math.tan(_3dCam.fov * Math.PI / 360) * 2.1, 3);
+  _3dCam.position.set(ctr.x + dist*0.55, ctr.y + dist*0.5, ctr.z + dist);
+  _3dCam.lookAt(ctr);
+  _3dCtrl.target.copy(ctr);
+  _3dCtrl.update();
+}
+function _3dResetCam() { _3dFitCamera(); }
+
+function _3dApplySearch(term) {
+  _3dSearch = term;
+  const cb = document.getElementById('three-search-clear');
+  if (cb) cb.style.display = term ? '' : 'none';
+  _3dHit = [];
+  _3dMeshMap.forEach(e => { e.mesh.material.emissive.setHex(0); e.mesh.material.emissiveIntensity = 0; });
+  if (!term) return;
+  const lo = term.toLowerCase();
+  let first = null;
+  _3dMeshMap.forEach(e => {
+    const m = e.modelId ? getModel(e.modelId) : null;
+    if ((m?.name?.toLowerCase()||'').includes(lo) || e.locCode.toLowerCase().includes(lo)) {
+      e.mesh.material.emissive.setHex(0xf59e0b);
+      e.mesh.material.emissiveIntensity = 1;
+      _3dHit.push(e); if (!first) first = e;
+    }
+  });
+  if (first) {
+    const { pos } = first;
+    _3dCam.position.set(pos.x+2.5, pos.y+2, pos.z+4);
+    _3dCtrl.target.set(pos.x, pos.y, pos.z); _3dCtrl.update();
+    toast(`🔍 ${_3dHit.length} 个库位匹配`);
+  } else { toast('未找到匹配型号'); }
+}
+function _3dClearSearch() {
+  const inp = document.getElementById('three-search-input');
+  if (inp) inp.value = '';
+  _3dApplySearch('');
+}
+
+async function _3dOpen() {
+  const host = document.getElementById('three-canvas-host');
+  const main = document.getElementById('main-panes');
+  main.style.display = 'none';
+  host.style.display = 'flex';
+  await new Promise(r => setTimeout(r, 30));
+  const ok = await _3dInit();
+  if (!ok) { host.style.display = 'none'; main.style.display = ''; return; }
+  _3dOnResize();
+  _3dRenderZone(state.zones.find(z => z.id === currentTable));
+  if (_3dAnimId) cancelAnimationFrame(_3dAnimId);
+  _3dAnimate();
+}
+function _3dClose() {
+  if (_3dAnimId) { cancelAnimationFrame(_3dAnimId); _3dAnimId = null; }
+  document.getElementById('three-canvas-host').style.display = 'none';
+  document.getElementById('main-panes').style.display = '';
+}
+function _3dRefreshIfOpen() {
+  if (!_3dReady || document.getElementById('three-canvas-host').style.display === 'none') return;
+  _3dRenderZone(state.zones.find(z => z.id === currentTable));
+}
 
 _initAuth(); // All vars declared above — safe entry point
 
