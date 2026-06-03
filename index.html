@@ -2329,10 +2329,12 @@
             <span style="font-size:10px; color:var(--muted);">2026-06-02</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>新增「3D」货架视图（工具栏切换）：当前区域货架以三维立体格子呈现，半透明蓝色=有货、红色=缺货、深色=空格</li>
-            <li>3D视图支持搜索型号高亮（橙色脉冲闪烁）并自动聚焦到对应格位，显示库位编号/型号名/数量标签</li>
-            <li>支持拖动旋转、双指缩放、双击重置视角；切换区域标签自动刷新3D画面</li>
-            <li>坐标模块 WHC_* 独立设计，为后续室内找货导航与路径规划预留接口</li>
+            <li>新增「3D」货架视图（工具栏切换）：三维立体格子，每排独立配色（A蓝/B绿/C紫/D琥珀/E青）</li>
+            <li>搜索型号 → 匹配格子橙色脉冲高亮，库位编号加粗黄色显示；其余格淡化至几乎不可见</li>
+            <li>新增「室内找货路径规划」：搜索后自动用 A* 算法规划从仓库入口沿通道到目标库位列的最短路径</li>
+            <li>路径以青色发光线 + V 形转角箭头铺设在地面，智能选择前侧或后侧走道（取较短路径）</li>
+            <li>坐标模块 WHC_* 独立，支撑 3D 显示 / 路径规划 / 未来机器人导航，不需重写</li>
+            <li>双指手势升级：捏合缩放 + 同向拖动平移，松手后状态完整保持；右键拖动也可平移（桌面端）</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
