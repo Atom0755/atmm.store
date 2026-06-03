@@ -10737,24 +10737,21 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   const line = new T.Line(lineGeo, lineMat);
   _3dScene.add(line); _3dNavObjs.push(line);
 
-  // ② 线条式 V 形箭头：转角处 + 直线段每隔约 2m 放一个
-  // 用原始格子路径 pts（未平滑）检测转角，避免平滑后方向抖动误判
+  // ② 线条式 V 形箭头：仅在 30°~89° 斜角转角处放（排除直线和90°直角）
+  // 用原始格子路径 pts（未平滑）检测，避免平滑后方向抖动误判
   const arrowMat = new T.LineBasicMaterial({ color: 0x00ffcc });
-  const arrowSz  = 0.20; // 箭头臂长 (m)
-  const markEvery = Math.max(3, Math.round(2.0 / gd.cellSize)); // 直线段每隔多少格放一个
+  const arrowSz  = 0.10; // 箭头臂长 (m)，减小一半
   for (let i = 1; i < pts.length - 1; i++) {
     const d1 = new T.Vector3().subVectors(pts[i],   pts[i-1]).setY(0);
     const d2 = new T.Vector3().subVectors(pts[i+1], pts[i]  ).setY(0);
     if (d1.length() < 0.001 || d2.length() < 0.001) continue;
     d1.normalize(); d2.normalize();
-    // 叉积长度 ≈ |sin(夹角)|：>0.50 认为是显著转角（约30°以上）
-    const cross = new T.Vector3().crossVectors(d1, d2);
-    const isCorner = cross.length() > 0.50;
-    const isMark   = (i % markEvery === 0);
-    if (!isCorner && !isMark) continue;
+    // 叉积 |sin(θ)|：30°~89° → 0.50~0.95（直角 sin90°=1.0 排除）
+    const sinA = new T.Vector3().crossVectors(d1, d2).length();
+    if (sinA < 0.50 || sinA > 0.95) continue; // 排除直线(<30°)和90°直角
 
-    const dir  = d2;                                      // 离开该点的行进方向
-    const perp = new T.Vector3(-dir.z, 0, dir.x);        // XZ 平面内垂向
+    const dir  = d2;
+    const perp = new T.Vector3(-dir.z, 0, dir.x);
     const base = pts[i].clone().setY(0.07);
     const tip  = base.clone().add(dir.clone().multiplyScalar(arrowSz));
     const lw   = base.clone()
@@ -10793,7 +10790,9 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   if (finalDir.length() > 0.05) {
     finalDir.normalize();
     const finalPerp = new T.Vector3(-finalDir.z, 0, finalDir.x);
-    const fBase = lastPt.clone().setY(0.07);
+    // 终点 > 放在货架边线（sd/2 + 小余量）处，而不是路径末端
+    const fBase = new T.Vector3(tgtPos.x, 0.07, tgtPos.z)
+      .sub(finalDir.clone().multiplyScalar(WHC.sd / 2 + 0.08));
     const fTip  = fBase.clone().add(finalDir.clone().multiplyScalar(arrowSz));
     const fLw   = fBase.clone().sub(finalDir.clone().multiplyScalar(arrowSz * 0.35)).add(finalPerp.clone().multiplyScalar(arrowSz * 0.85));
     const fRw   = fBase.clone().sub(finalDir.clone().multiplyScalar(arrowSz * 0.35)).sub(finalPerp.clone().multiplyScalar(arrowSz * 0.85));
