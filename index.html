@@ -10737,22 +10737,37 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   const line = new T.Line(lineGeo, lineMat);
   _3dScene.add(line); _3dNavObjs.push(line);
 
-  // ② 方向箭头（沿路径每隔 step 个采样点放一个锥）
-  const step = Math.max(5, Math.floor(smoothPts.length / 10));
-  const coneMat = new T.MeshBasicMaterial({ color: 0x00ffcc });
-  const coneGeo = new T.ConeGeometry(0.09, 0.22, 6);
-  const up = new T.Vector3(0, 1, 0);
-  for (let i = step; i < smoothPts.length - 2; i += step) {
-    const dir = new T.Vector3()
-      .subVectors(smoothPts[Math.min(i+2, smoothPts.length-1)], smoothPts[Math.max(i-2,0)])
-      .setY(0).normalize();
-    if (dir.length() < 0.01) continue;
-    const cone = new T.Mesh(coneGeo, coneMat.clone());
-    cone.position.set(smoothPts[i].x, 0.14, smoothPts[i].z);
-    cone.quaternion.setFromUnitVectors(up, dir);
-    _3dScene.add(cone); _3dNavObjs.push(cone);
+  // ② 线条式 V 形箭头：转角处 + 直线段每隔约 2m 放一个
+  // 用原始格子路径 pts（未平滑）检测转角，避免平滑后方向抖动误判
+  const arrowMat = new T.LineBasicMaterial({ color: 0x00ffcc });
+  const arrowSz  = 0.20; // 箭头臂长 (m)
+  const markEvery = Math.max(3, Math.round(2.0 / gd.cellSize)); // 直线段每隔多少格放一个
+  for (let i = 1; i < pts.length - 1; i++) {
+    const d1 = new T.Vector3().subVectors(pts[i],   pts[i-1]).setY(0);
+    const d2 = new T.Vector3().subVectors(pts[i+1], pts[i]  ).setY(0);
+    if (d1.length() < 0.001 || d2.length() < 0.001) continue;
+    d1.normalize(); d2.normalize();
+    // 叉积长度 ≈ |sin(夹角)|：>0.28 认为是显著转角（约16°以上）
+    const cross = new T.Vector3().crossVectors(d1, d2);
+    const isCorner = cross.length() > 0.28;
+    const isMark   = (i % markEvery === 0);
+    if (!isCorner && !isMark) continue;
+
+    const dir  = d2;                                      // 离开该点的行进方向
+    const perp = new T.Vector3(-dir.z, 0, dir.x);        // XZ 平面内垂向
+    const base = pts[i].clone().setY(0.07);
+    const tip  = base.clone().add(dir.clone().multiplyScalar(arrowSz));
+    const lw   = base.clone()
+      .sub(dir.clone().multiplyScalar(arrowSz * 0.35))
+      .add(perp.clone().multiplyScalar(arrowSz * 0.85));
+    const rw   = base.clone()
+      .sub(dir.clone().multiplyScalar(arrowSz * 0.35))
+      .sub(perp.clone().multiplyScalar(arrowSz * 0.85));
+
+    const aGeo  = new T.BufferGeometry().setFromPoints([lw, tip, rw]);
+    const aLine = new T.Line(aGeo, arrowMat.clone());
+    _3dScene.add(aLine); _3dNavObjs.push(aLine);
   }
-  coneGeo.dispose();
 
   // ③ 起点标记（小球）
   const sGeo = new T.SphereGeometry(0.16, 8, 6);
