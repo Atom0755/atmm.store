@@ -3350,8 +3350,117 @@ function WHC_parseLocCode(code) {
   if (isNaN(ai) || isNaN(ci) || isNaN(si)) return null;
   return { type: p[0], zoneTypeIdx: parseInt(p[1], 10) - 1, ai, ci, si };
 }
-// 预留：生成可通行格子图（货架=障碍，通道=可走），供未来A*路径规划
-function WHC_buildWalkGrid(zone) { return null; }
+// ══════ 可通行栅格地图 ══════════════════════════════════════════
+// 俯视 XZ 平面，将仓库地面离散化为格子：0=可走，1=货架障碍
+// cellSize = 0.35m；PAD = 外围可走边距；EPS = 货架外扩防贴边
+function WHC_buildWalkGrid(zone) {
+  if (!zone?.aisles?.length) return null;
+  const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+  const CELL = 0.35, PAD = 1.8, EPS = 0.10;
+
+  // 求所有货架列的世界坐标极值
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  zone.aisles.forEach((aisle, ai) => {
+    aisle[ck].forEach((cont, ci) => {
+      const p = WHC_slotPos(ai, ci, 0);
+      x0 = Math.min(x0, p.x - WHC.sw/2); x1 = Math.max(x1, p.x + WHC.sw/2);
+      z0 = Math.min(z0, p.z - WHC.sd/2); z1 = Math.max(z1, p.z + WHC.sd/2);
+    });
+  });
+  if (!isFinite(x0)) return null;
+
+  // 建格子表（带 PAD 边距）
+  const gx0 = x0 - PAD, gz0 = z0 - PAD;
+  const cols = Math.ceil((x1 + PAD - gx0) / CELL);
+  const rows = Math.ceil((z1 + PAD - gz0) / CELL);
+  const grid = new Uint8Array(cols * rows); // 0=走，1=挡
+
+  // 把每个货架列的 XZ 脚印标为障碍
+  zone.aisles.forEach((aisle, ai) => {
+    const zc = ai * (WHC.sd + WHC.ag);
+    const rMin = Math.max(0, Math.floor(((zc - WHC.sd/2 - EPS) - gz0) / CELL));
+    const rMax = Math.min(rows, Math.ceil(((zc + WHC.sd/2 + EPS) - gz0) / CELL));
+    aisle[ck].forEach((cont, ci) => {
+      const xc = ci * (WHC.sw + WHC.cg);
+      const cMin = Math.max(0, Math.floor(((xc - WHC.sw/2 - EPS) - gx0) / CELL));
+      const cMax = Math.min(cols, Math.ceil(((xc + WHC.sw/2 + EPS) - gx0) / CELL));
+      for (let r = rMin; r < rMax; r++)
+        for (let c = cMin; c < cMax; c++)
+          grid[r * cols + c] = 1;
+    });
+  });
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const toCell = (wx, wz) => ({
+    col: clamp(Math.floor((wx - gx0) / CELL), 0, cols-1),
+    row: clamp(Math.floor((wz - gz0) / CELL), 0, rows-1)
+  });
+  const toWorld = (col, row) => ({
+    x: gx0 + (col + 0.5) * CELL,
+    z: gz0 + (row + 0.5) * CELL
+  });
+  return { grid, cols, rows, cellSize: CELL, toCell, toWorld };
+}
+
+// ══════ A* 最短路径（8方向，禁止切角穿墙）═══════════════════════
+// 返回 [{col,row},...] 从起点到终点，或 null（无路）
+// 预留接口：将来换起点/多目标只需改调用参数，算法不变
+function WHC_findPath(gd, start, end) {
+  const { grid, cols, rows } = gd;
+  const idx = (c, r) => r * cols + c;
+  const blk = (c, r) => c < 0 || c >= cols || r < 0 || r >= rows || grid[idx(c,r)] === 1;
+
+  // 若起/终点在障碍内，找最近可走格（半径3格内搜索）
+  let { col: sc, row: sr } = start;
+  let { col: ec, row: er } = end;
+  const nudge = (col, row, out) => {
+    if (!blk(col, row)) { out.c = col; out.r = row; return; }
+    for (let d = 1; d <= 4; d++)
+      for (let dc = -d; dc <= d; dc++)
+        for (let dr = -d; dr <= d; dr++)
+          if (!blk(col+dc, row+dr)) { out.c = col+dc; out.r = row+dr; return; }
+    out.c = col; out.r = row; // 放弃，保持原值
+  };
+  const s = {c:sc,r:sr}; nudge(sc,sr,s); sc=s.c; sr=s.r;
+  const e = {c:ec,r:er}; nudge(ec,er,e); ec=e.c; er=e.r;
+  if (blk(sc,sr) || blk(ec,er)) return null;
+  if (sc===ec && sr===er) return [{col:sc,row:sr}];
+
+  // 8方向代价（对角=√2）
+  const DIRS = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
+  const n = cols * rows;
+  const g  = new Float32Array(n).fill(1e9);
+  const f  = new Float32Array(n).fill(1e9);
+  const prev = new Int32Array(n).fill(-1);
+  const open = new Set();
+  const h = (c,r) => Math.hypot(ec-c, er-r);
+
+  const si = idx(sc,sr);
+  g[si]=0; f[si]=h(sc,sr); open.add(si);
+
+  while (open.size) {
+    let cur=-1, bf=1e9;
+    open.forEach(i => { if (f[i]<bf) { bf=f[i]; cur=i; } });
+    open.delete(cur);
+    const cr=Math.floor(cur/cols), cc=cur-cr*cols;
+    if (cc===ec && cr===er) {
+      const path=[]; let node=cur;
+      while (node!==-1) {
+        const r=Math.floor(node/cols), c=node-r*cols;
+        path.push({col:c,row:r}); node=prev[node];
+      }
+      return path.reverse();
+    }
+    for (const [dc,dr,cost] of DIRS) {
+      const nc=cc+dc, nr=cr+dr;
+      if (blk(nc,nr)) continue;
+      if (dc!==0&&dr!==0&&(blk(cc+dc,cr)||blk(cc,cr+dr))) continue; // 禁切角
+      const ni=idx(nc,nr), ng=g[cur]+cost;
+      if (ng<g[ni]) { prev[ni]=cur; g[ni]=ng; f[ni]=ng+h(nc,nr); open.add(ni); }
+    }
+  }
+  return null;
+}
 function getSlotsKey() { return isShelfTable(currentTable) ? 'slots' : 'layers'; }
 function getSlot(ai, ci, si, smi) {
   const slot = getActiveTable().aisles[ai][getContainerKey()][ci][getSlotsKey()][si];
@@ -10410,14 +10519,18 @@ function _3dOnResize() {
 
 function _3dAnimate() {
   _3dAnimId = requestAnimationFrame(_3dAnimate);
-  const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(performance.now() * 0.003));
+  const t = performance.now();
+  const pulse    = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.003));
+  const navPulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t * 0.0038));
   _3dHit.forEach(e => { if (e.mesh.material) e.mesh.material.emissiveIntensity = pulse; });
+  _3dNavObjs.forEach(o => { if (o.material?._navPulse) o.material.opacity = navPulse; });
   _3dUpdateLabels();
   _3dCtrl.update();
   _3dRdr.render(_3dScene, _3dCam);
 }
 
 function _3dClearZone() {
+  _3dClearNavPath();
   _3dMeshMap.forEach(({ mesh, label }) => {
     _3dScene.remove(mesh);
     mesh.material.dispose();
@@ -10425,7 +10538,7 @@ function _3dClearZone() {
   });
   _3dZoneObjs.forEach(o => {
     _3dScene.remove(o);
-    o.material?.dispose(); // geometry shared or small — let GC handle
+    o.material?.dispose();
   });
   _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
   document.getElementById('three-labels-ov').innerHTML = '';
@@ -10477,7 +10590,7 @@ function _3dRenderZone(zone) {
 
         const locCode = makeLocationCode(zone.id, ai, ci, si);
         const label   = _3dMakeLabel(locCode, m?.name, slot.qty || 0);
-        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos, _origAlpha: faceAlpha });
+        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos, _origAlpha: faceAlpha, ai, ci, si });
       });
     });
     _3dDrawFrame(aisle, ai, ck, sk);
@@ -10561,6 +10674,114 @@ function _3dFitCamera() {
 }
 function _3dResetCam() { _3dFitCamera(); }
 
+// ══════ 路径导航 ═══════════════════════════════════════════════
+let _3dNavObjs = []; // 路径可视化对象（Line/Mesh）
+
+function _3dClearNavPath() {
+  _3dNavObjs.forEach(o => {
+    _3dScene.remove(o);
+    o.geometry?.dispose();
+    if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+    else o.material?.dispose();
+  });
+  _3dNavObjs = [];
+}
+
+// 在 3D 场景里画从固定入口→目标库位的导航路径
+// targetAi/targetCi: 目标格位的排/列索引
+function _3dDrawNavPath(zone, targetAi, targetCi) {
+  _3dClearNavPath();
+  if (!_3dReady || !zone) return;
+
+  const T = window.THREE;
+  const gd = WHC_buildWalkGrid(zone);
+  if (!gd) return;
+
+  // 入口（可在 zone 上配置 entryX/entryZ，默认货架左前角）
+  const entryX = zone.entryX ?? -1.5;
+  const entryZ = zone.entryZ ?? -1.0;
+  const startCell = gd.toCell(entryX, entryZ);
+
+  // 目标列的 X 中心
+  const txc = targetAi * (WHC.sd + WHC.ag);
+  const xc  = targetCi * (WHC.sw + WHC.cg);
+  // 两侧走道中心 Z（让 A* 选更近的一侧）
+  const zFront = txc - WHC.sd/2 - WHC.ag/2;
+  const zBack  = txc + WHC.sd/2 + WHC.ag/2;
+
+  const endF = gd.toCell(xc, zFront);
+  const endB = gd.toCell(xc, zBack);
+  const pathF = WHC_findPath(gd, startCell, endF);
+  const pathB = WHC_findPath(gd, startCell, endB);
+
+  // 选较短路径
+  let path = null;
+  if (pathF && pathB) path = pathF.length <= pathB.length ? pathF : pathB;
+  else path = pathF || pathB;
+  if (!path || path.length < 2) { toast('⚠️ 找不到通道路径'); return; }
+
+  // 把格子坐标转成 3D 世界点（贴地 y=0.05）
+  const pts = path.map(({ col, row }) => {
+    const { x, z } = gd.toWorld(col, row);
+    return new T.Vector3(x, 0.05, z);
+  });
+
+  // 平滑曲线
+  const curve = new T.CatmullRomCurve3(pts, false, 'catmullrom', 0.25);
+  const smoothPts = curve.getPoints(Math.max(60, pts.length * 5));
+
+  // ① 路径主线
+  const lineGeo = new T.BufferGeometry().setFromPoints(smoothPts);
+  const lineMat = new T.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.9 });
+  lineMat._navPulse = true;
+  const line = new T.Line(lineGeo, lineMat);
+  _3dScene.add(line); _3dNavObjs.push(line);
+
+  // ② 方向箭头（沿路径每隔 step 个采样点放一个锥）
+  const step = Math.max(5, Math.floor(smoothPts.length / 10));
+  const coneMat = new T.MeshBasicMaterial({ color: 0x00ffcc });
+  const coneGeo = new T.ConeGeometry(0.09, 0.22, 6);
+  const up = new T.Vector3(0, 1, 0);
+  for (let i = step; i < smoothPts.length - 2; i += step) {
+    const dir = new T.Vector3()
+      .subVectors(smoothPts[Math.min(i+2, smoothPts.length-1)], smoothPts[Math.max(i-2,0)])
+      .setY(0).normalize();
+    if (dir.length() < 0.01) continue;
+    const cone = new T.Mesh(coneGeo, coneMat.clone());
+    cone.position.set(smoothPts[i].x, 0.14, smoothPts[i].z);
+    cone.quaternion.setFromUnitVectors(up, dir);
+    _3dScene.add(cone); _3dNavObjs.push(cone);
+  }
+  coneGeo.dispose();
+
+  // ③ 起点标记（小球）
+  const sGeo = new T.SphereGeometry(0.16, 8, 6);
+  const sMat = new T.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.9 });
+  sMat._navPulse = true;
+  const sphere = new T.Mesh(sGeo, sMat);
+  sphere.position.set(smoothPts[0].x, 0.18, smoothPts[0].z);
+  _3dScene.add(sphere); _3dNavObjs.push(sphere);
+  sGeo.dispose();
+
+  // ④ 终点竖向大箭头（指向目标格位）
+  const tgtPos = WHC_slotPos(targetAi, targetCi, 0);
+  const vtGeo = new T.ConeGeometry(0.15, 0.45, 8);
+  const vtMat = new T.MeshBasicMaterial({ color: 0x00ffcc });
+  const vtCone = new T.Mesh(vtGeo, vtMat);
+  vtCone.position.set(tgtPos.x, 0.65, tgtPos.z);
+  _3dScene.add(vtCone); _3dNavObjs.push(vtCone);
+  vtGeo.dispose();
+
+  // ⑤ 路径末端→目标格位的引导短线
+  const lastPt = smoothPts[smoothPts.length - 1];
+  const finalGeo = new T.BufferGeometry().setFromPoints([
+    lastPt.clone(),
+    new T.Vector3(tgtPos.x, 0.05, tgtPos.z)
+  ]);
+  const finalLine = new T.Line(finalGeo, new T.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.7 }));
+  _3dScene.add(finalLine); _3dNavObjs.push(finalLine);
+}
+
 function _3dApplySearch(term) {
   _3dSearch = term;
   const cb = document.getElementById('three-search-clear');
@@ -10568,13 +10789,14 @@ function _3dApplySearch(term) {
   _3dHit = [];
 
   if (!term) {
-    // 清除：全部恢复原始透明度和发光、移除高亮标签类
+    // 清除：全部恢复原始透明度和发光、移除高亮标签类、清路径
     _3dMeshMap.forEach(e => {
       e.mesh.material.emissive.setHex(0);
       e.mesh.material.emissiveIntensity = 0;
       e.mesh.material.opacity = e._origAlpha;
       if (e.label) e.label.classList.remove('tlbl-hit');
     });
+    _3dClearNavPath();
     return;
   }
 
@@ -10603,10 +10825,13 @@ function _3dApplySearch(term) {
     }
   });
   if (first) {
-    const { pos } = first;
+    const { pos, ai, ci } = first;
     _3dCtrl.setTarget(pos.x, pos.y, pos.z);
     _3dCam.position.set(pos.x+2.5, pos.y+2, pos.z+4);
-    toast(`🔍 ${_3dHit.length} 个库位匹配`);
+    // 绘制从入口到目标库位的导航路径
+    const zone = state.zones.find(z => z.id === currentTable);
+    _3dDrawNavPath(zone, ai, ci);
+    toast(`🔍 ${_3dHit.length} 个库位匹配 · 路径已规划`);
   } else { toast('未找到匹配型号'); }
 }
 function _3dClearSearch() {
