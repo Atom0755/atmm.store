@@ -10232,12 +10232,14 @@ let _3dHit = [];       // highlighted entries
 let _3dLastTap = 0;
 let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
 
-// 内联轨道控制器 — 无需 OrbitControls CDN，支持鼠标+触摸
+// 内联轨道控制器 — 单指/鼠标=旋转，双指=捏合缩放+同向平移，滚轮=缩放
+// 所有状态（radius/theta/phi/tgt）在手势结束后保持不变
 function _3dMakeOrbit(camera, canvas) {
   let drag = false, lastX = 0, lastY = 0;
   let theta = 0.8, phi = Math.PI / 4, radius = 15;
   const tgt = { x: 0, y: 0, z: 0 };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
   function sync() {
     camera.position.set(
       tgt.x + radius * Math.sin(phi) * Math.sin(theta),
@@ -10246,38 +10248,73 @@ function _3dMakeOrbit(camera, canvas) {
     );
     camera.lookAt(tgt.x, tgt.y, tgt.z);
   }
-  canvas.addEventListener('mousedown', e => { drag = true; lastX = e.clientX; lastY = e.clientY; });
+
+  // 鼠标：左键拖动旋转，右键拖动平移，滚轮缩放
+  let mBtn = 0;
+  canvas.addEventListener('mousedown', e => { drag = true; mBtn = e.button; lastX = e.clientX; lastY = e.clientY; e.preventDefault(); });
   window.addEventListener('mouseup', () => { drag = false; });
   canvas.addEventListener('mousemove', e => {
     if (!drag) return;
-    theta -= (e.clientX - lastX) * 0.008;
-    phi = clamp(phi - (e.clientY - lastY) * 0.008, 0.06, Math.PI * 0.88);
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (mBtn === 2) {
+      // 右键平移
+      const pf = radius * 0.002;
+      tgt.x -= dx * pf * Math.cos(theta); tgt.z += dx * pf * Math.sin(theta); tgt.y += dy * pf;
+    } else {
+      theta -= dx * 0.008;
+      phi = clamp(phi - dy * 0.008, 0.06, Math.PI * 0.88);
+    }
     lastX = e.clientX; lastY = e.clientY; sync();
   });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('wheel', e => {
     radius = clamp(radius + e.deltaY * 0.04, 0.8, 60); sync();
   }, { passive: true });
-  let tch = [], lp = 0;
+
+  // 触摸：单指旋转，双指捏合=缩放 + 双指同向拖=平移
+  let tch = [], lp = 0, lcx = 0, lcy = 0;
   canvas.addEventListener('touchstart', e => {
     tch = [...e.touches];
-    if (tch.length === 1) { drag = true; lastX = tch[0].clientX; lastY = tch[0].clientY; }
-    else { drag = false; lp = Math.hypot(tch[0].clientX - tch[1].clientX, tch[0].clientY - tch[1].clientY); }
+    if (tch.length === 1) {
+      drag = true; lastX = tch[0].clientX; lastY = tch[0].clientY;
+    } else if (tch.length >= 2) {
+      drag = false;
+      lp  = Math.hypot(tch[0].clientX - tch[1].clientX, tch[0].clientY - tch[1].clientY);
+      lcx = (tch[0].clientX + tch[1].clientX) / 2;
+      lcy = (tch[0].clientY + tch[1].clientY) / 2;
+    }
   }, { passive: true });
   canvas.addEventListener('touchend', e => {
-    tch = [...e.touches]; drag = tch.length === 1;
+    tch = [...e.touches];
+    drag = tch.length === 1;
     if (drag) { lastX = tch[0].clientX; lastY = tch[0].clientY; }
+    // 两指→一指过渡：更新双指基准（避免跳跃）
+    if (tch.length === 1) { lp = 0; }
   }, { passive: true });
   canvas.addEventListener('touchmove', e => {
-    e.preventDefault(); tch = [...e.touches];
+    e.preventDefault();
+    tch = [...e.touches];
     if (tch.length === 1 && drag) {
+      // 单指旋转
       theta -= (tch[0].clientX - lastX) * 0.009;
       phi = clamp(phi - (tch[0].clientY - lastY) * 0.009, 0.06, Math.PI * 0.88);
-      lastX = tch[0].clientX; lastY = tch[0].clientY; sync();
-    } else if (tch.length === 2) {
-      const d = Math.hypot(tch[0].clientX - tch[1].clientX, tch[0].clientY - tch[1].clientY);
-      radius = clamp(radius - (d - lp) * 0.04, 0.8, 60); lp = d; sync();
+      lastX = tch[0].clientX; lastY = tch[0].clientY;
+      sync();
+    } else if (tch.length >= 2) {
+      const cx = (tch[0].clientX + tch[1].clientX) / 2;
+      const cy = (tch[0].clientY + tch[1].clientY) / 2;
+      const d  = Math.hypot(tch[0].clientX - tch[1].clientX, tch[0].clientY - tch[1].clientY);
+      // 捏合缩放
+      if (lp > 0) radius = clamp(radius - (d - lp) * 0.045, 0.8, 60);
+      // 双指平移：中心点移动量 → 平移 target
+      const dx = cx - lcx, dy = cy - lcy;
+      const pf = radius * 0.003;
+      tgt.x -= dx * pf * Math.cos(theta); tgt.z += dx * pf * Math.sin(theta); tgt.y += dy * pf;
+      lp = d; lcx = cx; lcy = cy;
+      sync();
     }
   }, { passive: false });
+
   sync();
   return {
     update() {},
@@ -10393,15 +10430,27 @@ function _3dRenderZone(zone) {
   const ck = isShelf ? 'shelves' : 'pallets';
   const sk = isShelf ? 'slots' : 'layers';
 
+  // 每排配色（按 ai 轮转）
+  const _PALETTE = [
+    { fill: 0x1a3a5f, edge: 0x3b82f6 }, // A: 蓝
+    { fill: 0x1a4a2a, edge: 0x22c55e }, // B: 绿
+    { fill: 0x3d1a50, edge: 0xa855f7 }, // C: 紫
+    { fill: 0x4a2800, edge: 0xf59e0b }, // D: 琥珀
+    { fill: 0x1a3a3a, edge: 0x06b6d4 }, // E: 青
+    { fill: 0x3a1a1a, edge: 0xf43f5e }, // F: 玫红
+  ];
+
   zone.aisles.forEach((aisle, ai) => {
+    const pal = _PALETTE[ai % _PALETTE.length];
     aisle[ck].forEach((container, ci) => {
       container[sk].forEach((slot, si) => {
-        const pos  = WHC_slotPos(ai, ci, si);
+        const pos    = WHC_slotPos(ai, ci, si);
         const hasMod = !!slot.modelId;
-        const m  = hasMod ? getModel(slot.modelId) : null;
+        const m      = hasMod ? getModel(slot.modelId) : null;
         const hasQty = (slot.qty || 0) > 0;
-        const faceColor = !hasMod ? 0x1e293b : hasQty ? 0x1e3a5f : 0x7f1d1d;
-        const faceAlpha = !hasMod ? 0.28 : hasQty ? 0.78 : 0.68;
+        const faceColor = !hasMod ? 0x1e293b : hasQty ? pal.fill : 0x7f1d1d;
+        const edgeColor = !hasMod ? 0x2a3a4a : hasQty ? pal.edge : 0xef4444;
+        const faceAlpha = !hasMod ? 0.22 : hasQty ? 0.82 : 0.68;
 
         const mat = new T.MeshStandardMaterial({
           color: faceColor, opacity: faceAlpha, transparent: true,
@@ -10412,15 +10461,14 @@ function _3dRenderZone(zone) {
         mesh.position.set(pos.x, pos.y, pos.z);
         _3dScene.add(mesh);
 
-        // Edge outline
-        const eMat = new T.LineBasicMaterial({ color: hasMod ? 0x475569 : 0x1e3a5f });
+        const eMat = new T.LineBasicMaterial({ color: edgeColor });
         const edges = new T.LineSegments(_3dEdgeGeo, eMat);
         edges.position.copy(mesh.position);
         _3dScene.add(edges); _3dZoneObjs.push(edges);
 
         const locCode = makeLocationCode(zone.id, ai, ci, si);
         const label   = _3dMakeLabel(locCode, m?.name, slot.qty || 0);
-        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos });
+        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos, _origAlpha: faceAlpha });
       });
     });
     _3dDrawFrame(aisle, ai, ck, sk);
@@ -10514,16 +10562,37 @@ function _3dApplySearch(term) {
   const cb = document.getElementById('three-search-clear');
   if (cb) cb.style.display = term ? '' : 'none';
   _3dHit = [];
-  _3dMeshMap.forEach(e => { e.mesh.material.emissive.setHex(0); e.mesh.material.emissiveIntensity = 0; });
-  if (!term) return;
+
+  if (!term) {
+    // 清除：全部恢复原始透明度和发光
+    _3dMeshMap.forEach(e => {
+      e.mesh.material.emissive.setHex(0);
+      e.mesh.material.emissiveIntensity = 0;
+      e.mesh.material.opacity = e._origAlpha;
+    });
+    return;
+  }
+
   const lo = term.toLowerCase();
   let first = null;
-  _3dMeshMap.forEach(e => {
+  // 先标记匹配
+  const matched = new Set();
+  _3dMeshMap.forEach((e, idx) => {
     const m = e.modelId ? getModel(e.modelId) : null;
     if ((m?.name?.toLowerCase()||'').includes(lo) || e.locCode.toLowerCase().includes(lo)) {
+      matched.add(idx); _3dHit.push(e); if (!first) first = e;
+    }
+  });
+  // 匹配格：橙色发光；非匹配格：极暗淡
+  _3dMeshMap.forEach((e, idx) => {
+    if (matched.has(idx)) {
+      e.mesh.material.opacity = e._origAlpha;
       e.mesh.material.emissive.setHex(0xf59e0b);
       e.mesh.material.emissiveIntensity = 1;
-      _3dHit.push(e); if (!first) first = e;
+    } else {
+      e.mesh.material.opacity = 0.06;
+      e.mesh.material.emissive.setHex(0);
+      e.mesh.material.emissiveIntensity = 0;
     }
   });
   if (first) {
