@@ -1271,9 +1271,214 @@
   <button onclick="_showWelcome()" style="padding:11px 22px; background:var(--ink); color:var(--paper); border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">← 返回业务选择</button>
 </div>
 
+<!-- ===== 转运 / 快拆 工作台（Phase 2 移植自 JCCBA，去 JC 化）===== -->
+<style>
+  #kc-overlay input { width:100%; padding:9px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; background:var(--paper); color:var(--ink); outline:none; }
+  #kc-overlay label { display:block; font-size:12px; color:var(--muted); font-weight:600; margin:10px 0 2px; }
+  .kc-card { background:var(--bg); border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .kc-step { font-size:14px; font-weight:800; color:var(--red); margin-bottom:4px; }
+  .kc-btn-primary { width:100%; padding:13px; border:none; border-radius:10px; background:var(--ink); color:var(--paper); font-size:15px; font-weight:800; cursor:pointer; margin-bottom:10px; font-family:inherit; }
+  .kc-btn { width:100%; padding:12px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper); color:var(--ink); font-size:14px; font-weight:700; cursor:pointer; margin-bottom:10px; font-family:inherit; }
+  @keyframes kcScanLine { 0%{top:14%;} 50%{top:74%;} 100%{top:14%;} }
+  .kc-scanline { position:absolute; left:22%; right:22%; height:2px; background:linear-gradient(90deg,transparent,#16a34a,transparent); box-shadow:0 0 8px 1px #16a34a; animation:kcScanLine 2.2s ease-in-out infinite; pointer-events:none; }
+</style>
+<div id="kc-overlay" style="display:none; position:fixed; inset:0; z-index:9500; background:var(--paper); overflow-y:auto;">
+  <div style="position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--ink); color:var(--paper);">
+    <button onclick="_kcBack()" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; font-family:inherit;">← 返回</button>
+    <div style="font-size:16px; font-weight:800; flex:1;">✂️ 快拆业务</div>
+    <button onclick="_gotoZhuanyun()" title="切换到转运" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; font-family:inherit;">🚚 转运</button>
+    <button onclick="_bizToWelcome()" title="返回业务选择" style="background:transparent; border:1.5px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; font-family:inherit;">业务 ⊞</button>
+  </div>
+
+  <!-- 视图1：订单列表 -->
+  <div id="kc-view-list" style="padding:14px; max-width:680px; margin:0 auto;">
+    <button onclick="_kcNewOrder()" class="kc-btn-primary" style="background:var(--red);">➕ 新建快拆订单</button>
+    <div id="kc-order-list"></div>
+  </div>
+
+  <!-- 视图2：新建订单（步1-5） -->
+  <div id="kc-view-new" style="display:none; padding:14px; max-width:680px; margin:0 auto;">
+    <div class="kc-card">
+      <div class="kc-step">① 客户</div>
+      <label>客户号（C0001，可填已有客户号以归入同一客户）</label>
+      <input id="kc-customer-no" placeholder="C0001" maxlength="5">
+      <label>客户名称</label>
+      <input id="kc-customer-name" placeholder="客户名称">
+      <label>联系方式</label>
+      <input id="kc-customer-contact" placeholder="电话 / 邮箱">
+    </div>
+    <div class="kc-card">
+      <div class="kc-step">② 内部订单号 + 运单</div>
+      <label>快拆订单号（自动生成）</label>
+      <input id="kc-order-no" placeholder="自动生成" maxlength="10">
+      <label>提单号 / 发货单号</label>
+      <input id="kc-bill-no" placeholder="提单号或发货单号">
+      <label>运单清单（每个运单：运单号 / 件数 / 体积 / 重量 / 备注）</label>
+      <div id="kc-waybills"></div>
+      <button type="button" onclick="_kcAddWaybill()" class="kc-btn" style="margin-top:2px;">＋ 添加运单</button>
+    </div>
+    <div class="kc-card">
+      <div class="kc-step">③ 日期时间（自动生成，可改）</div>
+      <input type="datetime-local" id="kc-order-at">
+    </div>
+    <div class="kc-card">
+      <div class="kc-step">④ 托 / 板数量</div>
+      <input type="number" id="kc-pallet-count" min="1" value="1">
+    </div>
+    <div class="kc-card">
+      <div class="kc-step">⑤ 库位编号（快拆默认 K，可改）</div>
+      <input id="kc-location" value="K">
+    </div>
+    <button id="kc-save-btn" onclick="_kcSaveOrder()" class="kc-btn-primary">✅ 保存订单并生成标签</button>
+  </div>
+
+  <!-- 视图3：订单详情 -->
+  <div id="kc-view-detail" style="display:none; padding:14px; max-width:680px; margin:0 auto;">
+    <div id="kc-detail-body"></div>
+  </div>
+</div>
+
+<!-- ===== 快拆 入库/出库 扫码全屏 ===== -->
+<div id="kc-scan-overlay" style="display:none; position:fixed; inset:0; z-index:9600; background:#000; color:#fff; flex-direction:column;">
+  <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:#111; flex-shrink:0;">
+    <button onclick="_kcScanClose()" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">← 取消</button>
+    <div id="kc-scan-title" style="font-size:15px; font-weight:800; flex:1; text-align:center;">入库扫码</div>
+    <button onclick="_kcScanDone()" style="background:#16a34a; border:none; color:#fff; border-radius:8px; padding:8px 18px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit;">完成</button>
+  </div>
+  <div style="display:flex; gap:10px; padding:8px 14px 10px; background:#111; flex-shrink:0;">
+    <button onclick="_kcRestartScanner()" style="flex:1; padding:12px; border:none; border-radius:10px; background:#2563eb; color:#fff; font-size:16px; font-weight:800; cursor:pointer; font-family:inherit;">🔄 再拍（黑屏/扫不出就点这里重开摄像头）</button>
+  </div>
+  <div style="position:relative; background:#000; flex-shrink:0;">
+    <video id="kc-scan-video" onclick="_kcTapAction()" autoplay playsinline muted style="width:100%; max-height:44vh; object-fit:cover; display:block; cursor:pointer;"></video>
+    <div onclick="_kcTapAction()" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:60%; aspect-ratio:1; border:3px solid #16a34a; border-radius:14px;"></div>
+    <div class="kc-scanline"></div>
+    <div style="position:absolute; left:0; right:0; bottom:6px; text-align:center; color:#fff; font-size:12px; text-shadow:0 1px 3px #000; pointer-events:none;">👆 扫不出就点一下画面立即识别；黑屏就点「再拍」</div>
+  </div>
+  <div id="kc-scan-status" style="text-align:center; padding:10px 12px; font-size:15px; font-weight:700; min-height:22px;">对准二维码自动识别；扫不出点画面、黑屏点「再拍」</div>
+  <div id="kc-scan-progress" style="text-align:center; font-size:15px; color:#9fe6b0; font-weight:800; margin-bottom:6px;"></div>
+  <div id="kc-scan-loc-wrap" style="display:none; align-items:center; justify-content:center; gap:8px; padding:0 12px 8px; flex-shrink:0;">
+    <span style="color:#fff; font-size:14px; font-weight:700;">库位</span>
+    <input id="kc-scan-loc" placeholder="如 A01（扫码即绑此库位，可随时改）" style="flex:1; max-width:300px; padding:9px 10px; border:1.5px solid rgba(255,255,255,.5); border-radius:8px; background:rgba(255,255,255,.1); color:#fff; font-size:14px; font-family:inherit; text-transform:uppercase;">
+  </div>
+  <div style="display:flex; gap:10px; padding:0 12px 8px; flex-shrink:0;">
+    <button id="kc-scan-torch" onclick="_kcToggleTorch()" style="flex:1; padding:11px; border:1.5px solid rgba(255,255,255,.4); border-radius:10px; background:transparent; color:#fff; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">🔦 手电筒</button>
+    <button onclick="_kcUploadScan()" style="flex:1; padding:11px; border:1.5px solid rgba(255,255,255,.4); border-radius:10px; background:transparent; color:#fff; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">📤 上传照片识别</button>
+    <input id="kc-scan-file" type="file" accept="image/*" onchange="_kcOnScanFile(this)" style="display:none;">
+  </div>
+  <div id="kc-scan-grid" style="position:relative; flex:1; min-height:90px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(30px,1fr)); gap:5px; align-content:start;"></div>
+</div>
+
+<!-- ===== 转运 出库预选（选要出库的托）===== -->
+<div id="tz-out-overlay" style="display:none; position:fixed; inset:0; z-index:9650; background:var(--paper); color:var(--ink); flex-direction:column;">
+  <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--ink); color:var(--paper); flex-shrink:0;">
+    <button onclick="_tzOutClose()" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">← 取消</button>
+    <div style="font-size:15px; font-weight:800; flex:1; text-align:center;">📤 出库 · 勾选本次要出的托</div>
+  </div>
+  <div style="display:flex; gap:8px; padding:8px 14px; flex-shrink:0; border-bottom:1px solid var(--line);">
+    <button onclick="_tzOutSelectAll(true)" style="flex:1; padding:9px; border:1.5px solid var(--line); border-radius:9px; background:var(--paper); color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;">全选未出库</button>
+    <button onclick="_tzOutSelectAll(false)" style="flex:1; padding:9px; border:1.5px solid var(--line); border-radius:9px; background:var(--paper); color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;">清空</button>
+  </div>
+  <div id="tz-out-body" style="flex:1; overflow-y:auto; padding:12px; max-width:680px; margin:0 auto; width:100%; box-sizing:border-box;"></div>
+  <div style="padding:10px 14px; flex-shrink:0; border-top:1px solid var(--line); background:var(--paper);">
+    <button id="tz-out-go" onclick="_tzBeginOutboundScan()" class="kc-btn-primary" style="width:100%;">▶️ 开始扫码出库</button>
+  </div>
+</div>
+
+<!-- ===== 转运业务工作台 ===== -->
+<div id="tz-overlay" style="display:none; position:fixed; inset:0; z-index:9500; background:var(--paper); overflow-y:auto;">
+  <div style="position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--ink); color:var(--paper);">
+    <button id="tz-back-btn" onclick="_tzBack()" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; font-family:inherit;">← 返回</button>
+    <div style="font-size:16px; font-weight:800; flex:1;">🚚 转运业务</div>
+    <button onclick="_gotoKuaicha()" title="切换到快拆" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; font-family:inherit;">✂️ 快拆</button>
+    <button onclick="_tzEditPrefixes()" title="老板：自定义单号前缀" style="background:transparent; border:1.5px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; font-family:inherit;">⚙️前缀</button>
+    <button onclick="_bizToWelcome()" title="返回业务选择" style="background:transparent; border:1.5px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; font-family:inherit;">业务 ⊞</button>
+  </div>
+
+  <!-- 视图1：订单列表 -->
+  <div id="tz-view-list" style="padding:14px; max-width:920px; margin:0 auto;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:stretch;">
+      <button onclick="_tzShowImport()" class="kc-btn-primary" style="background:var(--red);flex:2;margin:0;">➕ 新建转运订单（导入提货单）</button>
+      <div style="flex:1;display:flex;align-items:center;gap:8px;border:1.5px solid #1a73e8;border-radius:10px;padding:6px 8px;">
+        <span style="font-weight:800;color:#1a73e8;font-size:14px;flex-shrink:0;">模板</span>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+          <button onclick="_tzDownloadTemplate()" style="padding:6px;border:1.5px solid #1a73e8;border-radius:8px;background:transparent;color:#1a73e8;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">⬇ 下载</button>
+          <button onclick="_tzShowImport()" style="padding:6px;border:1.5px solid #16a34a;border-radius:8px;background:transparent;color:#16a34a;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">⬆ 上传</button>
+        </div>
+      </div>
+    </div>
+    <input id="tz-file" type="file" accept=".xlsx,.xls,.wps,.et,.ods,.csv,.txt" onchange="_tzOnFile(this)" style="display:none;">
+    <input id="tz-search" oninput="_tzLoadOrders()" placeholder="🔍 按订单号 / 客户号 / 提单号搜索" style="width:100%; padding:9px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; margin-bottom:12px; box-sizing:border-box; background:var(--paper); color:var(--ink);">
+    <!-- 删除待入库订单（仅老板可见）-->
+    <div id="tz-del-bar" style="display:none; margin-bottom:12px;">
+      <button id="tz-del-toggle" onclick="_tzToggleDelMode()" class="kc-btn" style="width:100%;margin:0;border-color:var(--red);color:var(--red);">🗑 删除待入库订单</button>
+      <div id="tz-del-actions" style="display:none; gap:8px; margin-top:8px;">
+        <button id="tz-del-go" onclick="_tzDoDelete()" class="kc-btn-primary" style="background:var(--red);margin:0;flex:2;">删除选中</button>
+        <button onclick="_tzToggleDelMode()" class="kc-btn" style="margin:0;flex:1;">退出删除</button>
+      </div>
+      <div id="tz-del-hint" style="display:none; font-size:11px; color:var(--muted); margin-top:6px; line-height:1.6;">只能删除「待入库」且尚未开始入库扫码的订单；已出库 / 已开始入库的不可删除（🔒）。</div>
+    </div>
+    <div id="tz-order-list"></div>
+  </div>
+
+  <!-- 视图2：新建（导入后） -->
+  <div id="tz-view-new" style="display:none; padding:14px; max-width:920px; margin:0 auto;">
+    <div id="tz-new-form" class="kc-card">
+      <div class="kc-step">① 导入提货单 → 确认客户号 / 订单号</div>
+      <label>客户号（系统按全局顺序自动生成，可改；须 C0001 格式且不与现有重复）</label>
+      <input id="tz-customer-no" placeholder="C0001" maxlength="5">
+      <div id="tz-cust-warn" style="color:var(--red); font-size:12px; font-weight:700; min-height:16px; margin-top:2px;"></div>
+      <div style="display:flex; gap:8px; margin-top:4px;">
+        <input id="tz-truck-plate" placeholder="提货车牌号" style="flex:1;">
+        <input id="tz-driver-name" placeholder="司机姓名" style="flex:1;">
+        <input id="tz-driver-phone" placeholder="提货司机电话" style="flex:1;">
+      </div>
+      <label>转运订单号（自动生成）</label>
+      <input id="tz-order-no" placeholder="自动生成" maxlength="10">
+      <label>提单号 / 发货单号</label>
+      <input id="tz-bill-no" placeholder="提单号或发货单号">
+      <label>免费存放天数（老板/经理设定，默认 3）</label>
+      <input id="tz-free-days" type="number" min="0" value="3">
+      <button id="tz-save-btn" onclick="_tzSaveOrder()" class="kc-btn-primary" style="margin-top:12px;">✅ 保存并继续</button>
+    </div>
+    <div style="font-weight:800; margin:6px 0;">📄 提货单内容（可放大缩小查看）</div>
+    <div id="tz-manifest-box"></div>
+  </div>
+
+  <!-- 视图3：订单详情 -->
+  <div id="tz-view-detail" style="display:none; padding:14px; max-width:920px; margin:0 auto;">
+    <div id="tz-detail-body"></div>
+  </div>
+
+  <!-- 视图4：分类算托数 -->
+  <div id="tz-view-classify" style="display:none; padding:14px; max-width:920px; margin:0 auto;">
+    <div id="tz-classify-body"></div>
+  </div>
+
+  <!-- 视图5：转运拣货表详情（出库托板/二维码） -->
+  <div id="tz-view-pickdetail" style="display:none; padding:14px; max-width:920px; margin:0 auto;">
+    <div id="tz-pickdetail-body"></div>
+  </div>
+
+  <!-- 导入来源弹窗 -->
+  <div id="tz-import-sheet" style="display:none; position:fixed; inset:0; z-index:9700; background:rgba(0,0,0,.45);">
+    <div style="background:var(--paper); border-radius:14px; max-width:460px; width:92%; margin:60px auto 0; padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b style="font-size:16px;">导入提货单 / 装箱单</b><button onclick="_tzHideImport()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);">×</button></div>
+      <div id="tz-import-opts">
+        <button onclick="_tzHideImport();_tzImportFile()" class="kc-btn" style="text-align:left;">📁 从本地选文件　<span style="color:var(--muted);font-size:12px;">.xlsx/.xls/.wps/.csv/.txt</span></button>
+        <button onclick="_tzPasteImport()" class="kc-btn" style="text-align:left;">⌨️ 手动粘贴清单　<span style="color:var(--muted);font-size:12px;">从微信/邮件复制后粘贴</span></button>
+        <button onclick="_tzShareHint()" class="kc-btn" style="text-align:left;">📤 从分享菜单接收</button>
+      </div>
+      <div id="tz-paste-area" style="display:none;">
+        <textarea id="tz-paste-text" placeholder="把提货单表格（含表头）从 Excel/微信/邮件 复制后粘贴到这里" style="width:100%;height:160px;padding:8px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;box-sizing:border-box;background:var(--paper);color:var(--ink);"></textarea>
+        <button onclick="_tzDoPaste()" class="kc-btn-primary" style="margin-top:8px;">解析并继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()">⊞</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2391,7 +2596,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.2</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.3</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>「转运 + 快拆」业务模块上线：从业务选择页进入，独立工作台，与一件代发互不影响</li>
+            <li>转运：建客户/入库单、上传提货单、托板分类、生成转运拣货表、托板标签打印（4×6/A4）、扫码进出库 + 拍照存档</li>
+            <li>快拆：建单 + 四行 Z 字形标签打印 + 扫码进出库</li>
+            <li>单号前缀老板可自定义（默认 转运 TZ / 拣货 TF / 快拆 QC），打印抬头自动用仓库名</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v5.2</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -10623,7 +10839,7 @@ function _saveProfile() {
 // 一件代发=现有全部仓管功能；转运+快拆=Phase 2 填充。快拆并入转运。
 const MODULES = {
   yijian:   { key:'yijian',   icon:'📦', name:'一件代发', desc:'货架 + 堆货仓管、扫码找货、型号库、发货', ready:true  },
-  zhuanyun: { key:'zhuanyun', icon:'🚚', name:'转运 + 快拆', desc:'转运拣货出库、托板标签打印、快拆分货', ready:false },
+  zhuanyun: { key:'zhuanyun', icon:'🚚', name:'转运 + 快拆', desc:'转运拣货出库、托板标签打印、快拆分货', ready:true },
 };
 let _currentModule = null;
 
@@ -10638,11 +10854,9 @@ function _showWelcome() {
   const enabled = _enabledModules();
   const grid = document.getElementById('welcome-cards');
   if (grid) grid.innerHTML = Object.values(MODULES).map(m => {
-    const on = enabled.includes(m.key);
-    const usable = on && m.ready;
-    const badge = !on
-      ? '<span style="font-size:10px;font-weight:700;color:#92400e;background:#fff3cd;border-radius:5px;padding:1px 6px;margin-left:6px;">未开通</span>'
-      : (!m.ready ? '<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:5px;padding:1px 6px;margin-left:6px;">即将上线</span>' : '');
+    // Phase 2：ready 即可进入以便试用；订阅 gating 留到 Phase 3（定价）
+    const usable = m.ready;
+    const badge = !m.ready ? '<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:5px;padding:1px 6px;margin-left:6px;">即将上线</span>' : '';
     const action = usable ? `_enterModule('${m.key}')` : `_welcomeLocked('${m.key}')`;
     return `<button onclick="${action}" style="display:flex; align-items:center; gap:14px; text-align:left; padding:18px; border-radius:14px; border:2px solid ${usable?'var(--red)':'var(--line)'}; background:var(--paper); cursor:pointer; opacity:${usable?1:.65}; font-family:inherit;">
       <span style="font-size:32px; flex-shrink:0;">${m.icon}</span>
@@ -10665,19 +10879,21 @@ function _welcomeLocked(key) {
 
 function _enterModule(key) {
   if (!MODULES[key]) key = 'yijian';
-  const enabled = _enabledModules();
-  if (!enabled.includes(key)) { _welcomeLocked(key); return; }
   if (!MODULES[key].ready) { _welcomeLocked(key); return; }
+  // 注：订阅 gating 在 Phase 3（定价）加入；当前所有 ready 模块均可进入以便试用
   _currentModule = key;
   localStorage.setItem('lastModule', key);
   const v = document.getElementById('welcome-view'); if (v) v.style.display = 'none';
-  const zy = document.getElementById('module-zhuanyun');
-  if (key === 'zhuanyun') { if (zy) zy.style.display = 'flex'; }
-  else { if (zy) zy.style.display = 'none'; }  // yijian = 现有主应用
   // 顶部标题随业务变化：ZEHEM哲亨WMS仓管系统（业务名）
   const nameEl = document.getElementById('app-biz-name');
   if (nameEl) nameEl.textContent = '（' + MODULES[key].name + '）';
+  if (key === 'zhuanyun') { _gotoZhuanyun(); }
+  else { try{ _tzClose(); }catch(e){} try{ _kcClose(); }catch(e){} }  // yijian = 现有主应用
 }
+// 转运/快拆 与 业务选择 之间的切换
+function _bizToWelcome(){ try{ _tzClose(); }catch(e){} try{ _kcClose(); }catch(e){} _showWelcome(); }
+function _gotoKuaicha(){ try{ _tzClose(); }catch(e){} _kcOpen(); }
+function _gotoZhuanyun(){ try{ _kcClose(); }catch(e){} _tzOpen(); }
 
 // 入口路由：登录后 / 游客都调用。开通 1 个直接进；多个则按上次选择或显示欢迎页。
 function _routeModulesOnEntry() {
@@ -10687,6 +10903,1489 @@ function _routeModulesOnEntry() {
   if (last && enabled.includes(last) && MODULES[last]?.ready) _enterModule(last);
   else _showWelcome();
 }
+
+// ===== 转运 / 快拆 业务逻辑（Phase 2 移植自 JCCBA，去 JC 化）=====
+function _tzBrand(){ return (_warehouse && _warehouse.name) ? _warehouse.name : "ZEHEM 哲亨"; }
+// 单号前缀（老板可自定义，存 atmm_settings.data.prefixes）
+const _ORD_PFX_DEFAULT = { zhuanyun_in:'TZ', zhuanyun_pick:'TF', kuaicha:'QC' };
+let _atmmSettings = null;  // {prefixes:{...}, free_days, logo_url, ...}
+function _ordPfx(kind){ return (_atmmSettings && _atmmSettings.prefixes && _atmmSettings.prefixes[kind]) || _ORD_PFX_DEFAULT[kind]; }
+async function _loadAtmmSettings(){
+  if(!_warehouse){ _atmmSettings = {}; return; }
+  try{
+    const { data } = await sb.from('atmm_settings').select('data').eq('warehouse_id',_warehouse.id).maybeSingle();
+    _atmmSettings = (data && data.data) ? data.data : {};
+  }catch(e){ _atmmSettings = {}; }
+}
+async function _saveOrdPrefixes(p){
+  if(!_warehouse) return;
+  _atmmSettings = Object.assign({}, _atmmSettings || {}, {
+    prefixes: Object.assign({}, (_atmmSettings && _atmmSettings.prefixes) || {}, p)
+  });
+  await sb.from('atmm_settings').upsert(
+    { warehouse_id:_warehouse.id, data:_atmmSettings, updated_at:new Date().toISOString() },
+    { onConflict:'warehouse_id' });
+}
+// 老板编辑单号前缀
+async function _tzEditPrefixes(){
+  if(_role!=='boss'){ toast('仅老板可修改单号前缀'); return; }
+  const clean=s=>String(s||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,6);
+  const a=prompt('转运入库单号前缀（字母，默认 TZ）', _ordPfx('zhuanyun_in')); if(a===null) return;
+  const b=prompt('转运拣货单号前缀（字母，默认 TF）', _ordPfx('zhuanyun_pick')); if(b===null) return;
+  const c=prompt('快拆单号前缀（字母，默认 QC）', _ordPfx('kuaicha')); if(c===null) return;
+  await _saveOrdPrefixes({ zhuanyun_in:clean(a)||'TZ', zhuanyun_pick:clean(b)||'TF', kuaicha:clean(c)||'QC' });
+  toast('✅ 单号前缀已保存：转运 '+_ordPfx('zhuanyun_in')+' / 拣货 '+_ordPfx('zhuanyun_pick')+' / 快拆 '+_ordPfx('kuaicha'));
+}
+// ============================================================
+// 快拆业务 (P1：建单 + 四行标签打印)
+// 数据表：atmm_customers / atmm_orders / atmm_pallets（见 supabase/kuaicha.sql）
+// ============================================================
+let _kcCurrentOrder = null;
+const _kcEl  = id => document.getElementById(id);
+const _kcVal = id => (_kcEl(id)?.value || '');
+
+function _kcShowView(v) {
+  ['list','new','detail'].forEach(x => { const e = _kcEl('kc-view-'+x); if (e) e.style.display = (x===v ? '' : 'none'); });
+}
+function _kcOpen() {
+  if (!_warehouse) { _pulseLoginBtn?.(); toast('请先登录'); return; }
+  _loadAtmmSettings();   // 加载单号前缀等设置
+  _kcEl('kc-overlay').style.display = 'block';
+  _kcShowView('list');
+  _kcLoadOrders();
+}
+function _kcClose() { _kcEl('kc-overlay').style.display = 'none'; }
+function _kcBack() {
+  const open = v => _kcEl('kc-view-'+v).style.display !== 'none';
+  if (open('new') || open('detail')) { _kcShowView('list'); _kcLoadOrders(); }
+  else _kcClose();
+}
+
+function _kcDateStr(iso) { const d=new Date(iso),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`; }
+function _kcFmtDT(iso) { const d=new Date(iso),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function _kcLocalDTValue(d) { const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+async function _kcNextCustomerNo() {
+  const { data } = await sb.from('atmm_customers').select('customer_no').eq('warehouse_id',_warehouse.id).order('customer_no',{ascending:false}).limit(1);
+  let n=1; if (data&&data[0]) { const m=/^C(\d+)$/.exec(data[0].customer_no); if (m) n=parseInt(m[1])+1; }
+  return 'C'+String(n).padStart(4,'0');
+}
+async function _kcNextOrderNo() {
+  const { data } = await sb.from('atmm_orders').select('order_no').eq('warehouse_id',_warehouse.id).eq('business','kuaicha').order('order_no',{ascending:false}).limit(1);
+  let n=1; if (data&&data[0]) { const m=new RegExp('^'+_ordPfx('kuaicha')+'(\\d+)$').exec(data[0].order_no); if (m) n=parseInt(m[1])+1; }
+  return _ordPfx('kuaicha')+String(n).padStart(7,'0');
+}
+
+async function _kcLoadOrders() {
+  const listEl = _kcEl('kc-order-list');
+  listEl.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">加载中…</div>';
+  const { data: orders, error } = await sb.from('atmm_orders').select('*').eq('warehouse_id',_warehouse.id).eq('business','kuaicha').order('created_at',{ascending:false});
+  if (error) { listEl.innerHTML = '<div style="color:var(--red);padding:20px;">加载失败：'+error.message+'<br><small>（是否已在 Supabase 跑 kuaicha.sql 建表？）</small></div>'; return; }
+  if (!orders || !orders.length) { listEl.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center;">暂无快拆订单，点上面「➕ 新建快拆订单」开始</div>'; return; }
+  const sLabel = { created:'待入库', inbound:'已入库', shipped:'已出库' };
+  const sColor = { created:'#b8860b', inbound:'#1a73e8', shipped:'#16a34a' };
+  const now = Date.now();
+  const overdueCount = orders.filter(o => o.status!=='shipped' && o.inbound_done_at && (now - new Date(o.inbound_done_at).getTime() > 86400000)).length;
+  const banner = overdueCount ? `<div style="background:#fff3cd;border:1.5px solid #f5c518;color:#7a5c00;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-weight:700;">⚠️ 有 ${overdueCount} 个订单已超过1天未出库，请尽快处理</div>` : '';
+  listEl.innerHTML = banner + orders.map(o => {
+    const overdue = o.status!=='shipped' && o.inbound_done_at && (now - new Date(o.inbound_done_at).getTime() > 86400000);
+    return `<div onclick="_kcOpenOrder('${o.id}')" style="background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="font-weight:800;font-size:15px;">${o.order_no}</div>
+        <span style="font-size:11px;font-weight:700;color:#fff;background:${sColor[o.status]||'#888'};padding:2px 8px;border-radius:20px;">${sLabel[o.status]||o.status}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">客户 ${o.customer_no} · ${o.pallet_count} 托 · 库位 ${o.location_code} · ${_kcFmtDT(o.order_at)}</div>
+      ${overdue?'<div style="font-size:12px;color:var(--red);font-weight:700;margin-top:4px;">⚠️ 已超过1天未出库</div>':''}
+    </div>`;
+  }).join('');
+}
+
+async function _kcNewOrder() {
+  _kcShowView('new');
+  _kcEl('kc-customer-no').value = await _kcNextCustomerNo();
+  _kcEl('kc-customer-name').value = '';
+  _kcEl('kc-customer-contact').value = '';
+  _kcEl('kc-order-no').value = await _kcNextOrderNo();
+  _kcEl('kc-bill-no').value = '';
+  _kcEl('kc-order-at').value = _kcLocalDTValue(new Date());
+  _kcEl('kc-pallet-count').value = '1';
+  _kcEl('kc-location').value = 'K';
+  _kcEl('kc-waybills').innerHTML = '';
+  _kcAddWaybill();
+}
+
+function _kcAddWaybill(w) {
+  w = w || {};
+  const row = document.createElement('div');
+  row.className = 'kc-wb-row';
+  row.style.cssText = 'border:1px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:8px;';
+  row.innerHTML = `
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <input class="kc-wb-no" placeholder="运单号" value="${w.waybill_no||''}" style="flex:2;">
+      <button type="button" onclick="this.closest('.kc-wb-row').remove()" style="flex-shrink:0;background:#ffe5e5;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:0 12px;cursor:pointer;font-weight:700;">删</button>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <input class="kc-wb-pieces" type="number" placeholder="件数" value="${w.pieces||''}" style="flex:1;">
+      <input class="kc-wb-volume" type="number" step="0.001" placeholder="体积m³" value="${w.volume||''}" style="flex:1;">
+      <input class="kc-wb-weight" type="number" step="0.01" placeholder="重量kg" value="${w.weight||''}" style="flex:1;">
+    </div>
+    <input class="kc-wb-remarks" placeholder="备注" value="${w.remarks||''}" style="width:100%;margin-top:6px;">`;
+  _kcEl('kc-waybills').appendChild(row);
+}
+function _kcCollectWaybills() {
+  return [..._kcEl('kc-waybills').querySelectorAll('.kc-wb-row')].map(r => ({
+    waybill_no: r.querySelector('.kc-wb-no').value.trim(),
+    pieces: r.querySelector('.kc-wb-pieces').value.trim(),
+    volume: r.querySelector('.kc-wb-volume').value.trim(),
+    weight: r.querySelector('.kc-wb-weight').value.trim(),
+    remarks: r.querySelector('.kc-wb-remarks').value.trim(),
+  })).filter(w => w.waybill_no||w.pieces||w.volume||w.weight||w.remarks);
+}
+
+async function _kcSaveOrder() {
+  if (!_warehouse) return;
+  const customerNo = _kcVal('kc-customer-no').trim().toUpperCase();
+  const name = _kcVal('kc-customer-name').trim();
+  const contact = _kcVal('kc-customer-contact').trim();
+  const orderNo = _kcVal('kc-order-no').trim().toUpperCase();
+  const billNo = _kcVal('kc-bill-no').trim();
+  const orderAtLocal = _kcVal('kc-order-at');
+  const palletCount = parseInt(_kcVal('kc-pallet-count')) || 0;
+  const location = (_kcVal('kc-location').trim() || 'K').toUpperCase();
+  const waybills = _kcCollectWaybills();
+  if (!/^C\d{4}$/.test(customerNo)) return toast('客户号格式应为 C0001');
+  if (!new RegExp('^'+_ordPfx('kuaicha')+'\\d{7}$').test(orderNo)) return toast('订单号格式应为 '+_ordPfx('kuaicha')+'0000001');
+  if (palletCount < 1) return toast('托/板数量至少为 1');
+  const btn = _kcEl('kc-save-btn'); if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
+  try {
+    let customerId = null;
+    const { data: ex } = await sb.from('atmm_customers').select('id').eq('warehouse_id',_warehouse.id).eq('customer_no',customerNo).maybeSingle();
+    if (ex) { customerId = ex.id; if (name||contact) await sb.from('atmm_customers').update({ name, contact }).eq('id',ex.id); }
+    else {
+      const { data: ins, error } = await sb.from('atmm_customers').insert({ warehouse_id:_warehouse.id, customer_no:customerNo, name, contact }).select('id').single();
+      if (error) throw error; customerId = ins.id;
+    }
+    const orderAt = orderAtLocal ? new Date(orderAtLocal).toISOString() : new Date().toISOString();
+    const { data: ord, error: oErr } = await sb.from('atmm_orders').insert({
+      warehouse_id:_warehouse.id, customer_id:customerId, customer_no:customerNo, order_no:orderNo,
+      business:'kuaicha', bill_no:billNo, waybills, order_at:orderAt, location_code:location, pallet_count:palletCount, status:'created'
+    }).select('*').single();
+    if (oErr) throw oErr;
+    const dateStr = _kcDateStr(orderAt);
+    const pallets = [];
+    for (let i=1;i<=palletCount;i++){
+      const qrText = `${customerNo}-${orderNo}-${dateStr}-${i}/${palletCount}`;
+      pallets.push({ warehouse_id:_warehouse.id, order_id:ord.id, seq:i, label:qrText, qr_text:qrText, location_code:location });
+    }
+    const { error: pErr } = await sb.from('atmm_pallets').insert(pallets);
+    if (pErr) throw pErr;
+    toast('✅ 快拆订单已创建');
+    _kcOpenOrder(ord.id);
+  } catch(e) { toast('保存失败：'+(e.message||e)); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '✅ 保存订单并生成标签'; } }
+}
+
+async function _kcOpenOrder(id) {
+  const { data: order, error } = await sb.from('atmm_orders').select('*').eq('id',id).single();
+  if (error || !order) { toast('订单加载失败'); return; }
+  const { data: pallets } = await sb.from('atmm_pallets').select('*').eq('order_id',id).order('seq',{ascending:true});
+  _kcCurrentOrder = { order, pallets: pallets||[] };
+  const wb = (order.waybills||[]).map(w => `<div style="font-size:12px;color:var(--muted);">运单 ${w.waybill_no||'—'} · ${w.pieces||0}件 · ${w.volume||0}m³ · ${w.weight||0}kg${w.remarks?(' · '+w.remarks):''}</div>`).join('') || '<div style="font-size:12px;color:var(--muted);">（无运单）</div>';
+  const inCnt  = (pallets||[]).filter(p=>p.inbound_at).length;
+  const outCnt = (pallets||[]).filter(p=>p.outbound_at).length;
+  _kcEl('kc-detail-body').innerHTML = `
+    <div class="kc-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:18px;font-weight:800;">${order.order_no}</div>
+        <div style="font-size:12px;color:var(--muted);">客户 ${order.customer_no}</div>
+      </div>
+      <div style="font-size:13px;margin-top:8px;line-height:1.9;">
+        提单/发货单：${order.bill_no||'—'}<br>
+        日期时间：${_kcFmtDT(order.order_at)}<br>
+        托/板数：<b>${order.pallet_count}</b> · 库位：<b>${order.location_code}</b><br>
+        入库：<b>${inCnt}/${order.pallet_count}</b> · 出库：<b>${outCnt}/${order.pallet_count}</b>
+      </div>
+      <div style="margin-top:8px;">${wb}</div>
+    </div>
+    <button onclick="_kcPrintLabels('label46')" class="kc-btn-primary">🏷 打印 4×6 标签机（每托4张，贴四边）</button>
+    <button onclick="_kcPrintLabels('sheet')" class="kc-btn">🖨 打印整页 Letter/A4（每页4份）</button>
+    <button onclick="_kcStartInbound()" class="kc-btn" style="border-color:#16a34a;color:#16a34a;">📥 入库扫码（逐托扫码+拍照）</button>
+    <button onclick="_kcStartOutbound()" class="kc-btn" style="border-color:#1a73e8;color:#1a73e8;">📤 出库扫码（逐托扫码+拍照）</button>
+    <button onclick="_kcReport()" class="kc-btn">📊 订单报表（查看 / 打印 / 转PDF）</button>`;
+  _kcShowView('detail');
+}
+
+// mode: 'label46' = 4×6 热敏标签机（一张4×6一个标签，每托4张）; 'sheet' = Letter/A4 整页4份
+async function _kcPrintLabels(mode) {
+  if (!_kcCurrentOrder) return;
+  mode = mode || 'sheet';
+  const { order, pallets } = _kcCurrentOrder;
+  if (!pallets.length) { toast('该订单没有托/板'); return; }
+  toast('生成标签中…');
+  await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
+  const dateStr = _kcDateStr(order.order_at);
+  const total = pallets.length;
+  const made = [];
+  for (const p of pallets) {
+    const qr = await _genZQR(p.qr_text, { cell: 9 });
+    let bar = '';
+    try {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      document.body.appendChild(svg);
+      _jsBarcodeLib(svg, `${order.order_no}-${p.seq}`, { format:'CODE128', width:1.8, height:45, fontSize:11, margin:4, displayValue:true });
+      bar = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+      document.body.removeChild(svg);
+    } catch(e){}
+    made.push({ qr, bar, l3:`${order.customer_no}-${order.order_no}`, l4:`${dateStr}-${p.seq}/${total}` });
+  }
+  const inner = m => `<img class="qr" src="${m.qr}"><img class="bar" src="${m.bar}"><div class="t">${m.l3}</div><div class="t">${m.l4}</div>`;
+  let css, bodyHtml;
+  if (mode === 'label46') {
+    css = `@page{size:4in 6in;margin:0;}
+*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;background:#fff;}
+.lbl{width:4in;height:6in;padding:6mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4mm;page-break-after:always;}
+.lbl .qr{width:62mm;height:62mm;}
+.lbl .bar{width:90mm;height:20mm;}
+.lbl .t{font-size:20pt;font-weight:800;letter-spacing:0.02em;}`;
+    bodyHtml = made.map(m => Array(4).fill(`<div class="lbl">${inner(m)}</div>`).join('')).join('');
+  } else {
+    css = `*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;background:#fff;}
+.sheet{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:6mm;padding:8mm;height:100vh;page-break-after:always;}
+.lbl{border:0.4mm dashed #999;border-radius:2mm;padding:3mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5mm;}
+.lbl .qr{width:32mm;height:32mm;}
+.lbl .bar{width:100%;max-width:50mm;height:14mm;}
+.lbl .t{font-size:13pt;font-weight:800;letter-spacing:0.02em;}
+@media print{.sheet{padding:5mm;height:auto;min-height:96vh;}}`;
+    bodyHtml = made.map(m => `<div class="sheet">${Array(4).fill(`<div class="lbl">${inner(m)}</div>`).join('')}</div>`).join('');
+  }
+  const win = window.open('','_blank');
+  if (!win) { toast('请允许弹出窗口后重试'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>快拆标签 ${order.order_no}${mode==='label46'?' 4x6':''}</title>
+<style>${css}</style></head><body>${bodyHtml}
+<script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script>
+</body></html>`);
+  win.document.close();
+}
+
+// ── 快拆 P4：订单报表（查看/打印/转PDF；以后加单价可自动算费用） ──
+function _kcReport() {
+  if (!_kcCurrentOrder) return;
+  const { order, pallets } = _kcCurrentOrder;
+  const fmt = iso => iso ? _kcFmtDT(iso) : '—';
+  const wb = (order.waybills||[]).map((w,i)=>`<tr><td>${i+1}</td><td>${w.waybill_no||'—'}</td><td>${w.pieces||''}</td><td>${w.volume||''}</td><td>${w.weight||''}</td><td>${w.remarks||''}</td></tr>`).join('') || '<tr><td colspan="6" style="color:#999;text-align:center;">无运单</td></tr>';
+  const pl = pallets.map(p=>`<tr><td>${p.seq}</td><td>${fmt(p.inbound_at)}</td><td>${fmt(p.outbound_at)}</td></tr>`).join('');
+  const inDone = pallets.filter(p=>p.inbound_at).length, outDone = pallets.filter(p=>p.outbound_at).length;
+  const statusLabel = { created:'待入库', inbound:'已入库', shipped:'已出库' }[order.status] || order.status;
+  const win = window.open('','_blank'); if (!win) { toast('请允许弹出窗口'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>快拆订单报表 ${order.order_no}</title>
+<style>body{font-family:-apple-system,sans-serif;padding:16px;color:#111;max-width:760px;margin:0 auto;}
+h1{font-size:20px;margin-bottom:4px;} h3{margin:16px 0 4px;} .sub{color:#666;font-size:13px;margin-bottom:14px;}
+table{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:13px;} th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;} th{background:#f5f5f5;}
+.kv{font-size:14px;line-height:2;} .kv b{display:inline-block;min-width:96px;color:#555;}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;color:#fff;font-size:12px;background:#16a34a;}
+@media print{.noprint{display:none;}}</style></head><body>
+<h1>${_tzBrand()} · 快拆订单报表</h1>
+<div class="sub">导出时间 ${_kcFmtDT(new Date().toISOString())}</div>
+<div class="kv">
+<div><b>订单号</b> ${order.order_no} &nbsp; <span class="badge">${statusLabel}</span></div>
+<div><b>客户号</b> ${order.customer_no}</div>
+<div><b>提单/发货单</b> ${order.bill_no||'—'}</div>
+<div><b>下单时间</b> ${fmt(order.order_at)}</div>
+<div><b>库位</b> ${order.location_code} &nbsp;·&nbsp; <b style="min-width:auto;">托/板数</b> ${order.pallet_count}</div>
+<div><b>入库</b> ${inDone}/${order.pallet_count}（完成 ${fmt(order.inbound_done_at)}）</div>
+<div><b>出库</b> ${outDone}/${order.pallet_count}（完成 ${fmt(order.outbound_done_at)}）</div>
+</div>
+<h3>运单</h3>
+<table><tr><th>#</th><th>运单号</th><th>件数</th><th>体积</th><th>重量</th><th>备注</th></tr>${wb}</table>
+<h3>托/板 进出库明细</h3>
+<table><tr><th>顺序号</th><th>入库时间</th><th>出库时间</th></tr>${pl}</table>
+<div class="noprint" style="margin-top:16px;"><button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer;">🖨 打印 / 转 PDF</button></div>
+</body></html>`);
+  win.document.close();
+}
+
+// ============================================================
+// 快拆 P2/P3：入库 / 出库 扫码 + 每托拍照存档
+// ============================================================
+let _kcScan = null;        // { mode:'inbound'|'outbound', order, pallets, stop, lastCode, lastTime }
+let _kcScanReturn = null;   // 扫码结束后的返回回调(转运用,返回转运详情而非快拆详情)
+let _kcAudioCtx = null;
+
+function _kcBeep(ok) {
+  try {
+    _kcAudioCtx = _kcAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _kcAudioCtx; if (ctx.state === 'suspended') ctx.resume();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = ok ? 880 : 200; o.type = ok ? 'sine' : 'square';
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (ok ? 0.16 : 0.32));
+    o.start(); o.stop(ctx.currentTime + (ok ? 0.18 : 0.34));
+  } catch(e) {}
+}
+
+async function _kcLoadZxing() {
+  if (window.ZXing || window.ZXingBrowser) return;
+  const cdns = [
+    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
+    'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
+    'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js',
+    'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js',
+  ];
+  for (const url of cdns) { try { await _tryLoadScript(url, 10000); if (window.ZXing || window.ZXingBrowser) return; } catch(e){} }
+}
+
+let _kcScanStream = null, _kcTorchOn = false;
+
+// 专门确保 @zxing/browser（window.ZXingBrowser）已加载——避免页面里已有 @zxing/library 时漏掉
+async function _kcEnsureZxingBrowser() {
+  if (window.ZXingBrowser) return;
+  for (const url of [
+    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
+    'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
+  ]) { try { await _tryLoadScript(url, 10000); if (window.ZXingBrowser) return; } catch(e){} }
+}
+
+// 通用扫码：① 安卓 BarcodeDetector；② iOS 用 @zxing/browser decodeFromVideoDevice 实时读视频(与发货管理一致)；
+// ③ 若 3 秒内仍无任何解码，自动启动"每帧抓图→图片解码"轮询兜底。连续扫码，去重在 _kcOnScan 内。
+async function _kcStartScanner(videoEl, onCode) {
+  // 本机实测：实时视频解码(decodeFromVideoDevice)对 Z 字形二维码不灵，但"图片解码"可用(上传/拍照都成功)。
+  // 所以 iOS 改为：摄像头连续自动抓高清帧 → 走图片解码(decodeFromImageUrl)，等于自动连续做"上传识别"，对准即扫出。
+  const st = { stopped:false, raf:null, busy:false };
+  const fire = (t) => { if (t && !st.stopped) onCode(t); };
+  _kcScanStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:{ideal:1920}, height:{ideal:1080}, focusMode:{ideal:'continuous'} }, audio:false });
+  try { const tr=_kcScanStream.getVideoTracks()[0], cap=tr.getCapabilities?.()||{}; if (cap.focusMode?.includes('continuous')) await tr.applyConstraints({advanced:[{focusMode:'continuous'}]}); } catch(e){}
+  videoEl.srcObject = _kcScanStream; try { await videoEl.play(); } catch(e){}
+  const stop = () => { st.stopped=true; if (st.raf) clearTimeout(st.raf); if (_kcScanStream){_kcScanStream.getTracks().forEach(t=>t.stop()); _kcScanStream=null;} videoEl.srcObject=null; };
+  // ① 安卓：原生 BarcodeDetector 实时解码（最快）
+  if ('BarcodeDetector' in window) {
+    try {
+      const det = new window.BarcodeDetector({ formats: await window.BarcodeDetector.getSupportedFormats() });
+      const tick = async () => { if (st.stopped) return; if (videoEl.readyState>=2){ try{ const c=await det.detect(videoEl); if(c&&c.length) fire(c[0].rawValue);}catch(e){} } st.raf=setTimeout(tick,120); };
+      tick(); return stop;
+    } catch(e){}
+  }
+  // ② iOS：连续高清抓帧 → 图片解码（约 3–4 fps，复用已验证可用的图片解码路径）
+  await _kcEnsureZxingBrowser();
+  const ZXB = window.ZXingBrowser, ZX = window.ZXing;
+  const reader = ZXB?.BrowserMultiFormatReader ? new ZXB.BrowserMultiFormatReader() : (ZX?.BrowserMultiFormatReader ? new ZX.BrowserMultiFormatReader() : null);
+  if (!reader) return stop;
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  // 轻量连续解码：放慢节奏+降分辨率，避免把 iOS 视频拖黑屏（黑屏后抓到的全是黑帧、永远扫不出）
+  const loop = async () => {
+    if (st.stopped) return;
+    if (videoEl.paused) { try { await videoEl.play(); } catch(e){} }   // 保活：iOS 视频偶尔会停→黑屏，发现就续播
+    if (!st.busy && videoEl.readyState >= 2) {
+      st.busy = true;
+      const vw=videoEl.videoWidth, vh=videoEl.videoHeight;
+      if (vw && vh) {
+        const sc = Math.min(1, 900/vw);
+        cv.width = Math.round(vw*sc); cv.height = Math.round(vh*sc);
+        ctx.drawImage(videoEl, 0, 0, cv.width, cv.height);
+        try { const r = await reader.decodeFromImageUrl(cv.toDataURL('image/jpeg', 0.8)); const t = r?.getText ? r.getText() : (r?.text||''); if (t) fire(t); } catch(e){}
+      }
+      st.busy = false;
+    }
+    if (!st.stopped) st.raf = setTimeout(loop, 550);
+  };
+  loop();
+  return stop;
+}
+
+// 点画面/取景框：有画面→立即抓帧识别(已验证可用)；黑屏→自动重开摄像头
+async function _kcTapAction() {
+  const v = _kcEl('kc-scan-video'); if (!v) { return; }
+  let dark = true;
+  try {
+    if (v.videoWidth && v.readyState >= 2) {
+      const c = document.createElement('canvas'); c.width = 24; c.height = 24;
+      const cx = c.getContext('2d'); cx.drawImage(v, 0, 0, 24, 24);
+      const d = cx.getImageData(0, 0, 24, 24).data; let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i+1] + d[i+2];
+      dark = (sum / (d.length / 4 * 3)) < 12;   // 平均亮度极低=黑屏
+    }
+  } catch(e) { dark = true; }
+  if (dark || !v.videoWidth) { _kcRestartScanner(); return; }
+  _kcTapDecode();
+}
+
+// 🔄 再拍 / 点画面 → 停掉当前摄像头再重开一次（解决 iOS 偶发黑屏卡死，不必退出重进）
+let _kcRestarting = false;
+async function _kcRestartScanner() {
+  if (!_kcScan || _kcRestarting) return;
+  _kcRestarting = true;
+  const wantTorch = _kcTorchOn;
+  const v = _kcEl('kc-scan-video');
+  const s = _kcEl('kc-scan-status'); if (s){ s.style.color='#fff'; s.textContent='🔄 重新开启摄像头…'; }
+  try { _kcScan.stop?.(); } catch(e){}
+  _kcScan.stop = null; _kcTorchOn = false;
+  await new Promise(r => setTimeout(r, 200));
+  try {
+    _kcScan.stop = await _kcStartScanner(v, _kcOnScan);
+    if (s){ s.style.color='#fff'; s.textContent='对准二维码自动识别；黑屏或扫不出就点「再拍」或点画面'; }
+    if (wantTorch) setTimeout(async () => { const ok = await applyTorch(_kcScanStream, true); if (ok){ _kcTorchOn=true; const b=_kcEl('kc-scan-torch'); if(b){ b.style.background='#f5c518'; b.style.color='#111'; } } }, 500);
+  } catch(e){ if (s){ s.style.color='#ff6b6b'; s.textContent='❌ 摄像头重启失败：'+(e.message||e)+'（请点取消重进）'; } }
+  finally { _kcRestarting = false; }
+}
+
+// 点一下摄像头画面 → 抓当前帧(用户点时通常较稳=清晰)→ 用图片解码(已验证可用)
+async function _kcTapDecode() {
+  const v = _kcEl('kc-scan-video'); if (!v || !v.videoWidth) return;
+  const s = _kcEl('kc-scan-status'); s.style.color='#fff'; s.textContent='📸 识别中…';
+  try {
+    let text = null;
+    if ('BarcodeDetector' in window) { try { const det = new window.BarcodeDetector({ formats: await window.BarcodeDetector.getSupportedFormats() }); const c = await det.detect(v); if (c && c.length) text = c[0].rawValue; } catch(e){} }
+    if (!text) {
+      const cv = document.createElement('canvas'); const sc = Math.min(1, 1400/v.videoWidth);
+      cv.width = Math.round(v.videoWidth*sc); cv.height = Math.round(v.videoHeight*sc);
+      cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+      await _kcEnsureZxingBrowser();
+      const reader = window.ZXingBrowser?.BrowserMultiFormatReader ? new window.ZXingBrowser.BrowserMultiFormatReader() : (window.ZXing?.BrowserMultiFormatReader ? new window.ZXing.BrowserMultiFormatReader() : null);
+      if (reader) { try { const r = await reader.decodeFromImageUrl(cv.toDataURL('image/jpeg', 0.92)); text = r?.getText ? r.getText() : (r?.text || ''); } catch(e){} }
+    }
+    if (text) _kcOnScan(text);
+    else { s.style.color='#ffd24d'; s.textContent='⚠️ 没识别到，对准清晰后再点一下画面'; }
+  } catch(e) { s.style.color='#ff6b6b'; s.textContent='识别失败：'+(e.message||e); }
+}
+
+async function _kcToggleTorch() {
+  _kcTorchOn = !_kcTorchOn;
+  const ok = await applyTorch(_kcScanStream, _kcTorchOn);
+  if (!ok && _kcTorchOn) { _kcTorchOn = false; toast('此设备不支持手电筒'); }
+  const b = _kcEl('kc-scan-torch'); if (b){ b.style.background=_kcTorchOn?'#f5c518':'transparent'; b.style.color=_kcTorchOn?'#111':'#fff'; }
+}
+
+function _kcUploadScan() { _kcEl('kc-scan-file')?.click(); }
+async function _kcOnScanFile(input) {
+  const file = input.files && input.files[0]; if (!file) return; input.value='';
+  const s = _kcEl('kc-scan-status'); s.style.color='#fff'; s.textContent='识别照片中…';
+  const url = URL.createObjectURL(file);
+  try {
+    let text = null;
+    if ('BarcodeDetector' in window) {
+      try { const img = await createImageBitmap(file); const det = new window.BarcodeDetector({ formats: await window.BarcodeDetector.getSupportedFormats() }); const c = await det.detect(img); if (c && c.length) text = c[0].rawValue; } catch(e){}
+    }
+    if (!text) {
+      await _kcLoadZxing();
+      const ZXB = window.ZXingBrowser, ZX = window.ZXing;
+      const reader = ZXB?.BrowserMultiFormatReader ? new ZXB.BrowserMultiFormatReader() : (ZX?.BrowserMultiFormatReader ? new ZX.BrowserMultiFormatReader() : null);
+      if (reader) {
+        const img = await new Promise((res)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=url; });
+        if (img && reader.decodeFromImageElement) { try { const r = await reader.decodeFromImageElement(img); text = r.getText ? r.getText() : String(r); } catch(e){} }
+        if (!text && reader.decodeFromImageUrl) { try { const r = await reader.decodeFromImageUrl(url); text = r.getText ? r.getText() : String(r); } catch(e){} }
+      }
+    }
+    if (text) _kcOnScan(text);
+    else { s.style.color='#ffd24d'; s.textContent='⚠️ 这张照片没识别到二维码/条码，换一张更清晰的'; }
+  } catch(e) { s.style.color='#ff6b6b'; s.textContent='识别失败：'+(e.message||e); }
+  finally { URL.revokeObjectURL(url); }
+}
+
+function _kcCapturePhoto(videoEl, maxW=900) {
+  const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
+  if (!vw) return Promise.resolve(null);
+  const scale = Math.min(1, maxW / vw);
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(vw*scale); cv.height = Math.round(vh*scale);
+  cv.getContext('2d').drawImage(videoEl, 0, 0, cv.width, cv.height);
+  return new Promise(res => cv.toBlob(b => res(b), 'image/jpeg', 0.6));
+}
+async function _kcUploadPhoto(blob, path) {
+  try {
+    const { error } = await sb.storage.from('pallet-photos').upload(path, blob, { contentType:'image/jpeg', upsert:true });
+    if (error) { console.warn('photo upload:', error.message); return null; }
+    const { data } = sb.storage.from('pallet-photos').getPublicUrl(path);
+    return data?.publicUrl || null;
+  } catch(e) { return null; }
+}
+
+function _kcStartInbound()  { _kcScanOpen('inbound'); }
+function _kcStartOutbound() { _kcScanOpen('outbound'); }
+
+async function _kcScanOpen(mode, opts) {
+  if (!_kcCurrentOrder) return;
+  _kcBeep(true); // 用户手势内预热音频
+  const { order, pallets } = _kcCurrentOrder;
+  if (mode === 'outbound' && order.status === 'created') toast('提示：本单尚未全部入库，只能出库已入库的托');
+  const work = (opts && opts.subset) ? opts.subset : pallets;   // 转运部分出库：只处理预选子集
+  _kcScan = { mode, order, pallets: work.map(p => ({...p})), scope:(opts&&opts.subset)?'partial':'full', allSeqs:(opts&&opts.allSeqs)||null, lastCode:'', lastTime:0, stop:null };
+  _kcEl('kc-scan-title').textContent = (mode==='inbound' ? '📥 入库扫码' : '📤 出库扫码') + (opts&&opts.subset ? `（本次 ${work.length} 托）` : '');
+  const locWrap=_kcEl('kc-scan-loc-wrap'), loc=_kcEl('kc-scan-loc');
+  if(locWrap) locWrap.style.display = mode==='inbound' ? 'flex' : 'none';   // 入库时显示库位输入
+  if(loc && mode==='inbound') loc.value = (order.location_code||'').toUpperCase();
+  _kcEl('kc-scan-overlay').style.display = 'flex';
+  _kcRenderScanGrid(); _kcUpdateScanProgress();
+  const s = _kcEl('kc-scan-status'); s.style.color='#fff'; s.textContent = '对准二维码自动识别；扫不出就点一下画面拍照识别';
+  await new Promise(r => setTimeout(r, 200));  // 等画面布局就绪再启动摄像头（模仿发货管理的延时）
+  try {
+    _kcScan.stop = await _kcStartScanner(_kcEl('kc-scan-video'), _kcOnScan);
+    _kcTorchOn = false; setTimeout(() => _kcToggleTorch(), 700); // 默认打开手电筒（稍等摄像头就绪）
+  }
+  catch(e) { s.style.color='#ff6b6b'; s.textContent = '❌ 摄像头启动失败：'+(e.message||e)+'（请确认已授权摄像头）'; }
+}
+function _kcScanDone() {
+  // 出库时若本次预选还有未扫的托，拦截确认（防止漏扫就结束）
+  if (_kcScan && _kcScan.mode==='outbound') {
+    const left = _kcScan.pallets.filter(p => !p.outbound_at).length;
+    if (left > 0) { _kcBeep(false); if(navigator.vibrate)navigator.vibrate([80,40,80]); if (!confirm(`本次预选 ${_kcScan.pallets.length} 托，还有 ${left} 托未扫码出库。\n确定结束吗？未扫的托仍留在仓库。`)) return; }
+  }
+  _kcScanClose();
+}
+function _kcScanClose() {
+  if (_kcScan?.stop) { try { _kcScan.stop(); } catch(e){} }
+  _kcEl('kc-scan-overlay').style.display = 'none';
+  const oid = _kcCurrentOrder?.order?.id; _kcScan = null;
+  if (_kcScanReturn) { const f=_kcScanReturn; _kcScanReturn=null; f(); }   // 转运:返回转运详情
+  else if (oid) _kcOpenOrder(oid); // 快拆:刷新详情进度
+}
+function _kcRenderScanGrid() {
+  const { mode, pallets } = _kcScan;
+  const grid = _kcEl('kc-scan-grid');
+  grid.innerHTML = pallets.map(p => {
+    const done = mode==='inbound' ? !!p.inbound_at : !!p.outbound_at;
+    return `<div data-done="${done?1:0}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;font-size:11px;line-height:1;${done?'background:#16a34a;color:#fff;':'background:#222;color:#aaa;border:1px solid #444;'}">${p.seq}${done?'✓':''}</div>`;
+  }).join('');
+  // 扫完一个自动往上滚，露出下一个待扫的托
+  const next = grid.querySelector('[data-done="0"]');
+  if (next) grid.scrollTop = Math.max(0, next.offsetTop - 6);
+}
+function _kcUpdateScanProgress() {
+  const { mode, pallets, order } = _kcScan;
+  const done = pallets.filter(p => mode==='inbound'?p.inbound_at:p.outbound_at).length;
+  const total = _kcScan.scope==='partial' ? pallets.length : order.pallet_count;   // 部分出库分母=本次预选数
+  _kcEl('kc-scan-progress').textContent = (mode==='inbound'?'已入库 ':'已出库 ') + done + '/' + total;
+}
+function _kcParseScan(text) {
+  text = (text||'').trim();
+  const mo = /JC[CZY]\d{7}/.exec(text);
+  let seq = null, m = /-(\d+)\s*\/\s*\d+/.exec(text);
+  if (m) seq = parseInt(m[1]); else { m = /-(\d+)\s*$/.exec(text); if (m) seq = parseInt(m[1]); }
+  return { orderNo: mo ? mo[0] : null, seq };
+}
+async function _kcOnScan(text) {
+  if (!_kcScan) return;
+  const now = Date.now();
+  if (text === _kcScan.lastCode && now - _kcScan.lastTime < 1800) return;  // 去重
+  _kcScan.lastCode = text; _kcScan.lastTime = now;
+  const { mode, order } = _kcScan;
+  const s = _kcEl('kc-scan-status');
+  const { orderNo, seq } = _kcParseScan(text);
+  if (!orderNo || seq===null) { s.style.color='#ffd24d'; s.textContent='⚠️ 无法识别：'+text; _kcBeep(false); return; }
+  if (orderNo !== order.order_no) { s.style.color='#ff6b6b'; s.textContent=`⛔ 不是本订单！扫到 ${orderNo}（本单 ${order.order_no}）`; _kcBeep(false); return; }
+  const p = _kcScan.pallets.find(x => x.seq === seq);
+  if (!p) {
+    if (_kcScan.scope==='partial' && _kcScan.allSeqs && _kcScan.allSeqs.has(seq)) { s.style.color='#ff6b6b'; s.textContent=`⛔ 第 ${seq} 托 不在本次出库清单（未预选）`; if(navigator.vibrate)navigator.vibrate([80,40,80]); _kcBeep(false); return; }
+    s.style.color='#ff6b6b'; s.textContent=`⛔ 本订单找不到第 ${seq} 托`; _kcBeep(false); return;
+  }
+  const field = mode==='inbound' ? 'inbound_at' : 'outbound_at';
+  if (p[field]) { s.style.color='#ffd24d'; s.textContent=`⚠️ 第 ${seq} 托 已${mode==='inbound'?'入库':'出库'}，勿重复`; _kcBeep(false); return; }
+  if (mode==='outbound' && !p.inbound_at) { s.style.color='#ff6b6b'; s.textContent=`⛔ 第 ${seq} 托 还没入库，不能出库`; _kcBeep(false); return; }
+  s.style.color='#fff'; s.textContent=`第 ${seq} 托 处理中…`;
+  let photoUrl = null;
+  try { const blob = await _kcCapturePhoto(_kcEl('kc-scan-video')); if (blob) photoUrl = await _kcUploadPhoto(blob, `${order.warehouse_id}/${order.order_no}/${mode}-${seq}-${now}.jpg`); } catch(e){}
+  const iso = new Date().toISOString();
+  const upd = mode==='inbound'
+    ? { inbound_at: iso, inbound_photo: photoUrl, location_code: ((_kcEl('kc-scan-loc')?.value||'').trim().toUpperCase() || order.location_code || '') }
+    : { outbound_at: iso, outbound_photo: photoUrl };
+  const { error } = await sb.from('atmm_pallets').update(upd).eq('id', p.id);
+  if (error) { s.style.color='#ff6b6b'; s.textContent='保存失败：'+error.message; _kcBeep(false); return; }
+  Object.assign(p, upd);
+  s.style.color='#7CFC9A'; s.textContent=`✅ 第 ${seq} 托 ${mode==='inbound'?'入库':'出库'}成功${photoUrl?'（已拍照）':'（照片未存）'}`;
+  _kcBeep(true); _kcRenderScanGrid(); _kcUpdateScanProgress();
+  const batchDone = _kcScan.pallets.every(x => mode==='inbound'?x.inbound_at:x.outbound_at);
+  if (batchDone) {
+    // 以整单为准判断是否全部完成（支持部分出库/分批入库）
+    const col = mode==='inbound' ? 'inbound_at' : 'outbound_at';
+    const { count } = await sb.from('atmm_pallets').select('id',{count:'exact',head:true}).eq('order_id',order.id).is(col,null);
+    const left = count||0;
+    if (left===0) {
+      const oUpd = mode==='inbound' ? { status:'inbound', inbound_done_at:iso } : { status:'shipped', outbound_done_at:iso };
+      await sb.from('atmm_orders').update(oUpd).eq('id', order.id);
+      Object.assign(order, oUpd);
+      s.style.color='#7CFC9A'; s.textContent = mode==='inbound' ? '🎉 全部入库完成！' : '🎉 全部出库完成，订单已结清！';
+    } else {
+      s.style.color='#7CFC9A'; s.textContent = mode==='inbound' ? `✅ 本批已入库，订单还剩 ${left} 托未入库` : `✅ 本次 ${_kcScan.pallets.length} 托已全部出库，订单还剩 ${left} 托在库`;
+    }
+  }
+}
+
+// ============================================================
+// 转运业务 TZ-P1：导入提货单 + 自动客户号/订单号 + 表格展示 + 保存/搜索
+// ============================================================
+let _tzManifest = null, _tzCurrentOrder = null, _tzZoom = 1, _tzAutoOpened = false;
+const _tzEl = id => document.getElementById(id);
+const _tzVal = id => (_tzEl(id)?.value || '');
+function _tzShowView(v){ ['list','new','detail','classify','pickdetail'].forEach(x=>{const e=_tzEl('tz-view-'+x); if(e) e.style.display=(x===v?'':'none');}); const bb=_tzEl('tz-back-btn'); if(bb) bb.style.display=(v==='list'?'none':''); }
+function _tzOpen(){
+  _loadAtmmSettings();   // 加载单号前缀等设置
+  _tzDelMode=false; _tzDelSel=new Set();   // 进入时退出删除模式
+  _tzEl('tz-overlay').style.display='block'; _tzShowView('list');
+  if(!_warehouse){   // 未登录也先看到转运页，给登录入口
+    const lst=_tzEl('tz-order-list');
+    if(lst) lst.innerHTML='<div style="padding:30px 16px;text-align:center;color:var(--muted);line-height:1.9;">请先登录后查看 / 操作转运订单<br><button onclick="_openAuthModal()" style="margin-top:14px;background:var(--ink);color:var(--paper);border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">👤 去登录 / 试用</button></div>';
+    return;
+  }
+  _tzLoadOrders();
+}
+function _tzClose(){ _tzEl('tz-overlay').style.display='none'; }
+function _tzBack(){ const open=v=>_tzEl('tz-view-'+v).style.display!=='none'; if(open('pickdetail')){ if(_pkSrcId){_tzOpenOrder(_pkSrcId);} else {_tzShowView('list');_tzLoadOrders();} } else if(open('new')||open('detail')){_tzShowView('list');_tzLoadOrders();} else if(open('classify')){ if(_tzCurrentOrder?.order){_tzOpenOrder(_tzCurrentOrder.order.id);} else {_tzShowView('list');_tzLoadOrders();} } else _tzClose(); }
+async function _tzNextOrderNo(){
+  const { data } = await sb.from('atmm_orders').select('order_no').eq('warehouse_id',_warehouse.id).eq('business','zhuanyun').order('order_no',{ascending:false}).limit(1);
+  let n=1; if(data&&data[0]){const m=new RegExp('^'+_ordPfx('zhuanyun_in')+'(\\d+)$').exec(data[0].order_no); if(m) n=parseInt(m[1])+1;}
+  return _ordPfx('zhuanyun_in')+String(n).padStart(7,'0');
+}
+// 转运拣货表单号：JCF + 7位（与入库 JCZ 区分）
+async function _jcfNextNo(){
+  const { data } = await sb.from('atmm_orders').select('order_no').eq('warehouse_id',_warehouse.id).eq('business','zhuanyun').like('order_no',_ordPfx('zhuanyun_pick')+'%').order('order_no',{ascending:false}).limit(1);
+  let n=1; if(data&&data[0]){const m=new RegExp('^'+_ordPfx('zhuanyun_pick')+'(\\d+)$').exec(data[0].order_no); if(m) n=parseInt(m[1])+1;}
+  return _ordPfx('zhuanyun_pick')+String(n).padStart(7,'0');
+}
+let _tzDelMode=false, _tzDelSel=new Set(), _tzInbStarted=new Set(), _tzListCache=[];
+async function _tzLoadOrders(){
+  const listEl=_tzEl('tz-order-list'); const kw=(_tzVal('tz-search')||'').trim().toLowerCase();
+  listEl.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center;">加载中…</div>';
+  const { data:orders, error }=await sb.from('atmm_orders').select('*').eq('warehouse_id',_warehouse.id).eq('business','zhuanyun').order('created_at',{ascending:false});
+  if(error){listEl.innerHTML='<div style="color:var(--red);padding:20px;">加载失败：'+error.message+'<br><small>（是否已在 Supabase 跑 zhuanyun.sql？）</small></div>';return;}
+  let list=(orders||[]).filter(o=>(o.extra&&o.extra.doc_type)!=='picklist');   // JCF 拣货表不混进入库订单列表
+  if(kw) list=list.filter(o=>(o.order_no+' '+o.customer_no+' '+(o.bill_no||'')).toLowerCase().includes(kw));
+  _tzListCache=list;
+  // 删除模式下：查出"已开始入库"的订单（有任一托已入库）→ 这些即使是待入库也不可删
+  if(_tzDelMode && list.length){
+    const ids=list.map(o=>o.id);
+    const { data:inb }=await sb.from('atmm_pallets').select('order_id').not('inbound_at','is',null).in('order_id',ids);
+    _tzInbStarted=new Set((inb||[]).map(r=>r.order_id));
+  }
+  _tzRenderList();
+}
+function _tzRenderList(){
+  const listEl=_tzEl('tz-order-list'); const list=_tzListCache; const kw=(_tzVal('tz-search')||'').trim();
+  // 删除条仅老板可见
+  const bar=_tzEl('tz-del-bar'); if(bar) bar.style.display=(_role==='boss')?'':'none';
+  const acts=_tzEl('tz-del-actions'), hint=_tzEl('tz-del-hint'), tog=_tzEl('tz-del-toggle');
+  if(acts) acts.style.display=_tzDelMode?'flex':'none';
+  if(hint) hint.style.display=_tzDelMode?'':'none';
+  if(tog){ tog.textContent=_tzDelMode?'✖ 取消删除模式':'🗑 删除待入库订单'; tog.style.background=_tzDelMode?'var(--red)':''; tog.style.color=_tzDelMode?'#fff':'var(--red)'; }
+  const go=_tzEl('tz-del-go'); if(go) go.textContent=`删除选中（${_tzDelSel.size}）`;
+  if(!list.length){listEl.innerHTML='<div style="color:var(--muted);padding:24px;text-align:center;">'+(kw?'没有匹配的订单':'暂无转运订单，点上面「➕ 新建（导入提货单）」开始')+'</div>';return;}
+  const sLabel={created:'待入库',inbound:'已入库',shipped:'已出库'}; const sColor={created:'#b8860b',inbound:'#1a73e8',shipped:'#16a34a'};
+  const now=Date.now();
+  listEl.innerHTML=list.map(o=>{
+    const overdue=o.status!=='shipped'&&o.inbound_done_at&&(now-new Date(o.inbound_done_at).getTime()>(o.free_days||3)*86400000);
+    const badge=`<span style="font-size:11px;font-weight:700;color:#fff;background:${sColor[o.status]||'#888'};padding:2px 8px;border-radius:20px;">${sLabel[o.status]||o.status}</span>`;
+    const info=`客户 ${o.customer_no} · ${o.pallet_count||0} 托 · ${_kcFmtDT(o.order_at)}`;
+    if(_tzDelMode){
+      const deletable = o.status==='created' && !_tzInbStarted.has(o.id);
+      const sel=_tzDelSel.has(o.id);
+      const lock = deletable ? '' : `<div style="font-size:11px;color:var(--muted);margin-top:4px;">🔒 ${o.status==='shipped'?'已出库':(_tzInbStarted.has(o.id)?'已开始入库':'已入库')}，不可删除</div>`;
+      return `<div ${deletable?`onclick="_tzDelToggle('${o.id}')"`:''} style="background:var(--bg);border:${sel?'2px solid var(--red)':'1.5px solid var(--line)'};border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:${deletable?'pointer':'default'};opacity:${deletable?'1':'.6'};">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">${deletable?(sel?'☑️':'⬜'):'🔒'}</span><div style="flex:1;font-weight:800;font-size:15px;">${o.order_no}</div>${badge}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;margin-left:28px;">${info}</div>${lock?'<div style="margin-left:28px;">'+lock+'</div>':''}
+      </div>`;
+    }
+    return `<div onclick="_tzOpenOrder('${o.id}')" style="background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div style="font-weight:800;font-size:15px;">${o.order_no}</div>${badge}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">${info}</div>
+      ${overdue?'<div style="font-size:12px;color:var(--red);font-weight:700;margin-top:4px;">⚠️ 已超过免费存放期</div>':''}
+    </div>`;
+  }).join('');
+}
+function _tzToggleDelMode(){ if(_role!=='boss'){ toast('仅老板可删除订单'); return; } _tzDelMode=!_tzDelMode; _tzDelSel=new Set(); _tzLoadOrders(); }
+function _tzDelToggle(id){ if(_tzDelSel.has(id)) _tzDelSel.delete(id); else _tzDelSel.add(id); _tzRenderList(); }
+async function _tzDoDelete(){
+  if(_role!=='boss'){ toast('仅老板可删除订单'); return; }
+  const ids=[..._tzDelSel];
+  if(!ids.length){ toast('请先勾选要删除的待入库订单'); return; }
+  if(!confirm(`确定删除选中的 ${ids.length} 个待入库订单？\n（连同其托板/标签一并删除，不可恢复）`)) return;
+  toast('⏳ 删除中…');
+  let done=0, skipped=0;
+  for(const id of ids){
+    // 服务端二次校验：仍为待入库且无任何托已入库
+    const { data:o }=await sb.from('atmm_orders').select('status').eq('id',id).single();
+    if(!o || o.status!=='created'){ skipped++; continue; }
+    const { count }=await sb.from('atmm_pallets').select('id',{count:'exact',head:true}).eq('order_id',id).not('inbound_at','is',null);
+    if((count||0)>0){ skipped++; continue; }
+    const { error }=await sb.from('atmm_orders').delete().eq('id',id);   // 托板 on delete cascade
+    if(error){ skipped++; } else done++;
+  }
+  _tzDelSel=new Set(); _tzDelMode=false;
+  toast(`✅ 已删除 ${done} 个${skipped?`，跳过 ${skipped} 个（已入库/出库不可删）`:''}`, 6000);
+  _tzLoadOrders();
+}
+function _tzImportFile(){ _tzEl('tz-file')?.click(); }
+function _tzShowImport(){ _tzEl('tz-import-opts').style.display=''; _tzEl('tz-paste-area').style.display='none'; _tzEl('tz-import-sheet').style.display='block'; }
+function _tzHideImport(){ _tzEl('tz-import-sheet').style.display='none'; }
+function _tzPasteImport(){ _tzEl('tz-import-opts').style.display='none'; _tzEl('tz-paste-area').style.display=''; _tzEl('tz-paste-text').value=''; _tzEl('tz-paste-text').focus(); }
+async function _tzDoPaste(){
+  const text=_tzVal('tz-paste-text'); if(!text.trim()){ toast('请先粘贴内容'); return; }
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  const split=l=>l.includes('\t')?l.split('\t'):l.split(',');
+  const headers=split(lines[0]||'').map(s=>s.trim()); const rows=lines.slice(1).map(split);
+  if(!headers.length){ toast('没解析到表头'); return; }
+  _tzManifest={ filename:'手动粘贴', headers, rows }; _tzHideImport(); await _tzNewFromManifest();
+}
+function _tzShareHint(){ alert('从微信/邮件分享提货单到本网页：\n\n1) 在微信/邮件里把 Excel 文件保存到 文件 / iCloud / Google Drive\n2) 回到本页 → 点「从本地选文件」→ 选该文件\n\n或：把表格内容复制 → 点「手动粘贴清单」粘贴'); }
+async function _tzDownloadTemplate(){
+  try{
+    const XLSX=await loadSheetJS();
+    const headers=['唛头/客户','唛头2','转运单号','件数','FBA SHIPMENT ID','重量(KG)','方数CBM','名称(目的地/承运商)','公司','地址1','地址2','城市','省州','电话','邮编','派送方式','备注'];
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers]), '提货单');
+    const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='转运提货单模板.xlsx'; a.click(); URL.revokeObjectURL(url);
+    toast('✅ 模板已下载，可转发给客户填写');
+  }catch(e){ toast('下载失败：'+(e.message||e)); }
+}
+async function _tzOnFile(input){
+  const file=input.files&&input.files[0]; if(!file) return; input.value='';
+  toast('解析文件中…');
+  try{
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    let headers=[], rows=[];
+    if(['xls','xlsx','wps','et','ods','csv'].includes(ext)){
+      const XLSX=await loadSheetJS(); const ab=await file.arrayBuffer();
+      const wb=XLSX.read(ab,{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]];
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const firstIdx=Math.max(0, aoa.findIndex(r=>r.filter(c=>String(c).trim()!=='').length>=2));
+      headers=(aoa[firstIdx]||[]).map(c=>String(c).trim());
+      rows=aoa.slice(firstIdx+1).filter(r=>r.some(c=>String(c).trim()!==''));
+    } else {
+      const text=await file.text(); const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      const split=l=>l.includes('\t')?l.split('\t'):l.split(','); headers=split(lines[0]||'').map(s=>s.trim()); rows=lines.slice(1).map(split);
+    }
+    if(!headers.length){ toast('没解析到表格内容，换个文件试试'); return; }
+    _tzManifest={ filename:file.name, headers, rows };
+    await _tzNewFromManifest();
+  }catch(e){ toast('解析失败：'+(e.message||e)); }
+}
+async function _tzNewFromManifest(){
+  _tzShowView('new');
+  _tzEl('tz-customer-no').value=await _kcNextCustomerNo();   // 跨3业务下一个客户号
+  _tzEl('tz-order-no').value=await _tzNextOrderNo();
+  _tzEl('tz-bill-no').value=''; _tzEl('tz-free-days').value='3'; _tzEl('tz-cust-warn').textContent='';
+  _tzRenderManifest();
+}
+function _tzRenderManifest(boxId){
+  const m=_tzManifest, box=_tzEl(boxId||'tz-manifest-box'); if(!box) return;
+  if(!m){ box.innerHTML=''; return; }
+  const th=m.headers.map(h=>`<th style="border:1px solid var(--line);padding:4px 8px;background:var(--bg);white-space:nowrap;font-size:12px;position:sticky;top:0;">${escapeHtml(h)}</th>`).join('');
+  const tr=m.rows.map(r=>`<tr>${m.headers.map((_,i)=>`<td style="border:1px solid var(--line);padding:4px 8px;white-space:nowrap;font-size:12px;">${escapeHtml(String(r[i]??''))}</td>`).join('')}</tr>`).join('');
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="font-size:12px;color:var(--muted);">📄 ${escapeHtml(m.filename)} · ${m.rows.length} 行 · ${m.headers.length} 列</div><div><button onclick="_tzZoomTable(-0.15)" class="kc-btn" style="width:auto;display:inline-block;padding:4px 10px;margin:0 4px 0 0;">－</button><button onclick="_tzZoomTable(0.15)" class="kc-btn" style="width:auto;display:inline-block;padding:4px 10px;margin:0;">＋</button></div></div><div style="overflow:auto;max-height:44vh;border:1px solid var(--line);border-radius:8px;"><table id="tz-manifest-table" style="border-collapse:collapse;transform-origin:top left;"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+  _tzZoom=1;
+}
+function _tzZoomTable(d){ _tzZoom=Math.max(0.5,Math.min(2.2,_tzZoom+d)); const t=_tzEl('tz-manifest-table'); if(t) t.style.transform='scale('+_tzZoom+')'; }
+async function _tzSaveOrder(){
+  if(!_warehouse||!_tzManifest) return;
+  const customerNo=_tzVal('tz-customer-no').trim().toUpperCase();
+  const orderNo=_tzVal('tz-order-no').trim().toUpperCase();
+  const billNo=_tzVal('tz-bill-no').trim();
+  const freeDays=parseInt(_tzVal('tz-free-days'))||3;
+  const warn=_tzEl('tz-cust-warn');
+  if(!/^C\d{4}$/.test(customerNo)){ warn.textContent='⚠️ 客户号格式应为 C0001（字母C+4位数字）'; return; }
+  if(!new RegExp('^'+_ordPfx('zhuanyun_in')+'\\d{7}$').test(orderNo)){ toast('订单号格式应为 '+_ordPfx('zhuanyun_in')+'0000001'); return; }
+  const { data:dup }=await sb.from('atmm_customers').select('id').eq('warehouse_id',_warehouse.id).eq('customer_no',customerNo).maybeSingle();
+  if(dup){ warn.textContent='⚠️ 该客户号已被占用，请改一个新的（建议用系统自动生成的）'; return; }
+  warn.textContent='';
+  const btn=_tzEl('tz-save-btn'); if(btn){btn.disabled=true;btn.textContent='保存中…';}
+  try{
+    const { data:cust, error:cErr }=await sb.from('atmm_customers').insert({warehouse_id:_warehouse.id,customer_no:customerNo}).select('id').single();
+    if(cErr) throw cErr;
+    const { data:ord, error:oErr }=await sb.from('atmm_orders').insert({
+      warehouse_id:_warehouse.id, customer_id:cust.id, customer_no:customerNo, order_no:orderNo,
+      business:'zhuanyun', bill_no:billNo, manifest:_tzManifest, free_days:freeDays, order_at:new Date().toISOString(), pallet_count:0, status:'created',
+      extra:{ truck_plate:_tzVal('tz-truck-plate').trim(), driver_name:_tzVal('tz-driver-name').trim(), driver_phone:_tzVal('tz-driver-phone').trim() }
+    }).select('*').single();
+    if(oErr) throw oErr;
+    toast('✅ 转运订单已创建'); _tzOpenOrder(ord.id);
+  }catch(e){ toast('保存失败：'+(e.message||e)); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='✅ 保存并继续';} }
+}
+async function _tzOpenOrder(id){
+  _tzPickMode=false;
+  const { data:order }=await sb.from('atmm_orders').select('*').eq('id',id).single();
+  if(!order){toast('加载失败');return;}
+  const { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',id);
+  _tzCurrentOrder={order, pallets:pallets||[]}; _tzManifest=order.manifest||null;
+  const m=order.manifest;
+  const inCnt=(pallets||[]).filter(p=>p.inbound_at).length, outCnt=(pallets||[]).filter(p=>p.outbound_at).length;
+  const overdue=order.status!=='shipped'&&order.inbound_done_at&&(Date.now()-new Date(order.inbound_done_at).getTime()>(order.free_days||3)*86400000);
+  _tzEl('tz-detail-body').innerHTML=`
+    <div class="kc-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:18px;font-weight:800;">${order.order_no}</div><div style="font-size:12px;color:var(--muted);">客户 ${order.customer_no}</div></div>
+      <div style="font-size:13px;margin-top:8px;line-height:1.9;">提单/发货单：${order.bill_no||'—'}<br>下单时间：${_kcFmtDT(order.order_at)}<br>免费存放：${order.free_days||3} 天 · 托/板数：<b>${order.pallet_count||0}</b><br>入库 <b>${inCnt}/${order.pallet_count||0}</b> · 出库 <b>${outCnt}/${order.pallet_count||0}</b>${overdue?' <span style="color:var(--red);font-weight:800;">⚠️ 已超免费期（'+(order.free_days||3)+'天），请尽快出库或加收费用</span>':''}${order.extra&&(order.extra.truck_plate||order.extra.driver_name||order.extra.driver_phone)?'<br>提货：'+[order.extra.truck_plate,order.extra.driver_name,order.extra.driver_phone].filter(Boolean).map(escapeHtml).join(' · '):''}<br>提货单：${m?escapeHtml(m.filename)+'（'+(m.rows?.length||0)+'行）':'—'}</div>
+    </div>
+    <div class="kc-card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-weight:700;">免费存放天数</span>
+      <input id="tz-freedays" type="number" min="0" value="${order.free_days||3}" style="width:78px;padding:8px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:15px;text-align:center;">
+      <span style="color:var(--muted);font-size:12px;">天 · 超出按超期计费</span>
+      <button onclick="_tzSaveFreeDays()" class="kc-btn" style="width:auto;margin:0;padding:8px 18px;border-color:#16a34a;color:#16a34a;">确认</button>
+    </div>
+    <button onclick="_tzClassify()" class="kc-btn-primary">🧮 分类算托/板数 + 生成标签</button>
+    <button onclick="_tzStartInbound()" class="kc-btn" style="border-color:#16a34a;color:#16a34a;">📥 入库扫码（逐托扫码+绑库位+拍照）</button>
+    <button onclick="_pkOpen()" class="kc-btn-primary" style="background:#7c3aed;border-color:#6d28d9;">📋 生成拣货表（按出库通知号重新归组）</button>
+    <button onclick="_tzStartOutbound()" class="kc-btn" style="border-color:#2563eb;color:#2563eb;">📤 出库扫码（预选要出的托+部分出库+拍照）</button>
+    <button onclick="_tzReport()" class="kc-btn">📊 订单报表（进出库明细 + 在库天数 + 计价预留）</button>
+    <div id="tz-picklists" style="margin-top:6px;"></div>
+    ${m?'<div style="font-weight:800;margin:12px 0 6px;">📄 提货单</div><div id="tz-manifest-box2"></div>':''}`;
+  if(m) _tzRenderManifest('tz-manifest-box2');
+  _pkRenderOrderPicklists(order.id);
+  _tzShowView('detail');
+}
+
+// ── 转运 TZ-P2：分类算托数 + 生成托板 + 打印标签 ──
+const TZ_PALLET_CBM = 2.2656;  // 40×48×72 英寸 ≈ 2.27 m³/托
+let _tzCols = { id:0, pieces:3, cbm:4, dest:5 };
+async function _tzClassify(){
+  if(!_tzCurrentOrder) return;
+  _tzPickMode=false;
+  const m=_tzCurrentOrder.order.manifest;
+  if(!m || !m.headers){ toast('该订单没有提货单数据'); return; }
+  const H=m.headers.map(h=>String(h||''));
+  const guess=(kws,def)=>{ const i=H.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k.toLowerCase()))); return i>=0?i:def; };
+  const dg=_tzDetectCols(m);  // 数据探测：件数=整数列、方数=小数列(数值最小)
+  _tzCols={ id:guess(['唛头','单号','转运单','运单','mark'],0),
+    pieces:(dg.pieces>=0?dg.pieces:guess(['件数','件','箱数','pcs','qty'],3)),
+    cbm:(dg.cbm>=0?dg.cbm:guess(['方数','体积','cbm','m³','立方'],4)),
+    dest:(dg.dest>=0?dg.dest:guess(['名称','派送','目的','承运','carrier','快递','卡派','仓'], Math.min(7,m.headers.length-1))) };
+  _tzColW=null;
+  await _tzRenderClassify();
+  _tzShowView('classify');
+}
+// 按数据识别：件数=正整数列(<1000)；方数=小数列且平均值最小(CBM值最小，区别于重量/单价)
+// ===== 转运拣货表（按出库通知号重新归组；整板为单位） =====
+let _tzPickMode=false, _pkGroups=[], _pkLocByDest={};
+async function _pkOpen(){
+  if(!_tzCurrentOrder) return;
+  const order=_tzCurrentOrder.order, m=order.manifest;
+  if(!m || !m.headers){ toast('该订单没有提货单数据，无法生成拣货表'); return; }
+  toast('准备拣货归组…');
+  // 取源入库单托板，建「目的地(入库组名)→库位」映射，供拣货表带出库位
+  const { data:pallets }=await sb.from('atmm_pallets').select('group_label,location_code,inbound_at').eq('order_id',order.id);
+  _pkLocByDest={};
+  (pallets||[]).forEach(p=>{ const k=(p.group_label||'').trim().toLowerCase(); if(!k) return; if(!_pkLocByDest[k]) _pkLocByDest[k]=new Set(); if(p.inbound_at && p.location_code) _pkLocByDest[k].add(p.location_code); });
+  if(!Object.values(_pkLocByDest).some(s=>s.size)){ toast('⚠️ 本单还没有任何托/板入库扫码绑库位，请先完成「入库扫码」再生成拣货表',6000); return; }
+  const H=m.headers.map(h=>String(h||''));
+  const guess=(kws,def)=>{ const i=H.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k.toLowerCase()))); return i>=0?i:def; };
+  const dg=_tzDetectCols(m);
+  _tzCols={ id:guess(['唛头','单号','转运单','运单','mark'],0),
+    pieces:(dg.pieces>=0?dg.pieces:guess(['件数','件','箱数','pcs','qty'],3)),
+    cbm:(dg.cbm>=0?dg.cbm:guess(['方数','体积','cbm','m³','立方'],4)),
+    dest:(dg.dest>=0?dg.dest:guess(['名称','派送','目的','承运','carrier','快递','卡派','仓'], Math.min(7,m.headers.length-1))),
+    weight:guess(['重量','毛重','weight','kg'],-1),
+    notify:guess(['fba shipment','fba shipping','shipment id','shipping id','通知','po号','po'],-1) };
+  _tzColW=null; _tzPickMode=true; _pkGroups=[];
+  await _tzRenderClassify();
+  _tzShowView('classify');
+}
+function _pkLocFor(destVals){
+  const set=new Set();
+  destVals.forEach(d=>{ const k=(d||'').trim().toLowerCase(); if(_pkLocByDest[k]) _pkLocByDest[k].forEach(x=>set.add(x)); });
+  return [...set].join('/');
+}
+// 该行的目的地组是否已入库扫码绑库位（只有绑了库位的才能拣货）
+function _pkRowHasLoc(r){
+  const d=String(r[_tzCols.dest]??'').trim().toLowerCase();
+  return !!(_pkLocByDest[d] && _pkLocByDest[d].size);
+}
+function _pkAddGroup(){
+  const m=_tzCurrentOrder.order.manifest;
+  const notify=(_tzVal('tz-group-name')||'').trim();
+  if(!notify) return toast('请先填「出库通知号」');
+  const checked=[...document.querySelectorAll('.tz-rowcb:checked')];
+  if(!checked.length) return toast('请先筛选/勾选要归入此通知号的行');
+  const palInput=parseInt(_tzVal('tz-group-pallets'))||0;
+  const rowIdxs=checked.map(cb=>parseInt(cb.dataset.ridx)).filter(x=>!isNaN(x));
+  let pieces=0,cbm=0,weight=0; const dests=new Set(), marks=[];
+  rowIdxs.forEach(ri=>{ const r=m.rows[ri]||[];
+    pieces+=parseInt(String(r[_tzCols.pieces]??'').replace(/[^\d]/g,''))||0;
+    cbm+=parseFloat(r[_tzCols.cbm])||0;
+    if(_tzCols.weight>=0) weight+=parseFloat(String(r[_tzCols.weight]??'').replace(/[^\d.]/g,''))||0;
+    const d=String(r[_tzCols.dest]??'').trim(); if(d) dests.add(d);
+    const mk=String(r[_tzCols.id]??'').trim(); if(mk) marks.push(mk);
+  });
+  const loc=_pkLocFor([...dests]);
+  const pallets = palInput>0 ? palInput : Math.max(1,Math.ceil(cbm/TZ_PALLET_CBM));
+  _pkGroups.push({ notify, rowIdxs, dest:[...dests].join('/'), pieces, cbm, weight, pallets, loc, marks });
+  toast(`✅ 已加入「${notify}」：${rowIdxs.length}行 · ${pallets}托`);
+  _tzClearFilter(); _tzRenderClassify();
+}
+function _pkDelGroup(gi){ _pkGroups.splice(gi,1); _tzRenderClassify(); }
+// 详情页：列出本入库单已生成的转运拣货表（JCF），可重新打印 / 老板可删
+async function _pkRenderOrderPicklists(srcId){
+  const box=_tzEl('tz-picklists'); if(!box) return;
+  const { data }=await sb.from('atmm_orders').select('*').eq('warehouse_id',_warehouse.id).eq('business','zhuanyun').like('order_no',_ordPfx('zhuanyun_pick')+'%').order('created_at',{ascending:false});
+  const list=(data||[]).filter(o=>o.extra&&o.extra.source_order_id===srcId);
+  if(!list.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="kc-card"><div class="kc-step">📋 已生成的转运拣货表（${list.length}）</div>`+list.map(o=>{
+    const g=(o.extra&&o.extra.pick_groups)||[];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;flex-wrap:wrap;">
+      <span style="flex:1;min-width:0;font-size:13px;"><b>${o.order_no}</b> · ${g.length}个通知号 · ${o.pallet_count||0}托 <span style="color:var(--muted);font-size:11px;">${_kcFmtDT(o.created_at)}</span></span>
+      <button onclick="_pkOpenPicklist('${o.id}')" style="background:#f3e8ff;border:1px solid #7c3aed;color:#6d28d9;border-radius:6px;padding:3px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;font-weight:700;">📋 打开（出库标签）</button>
+      ${_role==='boss'?`<button onclick="_pkDelPicklist('${o.id}')" style="background:#ffe5e5;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:3px 12px;cursor:pointer;font-family:inherit;">删</button>`:''}
+    </div>`;
+  }).join('')+`</div>`;
+}
+async function _pkReprint(id){
+  const { data:o }=await sb.from('atmm_orders').select('*').eq('id',id).single();
+  if(!o){ toast('加载失败'); return; }
+  const groups=(o.extra&&o.extra.pick_groups)||[];
+  const src={ order_no:(o.extra&&o.extra.source_order_no)||'—', customer_no:o.customer_no };
+  _pkPrintPickList(o, groups, src);
+}
+async function _pkDelPicklist(id){
+  if(_role!=='boss'){ toast('仅老板可删除'); return; }
+  if(!confirm('确认删除这张转运拣货表？')) return;
+  await sb.from('atmm_pallets').delete().eq('order_id',id);   // 一并删其出库托板
+  const { error }=await sb.from('atmm_orders').delete().eq('id',id);
+  if(error){ toast('删除失败：'+error.message); return; }
+  toast('🗑️ 已删除'); if(_tzCurrentOrder?.order) _pkRenderOrderPicklists(_tzCurrentOrder.order.id);
+}
+
+// ===== 阶段2：拣货表详情（改托板数 → 生成出库二维码 → 打印贴标）=====
+let _pkSrcId=null, _pkCurrentPick=null;
+async function _pkOpenPicklist(id){
+  const { data:pick }=await sb.from('atmm_orders').select('*').eq('id',id).single();
+  if(!pick){ toast('加载失败'); return; }
+  const { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',id).order('seq');
+  _pkSrcId=(pick.extra&&pick.extra.source_order_id)||null; _pkCurrentPick=pick;
+  _pkRenderPickDetail(pick, pallets||[]);
+  _tzShowView('pickdetail');
+}
+function _pkRenderPickDetail(pick, pallets){
+  const groups=(pick.extra&&pick.extra.pick_groups)||[];
+  const cntByNotify={}; pallets.forEach(p=>{ const k=p.group_label||''; cntByNotify[k]=(cntByNotify[k]||0)+1; });
+  const hasPallets=pallets.length>0;
+  const srcNo=(pick.extra&&pick.extra.source_order_no)||'—';
+  _tzEl('tz-pickdetail-body').innerHTML=`
+    <div class="kc-card" style="margin-bottom:6px;"><div style="font-size:17px;font-weight:800;">${pick.order_no} <span style="font-size:12px;color:var(--muted);font-weight:600;">转运拣货表 · 来源 ${escapeHtml(srcNo)} · 客户 ${pick.customer_no}</span></div></div>
+    <button onclick="_pkReprint('${pick.id}')" class="kc-btn">🖨 打印转运拣货表（8列）</button>
+    <div class="kc-card"><div class="kc-step">出库通知号分组（可改托板数 → 生成二维码）</div>
+      ${groups.map((g,gi)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;font-size:13px;"><b>${escapeHtml(g.notify)}</b> · ${g.pieces}件 · ${g.cbm.toFixed(2)}方 · 库位 ${escapeHtml(g.loc||'—')}<br><span style="font-size:11px;color:var(--muted);">唛头：${escapeHtml((g.marks||[]).join('、'))}</span></div>
+        <label style="white-space:nowrap;font-size:12px;">托板数 <input id="pk-pal-${gi}" type="number" min="1" value="${g.pallets||1}" style="width:60px;padding:5px;border:1px solid var(--line);border-radius:6px;text-align:center;"></label>
+        ${cntByNotify[g.notify]?`<span style="font-size:11px;color:#16a34a;font-weight:700;white-space:nowrap;">已生成${cntByNotify[g.notify]}码</span>`:''}
+      </div>`).join('')}
+    </div>
+    <button onclick="_pkMakePallets('${pick.id}')" class="kc-btn-primary" style="background:#7c3aed;border-color:#6d28d9;">✅ 确认托板数 + 生成出库二维码</button>
+    ${hasPallets?`<button onclick="_pkPrintLabels('${pick.id}','label46')" class="kc-btn-primary" style="margin-top:8px;">🏷 打印出库托板标签（4×6 不干胶，每托5张：四面+拣货表）</button><button onclick="_pkPrintLabels('${pick.id}','a4')" class="kc-btn">🖨 打印整页 A4（每页4枚）</button>`:''}
+  `;
+}
+async function _pkMakePallets(pickId){
+  const { data:pick }=await sb.from('atmm_orders').select('*').eq('id',pickId).single();
+  if(!pick){ toast('加载失败'); return; }
+  const groups=(pick.extra&&pick.extra.pick_groups)||[];
+  groups.forEach((g,gi)=>{ const v=parseInt(document.getElementById('pk-pal-'+gi)?.value); if(v>0) g.pallets=v; });
+  const { data:existed }=await sb.from('atmm_pallets').select('id,outbound_at').eq('order_id',pickId);
+  if((existed||[]).some(p=>p.outbound_at)){ toast('已有托板出库，不能重新生成'); return; }
+  if((existed||[]).length && !confirm('重新生成会清掉旧的出库托板二维码（未出库的），确定？')) return;
+  if((existed||[]).length) await sb.from('atmm_pallets').delete().eq('order_id',pickId);
+  const rows=[]; let seq=0;
+  groups.forEach((g,gi)=>{ const cnt=Math.max(1,g.pallets||1); const mark=(g.marks||[]).join('、'); for(let b=1;b<=cnt;b++){ seq++; rows.push({ warehouse_id:pick.warehouse_id, order_id:pickId, seq, label:mark, qr_text:`${pick.order_no}-${gi+1}-${b}`, group_label:g.notify, location_code:g.loc||'' }); } });
+  if(rows.length){ const { error }=await sb.from('atmm_pallets').insert(rows); if(error){ toast('生成失败：'+error.message,6000); return; } }
+  await sb.from('atmm_orders').update({ pallet_count:rows.length, extra:Object.assign({}, pick.extra, {pick_groups:groups}) }).eq('id',pickId);
+  toast(`✅ 已生成 ${rows.length} 个出库托板二维码`,4000);
+  _pkOpenPicklist(pickId);
+}
+async function _pkPrintLabels(pickId, mode){
+  mode=mode||'label46';
+  const { data:pick }=await sb.from('atmm_orders').select('*').eq('id',pickId).single();
+  const { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',pickId).order('seq');
+  if(!pallets||!pallets.length){ toast('请先「确认托板数 + 生成出库二维码」'); return; }
+  toast('生成标签中…'); await Promise.all([_loadQRCodeLib(),_loadJsBarcodeLib()]);
+  const made=[];
+  for(const p of pallets){
+    const qr=await _genZQR(p.qr_text,{cell:9}); let bar='';
+    try{ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); document.body.appendChild(svg); _jsBarcodeLib(svg,p.qr_text,{format:'CODE128',width:1.6,height:42,fontSize:10,margin:4,displayValue:true}); bar='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg)); document.body.removeChild(svg);}catch(e){}
+    made.push({qr,bar,notify:p.group_label||'',code:p.qr_text,mark:p.label||'',loc:p.location_code||''});
+  }
+  const inner=mm=>`<img class="qr" src="${mm.qr}"><img class="bar" src="${mm.bar}"><div class="t">${escapeHtml(mm.notify)}</div><div class="c">${escapeHtml(mm.code)}</div>${mm.mark?`<div class="m">唛头：${escapeHtml(mm.mark)}</div>`:''}${mm.loc?`<div class="g">库位 ${escapeHtml(mm.loc)}</div>`:''}`;
+  let css, body;
+  if(mode==='label46'){
+    css=`@page{size:4in 6in;margin:0;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;}.lbl{width:4in;height:6in;padding:6mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5mm;page-break-after:always;}.lbl .qr{width:55mm;height:55mm;}.lbl .bar{width:88mm;height:18mm;}.lbl .t{font-size:17pt;font-weight:800;text-align:center;}.lbl .c{font-size:11pt;font-family:monospace;}.lbl .m{font-size:10pt;color:#333;text-align:center;word-break:break-all;}.lbl .g{font-size:12pt;color:#444;}`;
+    body=made.map(mm=>Array(5).fill(`<div class="lbl">${inner(mm)}</div>`).join('')).join('');   // 每托5张：四面+拣货表
+  } else {
+    css=`*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;}.sheet{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:6mm;padding:8mm;height:100vh;page-break-after:always;}.lbl{border:.4mm dashed #999;border-radius:2mm;padding:3mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2mm;}.lbl .qr{width:30mm;height:30mm;}.lbl .bar{width:100%;max-width:48mm;height:12mm;}.lbl .t{font-size:12pt;font-weight:800;text-align:center;}.lbl .c{font-size:8pt;font-family:monospace;}.lbl .m{font-size:8pt;color:#333;text-align:center;word-break:break-all;}.lbl .g{font-size:9pt;color:#444;}@media print{.sheet{padding:5mm;height:auto;min-height:96vh;}}`;
+    body=made.map(mm=>`<div class="sheet">${Array(4).fill(`<div class="lbl">${inner(mm)}</div>`).join('')}</div>`).join('');
+  }
+  const win=window.open('','_blank'); if(!win){toast('请允许弹出窗口');return;}
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>转运出库标签 ${pick.order_no}</title><style>${css}</style></head><body>${body}<script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script></body></html>`);
+  win.document.close();
+}
+async function _pkGenerate(){
+  if(!_pkGroups.length) return toast('请先加入至少一个出库通知号分组');
+  const src=_tzCurrentOrder.order;
+  toast('⏳ 生成转运拣货表…');
+  const pickNo=await _jcfNextNo();
+  const groups=_pkGroups.map((g,i)=>({ seq:i+1, notify:g.notify, dest:g.dest, pieces:g.pieces, cbm:g.cbm, weight:g.weight, pallets:g.pallets, loc:g.loc, marks:g.marks }));
+  const { data:ins, error }=await sb.from('atmm_orders').insert({
+    warehouse_id:src.warehouse_id, customer_id:src.customer_id||null, customer_no:src.customer_no,
+    order_no:pickNo, business:'zhuanyun', status:'created', pallet_count:groups.reduce((s,g)=>s+g.pallets,0),
+    manifest:src.manifest||null,
+    extra:{ doc_type:'picklist', source_order_id:src.id, source_order_no:src.order_no, pick_groups:groups }
+  }).select('*').single();
+  if(error) return toast('生成失败：'+error.message,6000);
+  toast('✅ 转运拣货表已生成：'+pickNo,5000);
+  _pkPrintPickList(ins, groups, src);
+  _tzPickMode=false;
+  _tzOpenOrder(src.id);
+}
+function _pkPrintPickList(pick, groups, src){
+  const now=_kcFmtDT(new Date().toISOString());
+  const rows=groups.map((g,i)=>`<tr><td>${i+1}</td><td style="font-weight:700;">${escapeHtml(g.notify)}</td><td>${escapeHtml(g.dest||'')}</td><td style="text-align:center;">${g.pieces}</td><td style="text-align:center;">${g.cbm.toFixed(2)}</td><td style="text-align:center;">${g.weight?g.weight.toFixed(0):'—'}</td><td style="text-align:center;font-weight:700;">${g.pallets}</td><td style="font-size:11px;">${escapeHtml((g.marks||[]).join('、'))}</td><td style="text-align:center;font-family:monospace;font-weight:700;">${escapeHtml(g.loc||'未上架')}</td></tr>`).join('');
+  const totP=groups.reduce((s,g)=>s+g.pallets,0), totPc=groups.reduce((s,g)=>s+g.pieces,0), totC=groups.reduce((s,g)=>s+g.cbm,0);
+  const win=window.open('','_blank'); if(!win){toast('请允许弹出窗口');return;}
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>转运拣货表 ${pick.order_no}</title>
+<style>body{font-family:-apple-system,sans-serif;padding:16px;color:#111;max-width:1000px;margin:0 auto;}h1{font-size:20px;margin-bottom:4px;}.sub{color:#666;font-size:13px;margin-bottom:10px;line-height:1.7;}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;}th{background:#f5f5f5;}tfoot td{font-weight:700;background:#fafafa;}@media print{.noprint{display:none;}}</style></head><body>
+<h1>${_tzBrand()} · 转运拣货表</h1>
+<div class="sub">拣货单号 <b>${pick.order_no}</b> · 来源入库单 ${escapeHtml(src.order_no)} · 客户 ${pick.customer_no}<br>导出 ${now} · 共 ${groups.length} 个出库通知号 · ${totP} 托</div>
+<table><thead><tr><th>#</th><th>出库通知号</th><th>目的地</th><th>件数</th><th>方数</th><th>重量kg</th><th>托/板数</th><th>唛头/单号</th><th>库位编号</th></tr></thead>
+<tbody>${rows}</tbody>
+<tfoot><tr><td colspan="3">合计</td><td style="text-align:center;">${totPc}</td><td style="text-align:center;">${totC.toFixed(2)}</td><td></td><td style="text-align:center;">${totP}</td><td colspan="2"></td></tr></tfoot></table>
+<div class="noprint" style="margin-top:16px;"><button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer;">🖨 打印 / 转 PDF</button></div>
+</body></html>`);
+  win.document.close();
+}
+function _tzDetectCols(m){
+  const ncol=m.headers.length, rows=m.rows.slice(0,80);
+  let pBest={i:-1,c:0}, cBest={i:-1,avg:1e9}, dBest={i:-1,score:-1};
+  for(let i=0;i<ncol;i++){
+    let intC=0, decC=0, decSum=0, txt=0; const set=new Set();
+    rows.forEach(r=>{ const v=String(r[i]??'').trim(); if(!v) return; const n=parseFloat(v);
+      if(/^\d+$/.test(v)){ if(isFinite(n)&&n>0&&n<1000) intC++; }
+      else if(/^\d*\.\d+$/.test(v)){ if(isFinite(n)&&n>0&&n<100){ decC++; decSum+=n; } }
+      else { txt++; set.add(v); } });
+    if(intC>pBest.c) pBest={i,c:intC};
+    if(decC>=3){ const avg=decSum/decC; if(cBest.i<0||avg<cBest.avg) cBest={i,avg}; }
+    if(txt>=3 && set.size<=Math.max(2,Math.ceil(txt*0.6))){ const score=txt/set.size; if(score>dBest.score) dBest={i,score}; }  // 重复文字列=承运商/目的地
+  }
+  return { pieces:pBest.i, cbm:cBest.i, dest:dBest.i };
+}
+function _tzColChange(){ _tzCols.id=+_tzVal('tz-col-id'); _tzCols.pieces=+_tzVal('tz-col-pcs'); _tzCols.cbm=+_tzVal('tz-col-cbm'); _tzCols.dest=+_tzVal('tz-col-dest'); _tzColW=null; _tzRenderClassify(); }
+// 列宽 / 横向滚动 / 列宽拖动 / 重要列排左
+let _tzColW=null, _tzReorder=true, _tzColOrder=null, _tzStickyN=0;
+function _tzToggleReorder(){ _tzReorder=!_tzReorder; _tzRenderClassify(); }
+// 拖列宽后实时重算固定列的 left，保持4列贴合无缝
+function _tzUpdateStickyLeft(){ if(!_tzColOrder) return; let acc=36; for(let pos=0;pos<_tzStickyN;pos++){ const off=acc; document.querySelectorAll('[data-spos="'+pos+'"]').forEach(el=>el.style.left=off+'px'); acc+=_tzColW[_tzColOrder[pos]]||0; } }
+function _tzColResz(e,i){ e.preventDefault(); e.stopPropagation(); const col=document.getElementById('tzcol-'+i); if(!col||!_tzColW) return;
+  const sx=e.clientX, sw=_tzColW[i];
+  const mv=ev=>{ _tzColW[i]=Math.max(36, sw+(ev.clientX-sx)); col.style.width=_tzColW[i]+'px'; _tzUpdateStickyLeft(); _tzSyncSliderMax(); };
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',()=>window.removeEventListener('pointermove',mv),{once:true});
+}
+function _tzHScroll(v){ const s=_tzEl('tz-rows-scroll'); if(s) s.scrollLeft=+v; }
+function _tzSyncSlider(){ const s=_tzEl('tz-rows-scroll'); if(!s) return; const v=s.scrollLeft; ['tz-hscroll','tz-hscroll2'].forEach(id=>{const el=_tzEl(id); if(el) el.value=v;}); }
+function _tzSyncSliderMax(){ const s=_tzEl('tz-rows-scroll'); if(!s) return; const mx=Math.max(0, s.scrollWidth-s.clientWidth); ['tz-hscroll','tz-hscroll2'].forEach(id=>{const el=_tzEl(id); if(el){ el.max=mx; el.value=s.scrollLeft; }}); }
+
+// 可拖动折叠粗横条：上拉收起顶部(列对应/已分组)，让行表更高
+let _tzSplit=null;
+function _tzSplitStart(e){
+  const top=_tzEl('tz-top-col'), rows=_tzEl('tz-rows-scroll'); if(!top||!rows) return;
+  e.preventDefault();
+  _tzSplit={ y:e.clientY, top:top.offsetHeight, rows:rows.offsetHeight };
+  try{ e.target.setPointerCapture(e.pointerId); }catch(_){}
+  window.addEventListener('pointermove',_tzSplitMove); window.addEventListener('pointerup',_tzSplitEnd,{once:true});
+}
+function _tzSplitMove(e){
+  if(!_tzSplit) return; const top=_tzEl('tz-top-col'), rows=_tzEl('tz-rows-scroll'); if(!top||!rows) return;
+  const delta=_tzSplit.y-e.clientY;                 // 上拉为正
+  const newTop=Math.max(0, Math.min(_tzSplit.top, _tzSplit.top-delta));
+  top.style.maxHeight=newTop+'px';
+  rows.style.maxHeight=(_tzSplit.rows + (_tzSplit.top-newTop))+'px';
+}
+function _tzSplitEnd(){ _tzSplit=null; window.removeEventListener('pointermove',_tzSplitMove); }
+function _tzSplitToggle(){
+  const top=_tzEl('tz-top-col'), rows=_tzEl('tz-rows-scroll'); if(!top||!rows) return;
+  if(top.style.maxHeight==='0px'){ top.style.maxHeight=''; rows.style.maxHeight='40vh'; }   // 恢复
+  else { top.style.maxHeight='0px'; rows.style.maxHeight=(window.innerHeight-180)+'px'; }    // 一键收起
+}
+
+// 按住向下/上拖动连续多选行（鼠标/触控笔；触摸不拦截以免影响滚动）
+let _tzSelecting=false, _tzSelMode=true;
+function _tzApplyRow(tr,on){ const cb=tr&&tr.querySelector('.tz-rowcb'); if(!cb||cb.disabled) return; cb.checked=on; tr.style.background=on?'rgba(22,163,74,.18)':''; }
+function _tzSelStart(e){
+  const tr=e.target.closest('tr'); const cb=tr&&tr.querySelector('.tz-rowcb'); if(!cb||cb.disabled) return;
+  const onSel=!!e.target.closest('.tz-selcell');     // 按在"选"列
+  if(e.pointerType==='touch' && !onSel) return;      // 触摸：只有按"选"列才拖选；其它地方正常滚动
+  e.preventDefault(); _tzSelecting=true; _tzSelMode=!cb.checked; _tzApplyRow(tr,_tzSelMode);
+  window.addEventListener('pointermove',_tzSelMove); window.addEventListener('pointerup',_tzSelEnd,{once:true});
+}
+function _tzSelMove(e){ if(!_tzSelecting) return; const tr=document.elementFromPoint(e.clientX,e.clientY)?.closest('tr'); if(tr){ const cb=tr.querySelector('.tz-rowcb'); if(cb&&!cb.disabled) _tzApplyRow(tr,_tzSelMode); } }
+function _tzSelEnd(){ _tzSelecting=false; window.removeEventListener('pointermove',_tzSelMove); }
+async function _tzRenderClassify(){
+  const { order }=_tzCurrentOrder; const m=order.manifest;
+  const { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',order.id).order('seq');
+  _tzCurrentOrder.pallets=pallets||[];
+  const groups={}; (pallets||[]).forEach(p=>{ const g=p.group_label||'未命名'; groups[g]=(groups[g]||0)+1; });
+  const total=(pallets||[]).length;
+  const groupsHtml=Object.keys(groups).length ? Object.entries(groups).map(([g,n])=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;"><span style="flex:1;min-width:0;"><b>${escapeHtml(g)}</b> · ${n} 托</span><button onclick="_tzPrintGroup('${escapeHtml(g)}')" style="background:#eef2ff;border:1px solid #2563eb;color:#2563eb;border-radius:6px;padding:3px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;">🏷 二维码/条码</button><span style="flex:1;display:flex;justify-content:flex-end;"><button onclick="_tzDeleteGroup('${escapeHtml(g)}')" style="background:#ffe5e5;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:3px 12px;cursor:pointer;font-family:inherit;">删</button></span></div>`).join('') : '<div style="color:var(--muted);font-size:12px;">还没有分组</div>';
+  // 拣货模式：已加入的出库通知号分组列表
+  const pkGroupsHtml = _pkGroups.length ? _pkGroups.map((g,gi)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;flex-wrap:wrap;"><span style="flex:1;min-width:0;font-size:13px;"><b>${escapeHtml(g.notify)}</b> · ${g.rowIdxs.length}行 · ${g.pieces}件 · ${g.cbm.toFixed(2)}方 · ${g.weight?g.weight.toFixed(0)+'kg · ':''}<b>${g.pallets}托</b> · 库位 ${escapeHtml(g.loc||'—')}</span><button onclick="_pkDelGroup(${gi})" style="background:#ffe5e5;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:3px 12px;cursor:pointer;font-family:inherit;">删</button></div>`).join('') : '<div style="color:var(--muted);font-size:12px;">还没有加入分组</div>';
+  if(!_tzColW || _tzColW.length!==m.headers.length) _tzColW=m.headers.map((_,i)=> i===_tzCols.id?104 : i===_tzCols.pieces?42 : i===_tzCols.cbm?54 : i===_tzCols.dest?72 : 88);
+  const opt=sel=>m.headers.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${escapeHtml(String(h||('第'+(i+1)+'列')))}</option>`).join('');
+  // 过滤用列下拉：入库默认「目的地」列；拣货默认「出库通知号(FBA)」列
+  const _filterDef = _tzPickMode ? ((_tzCols.notify>=0)?_tzCols.notify:_tzCols.id) : _tzCols.dest;
+  const filterOpt=m.headers.map((h,i)=>`<option value="${i}" ${i===_filterDef?'selected':''}>${escapeHtml(String(h||('第'+(i+1)+'列')))}</option>`).join('');
+  const n=m.headers.length;
+  const keys=[_tzCols.id,_tzCols.pieces,_tzCols.cbm,_tzCols.dest];
+  const rest=[]; for(let i=0;i<n;i++){ if(!keys.includes(i)) rest.push(i); }
+  const colOrder=_tzReorder ? [...keys.filter(k=>k>=0&&k<n),...rest] : Array.from({length:n},(_,i)=>i);
+  const stickyN=_tzReorder?keys.filter(k=>k>=0&&k<n).length:1;   // 固定在左边的数据列数(单号/件数/方数/目的地)
+  let leftAcc=36; const leftOff=colOrder.map((i,pos)=>{ if(pos<stickyN){ const o=leftAcc; leftAcc+=_tzColW[i]; return o; } return null; });
+  _tzColOrder=colOrder; _tzStickyN=stickyN;
+  const totalW=36+colOrder.reduce((s,i)=>s+_tzColW[i],0);
+  const colgroup=`<col style="width:36px">`+colOrder.map(i=>`<col id="tzcol-${i}" style="width:${_tzColW[i]}px">`).join('');
+  const cb='box-sizing:border-box;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+  const roleOf=i=> i===_tzCols.cbm?'color:var(--red);':i===_tzCols.pieces?'color:#1a73e8;':i===_tzCols.id?'color:#16a34a;':i===_tzCols.dest?'color:#b8860b;':'';
+  const head=`<th style="position:sticky;top:0;left:0;z-index:8;background:var(--bg);${cb}">选</th>`+colOrder.map((i,pos)=>{
+    const stk=leftOff[pos]!==null?`left:${leftOff[pos]}px;z-index:7;`:'z-index:6;';
+    const sp=leftOff[pos]!==null?`data-spos="${pos}" `:'';
+    return `<th ${sp}style="position:sticky;top:0;${stk}background:var(--bg);${cb}${roleOf(i)}"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(String(m.headers[i]||('第'+(i+1)+'列')))}</span><span onpointerdown="_tzColResz(event,${i})" style="position:absolute;right:-1px;top:0;width:14px;height:100%;cursor:col-resize;touch-action:none;z-index:9;"></span></th>`;
+  }).join('');
+  const usedSet=new Set();
+  if(_tzPickMode){ _pkGroups.forEach(g=>g.rowIdxs.forEach(x=>usedSet.add(x))); }
+  else { const _tg=(order.extra&&order.extra.tz_groups)||{}; Object.values(_tg).forEach(a=>(a||[]).forEach(x=>usedSet.add(x))); }
+  const body=m.rows.map((r,ri)=>{
+    if(!r.some(c=>String(c).trim()!=='')) return '';
+    const cbmv=parseFloat(r[_tzCols.cbm])||0;
+    const used=usedSet.has(ri);
+    const noLoc=_tzPickMode && !_pkRowHasLoc(r);   // 拣货模式：未入库扫码绑库位 → 不可拣
+    const dis=used||noLoc;
+    const cellBg=used?'#e6e6e6':(noLoc?'#ffecec':'var(--paper)');
+    const cells=colOrder.map((i,pos)=>{
+      const role=roleOf(i)+(i===_tzCols.cbm?'font-weight:700;':'');
+      const stk=leftOff[pos]!==null?`position:sticky;left:${leftOff[pos]}px;background:${cellBg};z-index:2;`:'';
+      const sp=leftOff[pos]!==null?`data-spos="${pos}" `:'';
+      return `<td ${sp}style="${stk}${cb}${role}${dis?'opacity:.5;':''}">${escapeHtml(String(r[i]??''))}</td>`;
+    }).join('');
+    const rowBg=used?'#efefef':(noLoc?'#fff3f3':'');
+    const selBg=used?'#cfcfcf':(noLoc?'#f6caca':'var(--paper)');
+    const selInner=noLoc?'<span title="未入库扫码绑库位，不可拣货" style="font-size:9px;color:#b91c1c;font-weight:700;">未上架</span>':`<input type="checkbox" class="tz-rowcb" data-cbm="${cbmv}" data-dest="${escapeHtml(String(r[_tzCols.dest]??''))}" data-ridx="${ri}" ${used?'disabled':''} onchange="this.closest('tr').style.background=this.checked?'rgba(22,163,74,.18)':''" style="width:18px;height:18px;">`;
+    return `<tr${rowBg?` style="background:${rowBg};"`:''}><td class="tz-selcell" style="position:sticky;left:0;background:${selBg};text-align:center;box-sizing:border-box;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:2px;z-index:3;touch-action:none;">${selInner}</td>${cells}</tr>`;
+  }).join('');
+  _tzEl('tz-classify-body').innerHTML=`
+    <div class="kc-card" style="margin-bottom:6px;padding:10px 14px;"><div style="font-size:17px;font-weight:800;">${order.order_no} <span style="font-size:12px;color:var(--muted);font-weight:600;">客户 ${order.customer_no}</span></div></div>
+    <div id="tz-top-col" style="overflow:hidden;transition:max-height .12s ease;">
+      <div class="kc-card"><div class="kc-step" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span>列对应（自动识别，可改；🟢单号 🔵件数 🔴方数 🟡目的地）</span><button onclick="_tzToggleReorder()" class="kc-btn" style="width:auto;margin:0;padding:3px 10px;font-size:12px;font-weight:700;">${_tzReorder?'↔ 恢复原表列序':'↔ 重要列排左'}</button></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;align-items:center;">
+          <label>单号/唛头 <select id="tz-col-id" onchange="_tzColChange()" style="font-family:inherit;">${opt(_tzCols.id)}</select></label>
+          <label>件数 <select id="tz-col-pcs" onchange="_tzColChange()" style="font-family:inherit;">${opt(_tzCols.pieces)}</select></label>
+          <label>方数/CBM <select id="tz-col-cbm" onchange="_tzColChange()" style="font-family:inherit;">${opt(_tzCols.cbm)}</select></label>
+          <label>目的地 <select id="tz-col-dest" onchange="_tzColChange()" style="font-family:inherit;">${opt(_tzCols.dest)}</select></label>
+        </div>
+      </div>
+      <div class="kc-card"><div class="kc-step">${_tzPickMode?('已加入分组（'+_pkGroups.length+' 个出库通知号）'):('已分组（共 '+total+' 托）')}</div>${_tzPickMode?pkGroupsHtml:groupsHtml}</div>
+    </div>
+    <div id="tz-splitter" onpointerdown="_tzSplitStart(event)" ondblclick="_tzSplitToggle()" title="拖动调整高度；双击一键收起/恢复" style="height:24px;margin:4px 0 8px;border-radius:10px;background:#eaf1ff;border:2.5px solid #1a73e8;cursor:row-resize;display:flex;align-items:center;justify-content:center;color:#1a73e8;font-size:12px;font-weight:800;user-select:none;touch-action:none;">⠿⠿ 上拉看更多行（双击收起/恢复）⠿⠿</div>
+    <div class="kc-card">
+      <div class="kc-step">${_tzPickMode?'新建出库通知号分组：填通知号 → 选列+关键字筛选+确定(默认全选) → 加入分组':'新建一组：① 选列+填关键字+确定 自动筛选并全选 ② 或手动勾选（按住拖动可连续多选）'}</div>
+      <input id="tz-group-name" placeholder="${_tzPickMode?'出库通知号（如 FBA SHIPMENT ID / 邮件微信通知号）':'组名，如 FedEx / UPS / 卡派 目的地'}" style="margin-bottom:8px;">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;background:#f0f7ff;border:1.5px solid #93c5fd;border-radius:8px;padding:7px 8px;">
+        <select id="tz-filter-col" style="font-family:inherit;font-size:12px;max-width:120px;">${filterOpt}</select>
+        <input id="tz-filter-kw" placeholder="关键字，如 UPS / FedEx / 唛头号" onkeydown="if(event.key==='Enter')_tzFilterRows()" style="flex:1;min-width:110px;margin:0;">
+        <button onclick="_tzFilterRows()" class="kc-btn-primary" style="width:auto;margin:0;padding:7px 14px;">🔍 确定</button>
+        <button onclick="_tzClearFilter()" class="kc-btn" style="width:auto;margin:0;padding:7px 10px;">显示全部</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px;"><span style="color:var(--muted);white-space:nowrap;">◀左右滚动▶</span><input type="range" id="tz-hscroll" min="0" max="0" value="0" oninput="_tzHScroll(this.value)" style="flex:1;"></div>
+      <div id="tz-rows-scroll" onscroll="_tzSyncSlider()" style="overflow:auto;max-height:40vh;border:1px solid var(--line);border-radius:8px;">
+        <table onpointerdown="_tzSelStart(event)" style="border-collapse:separate;border-spacing:0;table-layout:fixed;width:${totalW}px;user-select:none;"><colgroup>${colgroup}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;"><span style="color:var(--muted);white-space:nowrap;">◀左右滚动▶</span><input type="range" id="tz-hscroll2" min="0" max="0" value="0" oninput="_tzHScroll(this.value)" style="flex:1;"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button onclick="_tzCalcGroup()" class="kc-btn" style="width:auto;margin:0;">🧮 算选中方数</button>
+        <span style="font-size:13px;">合计 <b id="tz-sum-cbm">0</b> m³ → 托数</span>
+        <input id="tz-group-pallets" type="number" min="1" style="width:72px;" value="">
+        <button onclick="${_tzPickMode?'_pkAddGroup()':'_tzConfirmGroup()'}" class="kc-btn-primary" style="width:auto;margin:0;">${_tzPickMode?'✅ 加入此出库通知号分组':'✅ 确认本组并生成托板'}</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">标准托/板 40×48×72 英寸 ≈ ${TZ_PALLET_CBM.toFixed(2)} m³/托（向上取整）</div>
+    </div>
+    ${_tzPickMode
+      ? (_pkGroups.length?`<button onclick="_pkGenerate()" class="kc-btn-primary" style="background:#7c3aed;border-color:#6d28d9;">📄 生成转运拣货表 + 打印</button>`:'')
+      : (total?`<button onclick="_tzPrintTzLabels('label46')" class="kc-btn-primary">🏷 打印全部托板标签（4×6，每托4张）</button><button onclick="_tzPrintTzLabels('sheet')" class="kc-btn">🖨 打印整页 Letter/A4（每页4份）</button>`:'')}`;
+  _tzSyncSliderMax(); setTimeout(_tzSyncSliderMax, 150);
+}
+function _tzCalcGroup(){
+  let sum=0; document.querySelectorAll('.tz-rowcb:checked').forEach(cb=>sum+=parseFloat(cb.dataset.cbm)||0);
+  _tzEl('tz-sum-cbm').textContent=sum.toFixed(3);
+  _tzEl('tz-group-pallets').value=Math.max(1,Math.ceil(sum/TZ_PALLET_CBM));
+}
+// 选某列 + 填关键字 + 确定 → 表格只显示该列含关键字的行，并默认全部勾选（已分组的灰行不可选）
+function _tzFilterRows(){
+  const m=_tzCurrentOrder&&_tzCurrentOrder.order&&_tzCurrentOrder.order.manifest; if(!m) return;
+  const col=parseInt(_tzVal('tz-filter-col'),10);
+  const kw=(_tzVal('tz-filter-kw')||'').trim().toLowerCase();
+  if(!kw){ _tzClearFilter(); return; }
+  let shown=0, checked=0;
+  document.querySelectorAll('#tz-rows-scroll tbody tr').forEach(tr=>{
+    const cb=tr.querySelector('.tz-rowcb'); if(!cb) return;
+    const ridx=parseInt(cb.dataset.ridx);
+    const val=String(((m.rows[ridx]||[])[col]) ?? '').toLowerCase();
+    const match=val.includes(kw);
+    tr.style.display=match?'':'none';
+    if(match){ shown++; if(!cb.disabled){ cb.checked=true; tr.style.background='rgba(22,163,74,.18)'; checked++; } }
+    else { if(!cb.disabled){ cb.checked=false; tr.style.background=''; } }
+  });
+  // 组名留空 → 自动用关键字（如 UPS / 出库通知号）
+  const gn=_tzEl('tz-group-name'); if(gn && !gn.value.trim()) gn.value=(_tzVal('tz-filter-kw')||'').trim();
+  _tzCalcGroup();
+  toast(shown ? `筛选出 ${shown} 行，已勾选 ${checked} 行 — 可取消个别行后「确认本组」` : '没有匹配该关键字的行');
+}
+function _tzClearFilter(){
+  document.querySelectorAll('#tz-rows-scroll tbody tr').forEach(tr=>{ tr.style.display=''; });
+}
+async function _tzConfirmGroup(){
+  const { order }=_tzCurrentOrder;
+  let label=_tzVal('tz-group-name').trim();
+  const n=parseInt(_tzVal('tz-group-pallets'))||0;
+  const checked=[...document.querySelectorAll('.tz-rowcb:checked')];
+  if(!checked.length) return toast('请先勾选要分组的行');
+  if(n<1) return toast('请先点「算选中方数」算出托数（或手填托数）');
+  if(!label){   // 没填组名 → 自动用选中行"目的地"列里出现最多的值
+    const counts={}; checked.forEach(cb=>{ const d=(cb.dataset.dest||'').trim(); if(d) counts[d]=(counts[d]||0)+1; });
+    const top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    label = top ? top[0] : ('组'+(Date.now().toString().slice(-4)));
+  }
+  const { data:exist }=await sb.from('atmm_pallets').select('seq').eq('order_id',order.id).order('seq',{ascending:false}).limit(1);
+  let seq=exist&&exist[0]?exist[0].seq:0;
+  const dateStr=_kcDateStr(order.order_at); const pallets=[];
+  for(let i=0;i<n;i++){ seq++; const qr=`${order.customer_no}-${order.order_no}-${dateStr}-${seq}`; pallets.push({warehouse_id:order.warehouse_id,order_id:order.id,seq,label:qr,qr_text:qr,group_label:label,location_code:''}); }
+  const { error }=await sb.from('atmm_pallets').insert(pallets);
+  if(error) return toast('生成失败：'+error.message);
+  // 记录本组选中的行索引(下次渲染这些行变灰不可重选)
+  const ridxs=checked.map(cb=>parseInt(cb.dataset.ridx)).filter(x=>!isNaN(x));
+  const lastIdx=ridxs.length?Math.max(...ridxs):-1;   // 本次最后选中的行
+  const extra=Object.assign({}, order.extra||{}); const tg=Object.assign({}, extra.tz_groups||{});
+  tg[label]=Array.from(new Set([...(tg[label]||[]), ...ridxs])); extra.tz_groups=tg;
+  const { count }=await sb.from('atmm_pallets').select('*',{count:'exact',head:true}).eq('order_id',order.id);
+  await sb.from('atmm_orders').update({pallet_count:count, extra}).eq('id',order.id); order.pallet_count=count; order.extra=extra;
+  toast(`✅ ${label} 已生成 ${n} 托`);
+  await _tzRenderClassify();
+  if(lastIdx>=0) setTimeout(()=>_tzScrollToRow(lastIdx), 60);   // 把上次最后选的行滚到屏幕中间，便于继续选
+}
+async function _tzSaveFreeDays(){
+  const v=parseInt(_tzVal('tz-freedays'),10);
+  if(isNaN(v)||v<0){ toast('请输入有效天数（≥0）'); return; }
+  const { order }=_tzCurrentOrder;
+  const { error }=await sb.from('atmm_orders').update({free_days:v}).eq('id',order.id);
+  if(error){ toast('保存失败：'+error.message); return; }
+  order.free_days=v; toast('✅ 免费存放天数已设为 '+v+' 天'); _tzOpenOrder(order.id);
+}
+// 转运入库扫码 —— 复用快拆扫码引擎(同 atmm_pallets)。
+// 注意:绝不能在打开摄像头前 await(否则 iOS 丢失用户手势→摄像头打不开)。直接用 _tzOpenOrder 已缓存的 pallets。
+function _tzStartInbound(){
+  const { order, pallets }=_tzCurrentOrder;
+  if(!pallets || !pallets.length){ toast('请先「分类算托数」生成托板'); return; }
+  _kcCurrentOrder={ order, pallets:pallets.map(p=>({...p})) }; _kcScanReturn=()=>_tzOpenOrder(order.id);
+  _kcStartInbound();   // 同步调用,保住用户手势
+}
+
+// ===== 转运出库：先预选要出的托（支持部分出库），再扫码校验 =====
+let _tzOutSel = new Set();      // 选中的托 id
+let _tzOutGroups = [];          // [{label, pallets:[...]}]
+async function _tzStartOutbound(){
+  const { order }=_tzCurrentOrder;
+  const { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',order.id).order('seq');
+  if(!pallets || !pallets.length){ toast('请先分类生成托板'); return; }
+  if(!pallets.some(p=>p.inbound_at)){ toast('还没有任何托入库，无法出库'); return; }
+  if(!pallets.some(p=>p.inbound_at && !p.outbound_at)){ toast('本订单已全部出库'); return; }
+  _tzCurrentOrder.pallets=pallets;
+  _tzOutSel=new Set();
+  _tzRenderOutSelect();
+  _tzEl('tz-out-overlay').style.display='flex';
+  setTimeout(()=>_tzOutScrollToNext(), 80);   // 打开就定位到第一个可出库的托
+}
+function _tzOutClose(){ _tzEl('tz-out-overlay').style.display='none'; if(_tzCurrentOrder?.order) _tzOpenOrder(_tzCurrentOrder.order.id); }
+function _tzRenderOutSelect(){
+  const { pallets }=_tzCurrentOrder;
+  const map={}; _tzOutGroups=[];
+  pallets.forEach(p=>{ const g=p.group_label||'（未分组）'; if(!map[g]){ map[g]={label:g,pallets:[]}; _tzOutGroups.push(map[g]); } map[g].pallets.push(p); });
+  _tzEl('tz-out-body').innerHTML=_tzOutGroups.map((grp,gi)=>{
+    const ps=grp.pallets.slice().sort((a,b)=>a.seq-b.seq);
+    const loc=[...new Set(ps.map(p=>p.location_code).filter(Boolean))].join('/')||'—';
+    const inb=ps.filter(p=>p.inbound_at).length, out=ps.filter(p=>p.outbound_at).length;
+    return `<div class="kc-card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div><span style="font-weight:800;font-size:15px;">${escapeHtml(grp.label)}</span> <span style="font-size:12px;color:var(--muted);">库位 ${escapeHtml(loc)} · 共${ps.length}托 · 已入库${inb} · 已出库${out}</span></div>
+        <button onclick="_tzOutToggleGroup(${gi})" style="border:1.5px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">本组全选/取消</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px;margin-top:10px;">
+        ${ps.map(p=>_tzOutChip(p)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  _tzOutUpdateCount();
+}
+function _tzOutChip(p){
+  const out=!!p.outbound_at, noin=!p.inbound_at, sel=_tzOutSel.has(p.id);
+  let bg='#e8eaed',col='#333',bd='1px solid #d0d3d8',tip='',click=`onclick="_tzOutToggle('${p.id}')"`,cur='pointer';
+  if(out){ bg='#16a34a';col='#fff';bd='none';tip='已出';click='';cur='default'; }
+  else if(noin){ bg='#f3e0e0';col='#b06';bd='1px dashed #d99';tip='未入库';click='';cur='not-allowed'; }
+  else if(sel){ bg='#2563eb';col='#fff';bd='none'; }
+  const selable = !out && !noin;
+  return `<div ${click} data-sel="${selable?1:0}" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;font-weight:800;font-size:14px;background:${bg};color:${col};border:${bd};cursor:${cur};">${p.seq}${out?'✓':''}${tip?`<span style="font-size:8px;font-weight:600;margin-top:1px;">${tip}</span>`:''}</div>`;
+}
+function _tzOutToggle(id){
+  const p=_tzCurrentOrder.pallets.find(x=>x.id===id);
+  if(!p || !p.inbound_at || p.outbound_at) return;   // 仅可选"已入库且未出库"
+  if(_tzOutSel.has(id)) _tzOutSel.delete(id); else _tzOutSel.add(id);
+  _tzRenderOutSelect();
+}
+function _tzOutToggleGroup(gi){
+  const ps=(_tzOutGroups[gi]?.pallets||[]).filter(p=>p.inbound_at && !p.outbound_at);
+  const allSel=ps.length>0 && ps.every(p=>_tzOutSel.has(p.id));
+  ps.forEach(p=>{ if(allSel) _tzOutSel.delete(p.id); else _tzOutSel.add(p.id); });
+  _tzRenderOutSelect();
+}
+function _tzOutSelectAll(on){
+  _tzOutSel=new Set();
+  if(on) _tzCurrentOrder.pallets.forEach(p=>{ if(p.inbound_at && !p.outbound_at) _tzOutSel.add(p.id); });
+  _tzRenderOutSelect();
+}
+function _tzOutUpdateCount(){
+  const n=_tzOutSel.size, b=_tzEl('tz-out-go');
+  if(b){ b.textContent = n>0 ? `▶️ 开始扫码出库（已选 ${n} 托）` : '请先勾选要出库的托'; b.disabled=(n===0); b.style.opacity=n===0?'.5':'1'; }
+}
+function _tzBeginOutboundScan(){
+  const { order, pallets }=_tzCurrentOrder;
+  const subset=pallets.filter(p=>_tzOutSel.has(p.id));
+  if(!subset.length){ toast('请先勾选要出库的托'); return; }
+  _tzEl('tz-out-overlay').style.display='none';
+  _kcCurrentOrder={ order, pallets };
+  _kcScanReturn=()=>_tzAfterOutbound(order.id);   // 扫完:还有未出库→回勾选页继续；全出完→回详情
+  _kcScanOpen('outbound', { subset, allSeqs:new Set(pallets.map(p=>p.seq)) });   // 同步,保住手势
+}
+async function _tzAfterOutbound(orderId){
+  const { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',orderId).order('seq');
+  const remaining=(pallets||[]).filter(p=>p.inbound_at && !p.outbound_at);
+  if(remaining.length){
+    _tzCurrentOrder.pallets=pallets; _tzOutSel=new Set();
+    _tzRenderOutSelect();
+    _tzEl('tz-out-overlay').style.display='flex';
+    setTimeout(()=>_tzOutScrollToNext(), 80);   // 下一个未出库的托滚到居中偏上
+  } else {
+    _tzOpenOrder(orderId);   // 全部出完→回详情
+  }
+}
+function _tzOutScrollToNext(){
+  const body=_tzEl('tz-out-body'); if(!body) return;
+  const el=body.querySelector('[data-sel="1"]'); if(!el) return;
+  const r=el.getBoundingClientRect(), br=body.getBoundingClientRect();
+  body.scrollTop += (r.top - br.top) - body.clientHeight*0.28;   // 居中偏上(约30%处)
+}
+
+// ===== TZ-P5：转运订单报表（含在库天数/超免费期 + 计价预留）=====
+async function _tzReport(){
+  if(!_tzCurrentOrder?.order){ toast('请先打开订单'); return; }
+  const order=_tzCurrentOrder.order;
+  const { data:plist }=await sb.from('atmm_pallets').select('*').eq('order_id',order.id).order('seq');
+  const ps=plist||[];
+  const fmt=iso=>iso?_kcFmtDT(iso):'—';
+  const DAY=86400000, now=Date.now(), freeDays=order.free_days||3;
+  const days=p=>{ if(!p.inbound_at) return null; const end=p.outbound_at?new Date(p.outbound_at).getTime():now; return Math.max(0,Math.ceil((end-new Date(p.inbound_at).getTime())/DAY)); };
+  const over=p=>{ const d=days(p); return d===null?0:Math.max(0,d-freeDays); };
+  const inDone=ps.filter(p=>p.inbound_at).length, outDone=ps.filter(p=>p.outbound_at).length, inStock=ps.filter(p=>p.inbound_at&&!p.outbound_at).length;
+  const totalPD=ps.reduce((s,p)=>s+(days(p)||0),0), overPD=ps.reduce((s,p)=>s+over(p),0), overPallets=ps.filter(p=>over(p)>0).length;
+  const statusLabel={ created:'待入库', inbound:'已入库', shipped:'已出库' }[order.status]||order.status;
+  // 按唛头/分类分组
+  const groups={}, gorder=[];
+  ps.forEach(p=>{ const g=p.group_label||'（未分组）'; if(!groups[g]){ groups[g]=[]; gorder.push(g); } groups[g].push(p); });
+  let plRows='';
+  gorder.forEach(g=>{
+    const arr=groups[g].slice().sort((a,b)=>a.seq-b.seq);
+    arr.forEach((p,i)=>{ const d=days(p), o=over(p);
+      plRows+=`<tr>${i===0?`<td rowspan="${arr.length}" style="font-weight:700;">${escapeHtml(g)}</td>`:''}<td>${p.seq}</td><td>${escapeHtml(p.location_code||'—')}</td><td>${fmt(p.inbound_at)}</td><td>${fmt(p.outbound_at)}</td><td style="text-align:center;">${d===null?'—':d}</td><td style="text-align:center;${o>0?'color:#c00;font-weight:700;':''}">${o>0?o:'—'}</td></tr>`; });
+  });
+  if(!plRows) plRows='<tr><td colspan="7" style="text-align:center;color:#999;">暂无托/板</td></tr>';
+  // 分组小计(托数)
+  let gSum=gorder.map(g=>`${escapeHtml(g)} ${groups[g].length}托`).join(' · ')||'—';
+  const win=window.open('','_blank'); if(!win){ toast('请允许弹出窗口'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>转运订单报表 ${order.order_no}</title>
+<style>body{font-family:-apple-system,sans-serif;padding:16px;color:#111;max-width:820px;margin:0 auto;}
+h1{font-size:20px;margin-bottom:4px;} h3{margin:18px 0 4px;} .sub{color:#666;font-size:13px;margin-bottom:14px;}
+table{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:13px;} th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;} th{background:#f5f5f5;}
+.kv{font-size:14px;line-height:2;} .kv b{display:inline-block;min-width:104px;color:#555;}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;color:#fff;font-size:12px;background:#16a34a;}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0;} .card{flex:1;min-width:120px;border:1px solid #e5e5e5;border-radius:10px;padding:10px 12px;} .card .n{font-size:22px;font-weight:800;} .card .l{font-size:12px;color:#666;}
+.warn{color:#c00;font-weight:700;} .muted{color:#999;}
+@media print{.noprint{display:none;}}</style></head><body>
+<h1>${_tzBrand()} · 转运订单报表</h1>
+<div class="sub">导出时间 ${_kcFmtDT(new Date().toISOString())}</div>
+<div class="kv">
+<div><b>订单号</b> ${order.order_no} &nbsp; <span class="badge">${statusLabel}</span></div>
+<div><b>客户号</b> ${order.customer_no}</div>
+<div><b>提单/发货单</b> ${escapeHtml(order.bill_no||'—')}</div>
+<div><b>下单时间</b> ${fmt(order.order_at)}</div>
+<div><b>免费存放</b> ${freeDays} 天 &nbsp;·&nbsp; <b style="min-width:auto;">托/板数</b> ${order.pallet_count||ps.length}</div>
+<div><b>分类构成</b> ${gSum}</div>
+<div><b>入库完成</b> ${fmt(order.inbound_done_at)} &nbsp;·&nbsp; <b style="min-width:auto;">出库完成</b> ${fmt(order.outbound_done_at)}</div>
+</div>
+<div class="cards">
+<div class="card"><div class="n">${order.pallet_count||ps.length}</div><div class="l">总托/板</div></div>
+<div class="card"><div class="n">${inDone}</div><div class="l">已入库</div></div>
+<div class="card"><div class="n">${inStock}</div><div class="l">在库中</div></div>
+<div class="card"><div class="n">${outDone}</div><div class="l">已出库</div></div>
+<div class="card"><div class="n ${overPallets?'warn':''}">${overPallets}</div><div class="l">超免费期托数</div></div>
+</div>
+<h3>托/板 进出库明细</h3>
+<table><tr><th>唛头/分类</th><th>顺序</th><th>库位</th><th>入库时间</th><th>出库时间</th><th>在库天数</th><th>超期天数</th></tr>${plRows}</table>
+<h3>计价预留（填入单价即可结算）</h3>
+<table>
+<tr><th>项目</th><th>计费量</th><th>单价</th><th>金额</th></tr>
+<tr><td>仓储费（按 托·天）</td><td>${totalPD} 托·天</td><td>＿＿＿ / 托·天</td><td>＿＿＿＿</td></tr>
+<tr><td>超期仓储费（超免费期 托·天）</td><td class="${overPD?'warn':''}">${overPD} 托·天</td><td>＿＿＿ / 托·天</td><td>＿＿＿＿</td></tr>
+<tr><td>操作 / 装卸费（按 托）</td><td>${order.pallet_count||ps.length} 托</td><td>＿＿＿ / 托</td><td>＿＿＿＿</td></tr>
+<tr><td>其他费用</td><td>—</td><td>—</td><td>＿＿＿＿</td></tr>
+<tr><td style="font-weight:700;">合计应收</td><td>—</td><td>—</td><td style="font-weight:700;">＿＿＿＿</td></tr>
+</table>
+<div class="muted" style="font-size:12px;margin-top:6px;">说明：在库天数=入库日至出库日(未出库按今日计)，向上取整；超期天数=在库天数−免费 ${freeDays} 天。单价与计费口径以双方约定为准。</div>
+<div class="noprint" style="margin-top:16px;"><button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer;">🖨 打印 / 转 PDF</button></div>
+</body></html>`);
+  win.document.close();
+}
+function _tzScrollToRow(ridx){
+  const sc=_tzEl('tz-rows-scroll'); if(!sc) return;
+  const cell=sc.querySelector('[data-ridx="'+ridx+'"]'); const tr=cell&&cell.closest('tr'); if(!tr) return;
+  const t=tr.getBoundingClientRect(), s=sc.getBoundingClientRect();
+  sc.scrollTop += (t.top - s.top) - sc.clientHeight/2 + t.height/2;
+}
+async function _tzDeleteGroup(label){
+  const { order }=_tzCurrentOrder;
+  if(!confirm(`删除分组"${label}"的所有托板？`)) return;
+  await sb.from('atmm_pallets').delete().eq('order_id',order.id).eq('group_label',label);
+  const extra=Object.assign({}, order.extra||{}); const tg=Object.assign({}, extra.tz_groups||{}); delete tg[label]; extra.tz_groups=tg;
+  const { count }=await sb.from('atmm_pallets').select('*',{count:'exact',head:true}).eq('order_id',order.id);
+  await sb.from('atmm_orders').update({pallet_count:count, extra}).eq('id',order.id); order.pallet_count=count; order.extra=extra;
+  toast('已删除'); _tzRenderClassify();
+}
+// 重打某一分组的标签：让用户选打印尺寸（4×6 不干胶 / A4 一页4枚）
+function _tzPrintGroup(label){
+  const a4 = confirm(`重新打印『${label}』组的二维码/条码标签。\n\n确定 = 4×6 不干胶（贴标机）\n取消 = A4 一页 4 枚`);
+  _tzPrintTzLabels(a4?'label46':'a4', label);
+}
+async function _tzPrintTzLabels(mode, onlyGroup){
+  const { order }=_tzCurrentOrder; mode=mode||'label46';
+  let { data:pallets }=await sb.from('atmm_pallets').select('*').eq('order_id',order.id).order('seq');
+  if(onlyGroup) pallets=(pallets||[]).filter(p=>(p.group_label||'')===onlyGroup);
+  if(!pallets || !pallets.length){ toast(onlyGroup?('『'+onlyGroup+'』组没有托板'):'还没有托板，请先分类生成'); return; }
+  toast('生成标签中…'); await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
+  const dateStr=_kcDateStr(order.order_at), total=pallets.length, made=[];
+  for(const p of pallets){
+    const qr=await _genZQR(p.qr_text,{cell:9}); let bar='';
+    try{ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); document.body.appendChild(svg); _jsBarcodeLib(svg,`${order.order_no}-${p.seq}`,{format:'CODE128',width:1.8,height:45,fontSize:11,margin:4,displayValue:true}); bar='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg)); document.body.removeChild(svg);}catch(e){}
+    made.push({qr,bar,l3:`${order.customer_no}-${order.order_no}`,l4:`${dateStr}-${p.seq}/${total}`,g:p.group_label||''});
+  }
+  const inner=mm=>`<img class="qr" src="${mm.qr}"><img class="bar" src="${mm.bar}"><div class="t">${mm.l3}</div><div class="t">${mm.l4}</div>${mm.g?`<div class="g">${escapeHtml(mm.g)}</div>`:''}`;
+  let css, body;
+  if(mode==='label46'){
+    css=`@page{size:4in 6in;margin:0;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;}.lbl{width:4in;height:6in;padding:6mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3mm;page-break-after:always;}.lbl .qr{width:60mm;height:60mm;}.lbl .bar{width:90mm;height:20mm;}.lbl .t{font-size:19pt;font-weight:800;}.lbl .g{font-size:14pt;color:#444;}`;
+    body=made.map(mm=>Array(4).fill(`<div class="lbl">${inner(mm)}</div>`).join('')).join('');
+  } else {
+    css=`*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;}.sheet{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:6mm;padding:8mm;height:100vh;page-break-after:always;}.lbl{border:.4mm dashed #999;border-radius:2mm;padding:3mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5mm;}.lbl .qr{width:32mm;height:32mm;}.lbl .bar{width:100%;max-width:50mm;height:14mm;}.lbl .t{font-size:13pt;font-weight:800;}.lbl .g{font-size:10pt;color:#444;}@media print{.sheet{padding:5mm;height:auto;min-height:96vh;}}`;
+    body=made.map(mm=>`<div class="sheet">${Array(4).fill(`<div class="lbl">${inner(mm)}</div>`).join('')}</div>`).join('');
+  }
+  const win=window.open('','_blank'); if(!win){toast('请允许弹出窗口');return;}
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>转运标签 ${order.order_no}${onlyGroup?(' · '+onlyGroup):''}</title><style>${css}</style></head><body>${body}<script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script></body></html>`);
+  win.document.close();
+}
+
 
 // ── Auth init (entry point) ──
 async function _initAuth() {
