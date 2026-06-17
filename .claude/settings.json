@@ -8,11 +8,35 @@
       "Bash(Measure-Object -Line)",
       "Bash(Get-ChildItem api/ -Filter \"*.js\")",
       "Bash(Measure-Object)",
-      "Bash(Select-Object -ExpandProperty Count)"
+      "Bash(Select-Object -ExpandProperty Count)",
+      "Bash(grep -n \"基础版\\\\|标准版\\\\|高级版\\\\|Basic\\\\|Standard\\\\|Premium\\\\|\\\\$19\\\\|\\\\$31\\\\|\\\\$68\\\\|\\\\$88\\\\|\\\\$188\\\\|\\\\$228\\\\|\\\\$365\\\\|\\\\$372\\\\|\\\\$888\\\\|\\\\$1,056\\\\|\\\\$1,888\\\\|\\\\$2,736\" \"d:\\\\Store手机版\\\\atmm.store\\\\shop.html\")",
+      "Bash(grep -rn \"选择方案\\\\|planModal\\\\|\\\\$19\\\\|\\\\$29\\\\|\\\\$68\\\\|\\\\$99\" \"d:\\\\Store手机版\\\\atmm.store\\\\\" 2>/dev/null | grep -v \".git\" | head -20)",
+      "Bash(powershell -Command \"\\(Get-Content index.html -Raw\\) -replace 'app-version-label\\\\\" onclick=\\\\\"_openChangelog\\\\\\(\\\\\\)\\\\\" style=\\\\\"font-size:11px; font-weight:700; color:var\\\\\\(--red\\\\\\); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;\\\\\">v3\\\\.5', 'app-version-label\\\\\" onclick=\\\\\"_openChangelog\\(\\)\\\\\" style=\\\\\"font-size:11px; font-weight:700; color:var\\(--red\\); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;\\\\\">v3.6' | Set-Content index.html -NoNewline -Encoding utf8\")",
+      "Bash(python3 -)",
+      "Bash(python fix_v37.py)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(python fix_v37b.py)",
+      "Bash(python fix_v37c.py)",
+      "Bash(python fix_v37d.py)",
+      "Bash(python fix_v37e.py)",
+      "Bash(python fix_changelog.py)",
+      "Bash(Test-Path \"d:\\\\Store手机版\\\\atmm.store\\\\models.html\")",
+      "Bash(dir /b \"d:\\\\ZEHEM.AI\\\\zehem.ai-web\\\\supabase\\\\functions\")",
+      "Bash(vercel --prod)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel login *)",
+      "Bash(supabase --version)",
+      "Bash(supabase status *)",
+      "Bash(git mv *)"
     ],
     "additionalDirectories": [
       "d:\\Store???\\atmm.store",
-      "d:\\ZEHEM.AI\\zehem.ai-web\\public"
+      "d:\\ZEHEM.AI\\zehem.ai-web\\public",
+      "d:\\ZEHEM.AI\\zehem.ai-web\\supabase\\functions\\zehem-cards",
+      "d:\\ZEHEM.AI\\zehem.ai-web\\supabase\\functions\\zehem-daily-grant",
+      "d:\\ZEHEM.AI\\zehem.ai-web\\src\\contexts",
+      "d:\\ZEHEM.AI\\zehem.ai-web"
     ]
   }
 }
