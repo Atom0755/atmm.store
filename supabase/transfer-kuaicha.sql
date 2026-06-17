@@ -84,6 +84,21 @@ create policy "members rw atmm_pallets" on atmm_pallets for all
   using (is_member(auth.uid(), warehouse_id)) with check (is_member(auth.uid(), warehouse_id));
 
 -- ============================================================
+-- 每仓库通用设置（单号前缀、免费存放天数、打印抬头 Logo 等）
+-- 单行 jsonb，便于以后扩展，不用频繁 ALTER。
+-- ============================================================
+create table if not exists atmm_settings (
+  warehouse_id uuid primary key references warehouses(id) on delete cascade,
+  data         jsonb not null default '{}'::jsonb,   -- {prefixes:{zhuanyun_in,zhuanyun_pick,kuaicha}, free_days, logo_url, ...}
+  updated_at   timestamptz default now()
+);
+
+alter table atmm_settings enable row level security;
+drop policy if exists "members rw atmm_settings" on atmm_settings;
+create policy "members rw atmm_settings" on atmm_settings for all
+  using (is_member(auth.uid(), warehouse_id)) with check (is_member(auth.uid(), warehouse_id));
+
+-- ============================================================
 -- 托/板 入出库拍照存档 Storage 桶（公开读，图片作业凭证）
 -- ============================================================
 insert into storage.buckets (id, name, public)
