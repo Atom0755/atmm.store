@@ -1251,9 +1251,29 @@
   </div>
 </div>
 
+<!-- ===== 业务模块欢迎 / 选择页（Phase 1）===== -->
+<div id="welcome-view" style="display:none; position:fixed; inset:0; z-index:4000; background:var(--bg,#faf8f3); flex-direction:column; align-items:center; overflow-y:auto; padding:0 20px;">
+  <button onclick="_enterModule(_currentModule||'yijian')" title="返回" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:var(--muted); line-height:1;">✕</button>
+  <div style="max-width:520px; width:100%; margin:auto; padding:48px 0;">
+    <div style="text-align:center; margin-bottom:6px; font-size:26px; font-weight:900; color:var(--ink);"><span translate="no">ZEHEM</span> 哲亨智能仓管</div>
+    <div style="text-align:center; margin-bottom:30px; font-size:14px; color:var(--muted);">请选择要进入的业务 / Choose your business</div>
+    <div id="welcome-cards" style="display:flex; flex-direction:column; gap:14px;"></div>
+    <div style="text-align:center; margin-top:26px; font-size:12px; color:var(--muted);">未开通的业务可在「设置 → 订阅」升级解锁</div>
+  </div>
+</div>
+
+<!-- ===== 转运 + 快拆 模块容器（Phase 2 填充）===== -->
+<div id="module-zhuanyun" style="display:none; position:fixed; inset:0; z-index:3000; background:var(--bg,#faf8f3); flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;">
+  <div style="font-size:48px; margin-bottom:12px;">🚚</div>
+  <div style="font-size:22px; font-weight:900; color:var(--ink); margin-bottom:6px;">转运 + 快拆</div>
+  <div style="font-size:14px; color:var(--muted); margin-bottom:24px;">该业务模块即将上线 🚧</div>
+  <button onclick="_showWelcome()" style="padding:11px 22px; background:var(--ink); color:var(--paper); border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">← 返回业务选择</button>
+</div>
+
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()">⊞</button>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2368,7 +2388,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.0</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.1</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>新增「业务模块」框架：顶部 ⊞ 按钮可打开业务选择页，按仓库已开通业务进入对应模块</li>
+            <li>现有全部仓管功能归入「📦 一件代发」模块；「🚚 转运 + 快拆」模块即将上线（快拆并入转运）</li>
+            <li>可开通业务由订阅决定；只开通一个直接进入，开通多个则记住上次选择，互不影响</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v5.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -9657,6 +9687,9 @@ async function _onSignIn(user) {
       if (searchEl) searchEl.value = '';
     }, 500);
   }
+
+  // 业务模块入口路由（订阅决定可见业务）
+  _routeModulesOnEntry();
 }
 
 // ── Cloud load ──
@@ -10575,6 +10608,72 @@ function _saveProfile() {
   toast('✅ 资料已保存');
 }
 
+// ── 业务模块框架（Phase 1）──────────────────────────────────────────
+// 一件代发=现有全部仓管功能；转运+快拆=Phase 2 填充。快拆并入转运。
+const MODULES = {
+  yijian:   { key:'yijian',   icon:'📦', name:'一件代发', desc:'货架 + 堆货仓管、扫码找货、型号库、发货', ready:true  },
+  zhuanyun: { key:'zhuanyun', icon:'🚚', name:'转运 + 快拆', desc:'转运拣货出库、托板标签打印、快拆分货', ready:false },
+};
+let _currentModule = null;
+
+// 该仓库已开通的业务（由订阅 subscriptions.modules 决定；未配置则默认仅「一件代发」）
+function _enabledModules() {
+  const mods = _subscription && Array.isArray(_subscription.modules) ? _subscription.modules : null;
+  const list = (mods && mods.length) ? mods.filter(k => MODULES[k]) : ['yijian'];
+  return list.length ? list : ['yijian'];
+}
+
+function _showWelcome() {
+  const enabled = _enabledModules();
+  const grid = document.getElementById('welcome-cards');
+  if (grid) grid.innerHTML = Object.values(MODULES).map(m => {
+    const on = enabled.includes(m.key);
+    const usable = on && m.ready;
+    const badge = !on
+      ? '<span style="font-size:10px;font-weight:700;color:#92400e;background:#fff3cd;border-radius:5px;padding:1px 6px;margin-left:6px;">未开通</span>'
+      : (!m.ready ? '<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:5px;padding:1px 6px;margin-left:6px;">即将上线</span>' : '');
+    const action = usable ? `_enterModule('${m.key}')` : `_welcomeLocked('${m.key}')`;
+    return `<button onclick="${action}" style="display:flex; align-items:center; gap:14px; text-align:left; padding:18px; border-radius:14px; border:2px solid ${usable?'var(--red)':'var(--line)'}; background:var(--paper); cursor:pointer; opacity:${usable?1:.65}; font-family:inherit;">
+      <span style="font-size:32px; flex-shrink:0;">${m.icon}</span>
+      <span style="flex:1;">
+        <span style="display:block; font-size:17px; font-weight:800; color:var(--ink);">${m.name}${badge}</span>
+        <span style="display:block; font-size:12px; color:var(--muted); margin-top:3px;">${m.desc}</span>
+      </span>
+      <span style="font-size:20px; color:var(--muted); flex-shrink:0;">${usable?'→':'🔒'}</span>
+    </button>`;
+  }).join('');
+  const v = document.getElementById('welcome-view');
+  if (v) v.style.display = 'flex';
+}
+
+function _welcomeLocked(key) {
+  const m = MODULES[key];
+  if (m && !m.ready) { toast('🚧 ' + m.name + ' 即将上线，敬请期待'); return; }
+  toast('该业务尚未开通，可在「设置 → 订阅」升级解锁');
+}
+
+function _enterModule(key) {
+  if (!MODULES[key]) key = 'yijian';
+  const enabled = _enabledModules();
+  if (!enabled.includes(key)) { _welcomeLocked(key); return; }
+  if (!MODULES[key].ready) { _welcomeLocked(key); return; }
+  _currentModule = key;
+  localStorage.setItem('lastModule', key);
+  const v = document.getElementById('welcome-view'); if (v) v.style.display = 'none';
+  const zy = document.getElementById('module-zhuanyun');
+  if (key === 'zhuanyun') { if (zy) zy.style.display = 'flex'; }
+  else { if (zy) zy.style.display = 'none'; }  // yijian = 现有主应用
+}
+
+// 入口路由：登录后 / 游客都调用。开通 1 个直接进；多个则按上次选择或显示欢迎页。
+function _routeModulesOnEntry() {
+  const enabled = _enabledModules();
+  if (enabled.length <= 1) { _enterModule(enabled[0] || 'yijian'); return; }
+  const last = localStorage.getItem('lastModule');
+  if (last && enabled.includes(last) && MODULES[last]?.ready) _enterModule(last);
+  else _showWelcome();
+}
+
 // ── Auth init (entry point) ──
 async function _initAuth() {
   loadState(); render(); // Show app preview behind overlay before auth check
@@ -10596,8 +10695,10 @@ async function _initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await _onSignIn(session.user);
+  } else {
+    // 游客模式：默认进「一件代发」（与原行为一致）
+    _routeModulesOnEntry();
   }
-  // else: guest mode — app is fully usable, no blocking overlay
 
   // Listen for future auth changes
   sb.auth.onAuthStateChange(async (evt, session) => {
