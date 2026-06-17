@@ -1253,7 +1253,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -1519,6 +1519,35 @@
           <a href="/models?imgupload=1" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;border:1px solid var(--line);border-radius:0 10px 10px 0;background:#f0fff4;color:#065f46;text-decoration:none;font-size:10px;font-weight:700;gap:3px;min-width:64px;white-space:nowrap;">📷<span>上传图片</span></a>
         </div>
         <button class="action-row" data-act="upload-share"><span class="ico">📤</span><div style="flex:1;"><div style="font-weight:700;">从分享菜单接收</div><div style="font-size:11px; color:var(--muted);">微信/邮件里 → 分享 → "在 Safari 中打开"</div></div></button>
+      </div>
+
+      <!-- 已选文件名（点确定导入后清空） -->
+      <div id="import-picked-file" style="display:none; margin-top:8px; padding:7px 12px; background:#fffaf0; border:1.5px solid #f59e0b; border-radius:8px; font-size:12px; font-weight:700; color:#92400e; word-break:break-all;"></div>
+
+      <!-- 列对应：选了电子表格后下拉自动填充该表的列；可手动指定哪列=型号、哪列=描述 -->
+      <div id="import-colmap" style="display:none; margin-top:10px; padding:10px 12px; background:#f0f7ff; border:1.5px solid #93c5fd; border-radius:10px;">
+        <div style="font-size:12px; font-weight:700; color:#1e40af; margin-bottom:8px;">🔢 列对应 <span id="import-colmap-file" style="font-weight:400; font-size:11px; color:var(--muted);">（选「从本地选文件」后自动识别列）</span></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:130px;">
+            <label style="font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:3px;">型号列（必选）</label>
+            <select id="import-name-col" style="width:100%; padding:7px 8px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; font-family:inherit; background:#fff;"><option value="-1">（请先从本地选文件）</option></select>
+          </div>
+          <div style="flex:1; min-width:130px;">
+            <label style="font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:3px;">描述列（可选）</label>
+            <select id="import-desc-col" style="width:100%; padding:7px 8px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; font-family:inherit; background:#fff;"><option value="-1">（无 / 不导入描述）</option></select>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+          <div style="flex:1; min-width:130px;">
+            <label style="font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:3px;">数量列（可选·填进货架/堆货）</label>
+            <select id="import-qty-col" style="width:100%; padding:7px 8px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; font-family:inherit; background:#fff;"><option value="-1">（无 / 不导入数量）</option></select>
+          </div>
+          <div style="flex:1; min-width:130px;">
+            <label style="font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:3px;">单位列（可选）</label>
+            <select id="import-unit-col" style="width:100%; padding:7px 8px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; font-family:inherit; background:#fff;"><option value="-1">（无 / 默认 箱）</option></select>
+          </div>
+        </div>
+        <div id="import-colmap-preview" style="font-size:11px; color:var(--muted); margin-top:7px; line-height:1.5;">选好文件后，这里会显示首行预览，确认无误再点下面「确定导入」。</div>
       </div>
 
       <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 14px 0 8px; letter-spacing: 0.05em;">📥 添加方式 / IMPORT MODE <span style="font-weight:400; font-size:11px;">（可多选）</span></div>
@@ -2339,7 +2368,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.0</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>导入电子表格新增「🔢 列对应」：选 .xlsx/.xls/.csv 等文件后自动识别列，可手动指定型号列/描述列/数量列/单位列</li>
+            <li>列对应支持首行预览，确认无误再导入；描述、数量、单位会一并写入型号库与货架/堆货区</li>
+            <li>已存在型号若带新描述会自动补全；手动粘贴清单的导入方式保持不变</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.9</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -8113,23 +8152,165 @@ function parseModelLines(txt) {
   return txt.split('\n').map(l => l.trim().replace(/^[\d①-⑳]+[.、\s,]*/, '').replace(/^[-*•]\s*/, '').trim()).filter(Boolean);
 }
 
+// ── 列对应（电子表格导入）────────────────────────────────────────────
+let pendingImportTable = null;  // 选了电子表格后：{ headers, rows, filename } —— 待用户做列对应
+
+// 把表格解析成 { headers:[列标题...], rows:[[...],...] }，供「列对应」下拉使用
+function xlsxToTable(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (!data.length) return { headers: [], rows: [] };
+  let h = 0;
+  while (h < data.length && !data[h].some(c => String(c).trim())) h++;  // 找第一行有内容的当表头
+  const headerRow = data[h] || [];
+  const numCols = Math.max(...data.map(r => r.length), headerRow.length, 1);
+  const headers = [];
+  for (let c = 0; c < numCols; c++) {
+    const t = String(headerRow[c] || '').trim();
+    headers.push(t || `第${c+1}列`);
+  }
+  const rows = data.slice(h + 1).filter(r => r.some(c => String(c).trim()));
+  return { headers, rows };
+}
+
+// 列对应启发式：按表头关键词猜「型号列 / 描述列 / 数量列 / 单位列」，猜不到再用文本列兜底
+function _guessCols(headers, rows) {
+  const norm = headers.map(x => String(x).toLowerCase());
+  const findBy = (kws) => norm.findIndex(h => kws.some(k => h.includes(k)));
+  let nameCol = findBy(['产品编号', '型号', 'sku', 'item', 'model', '编号']);
+  let descCol = findBy(['产品描述', '描述', 'description', 'desc', '品名', '名称', 'name']);
+  let qtyCol  = findBy(['数量', 'qty', 'quantity', '件数', '箱数', '可用库']);
+  let unitCol = findBy(['单位', 'unit', 'uom']);
+  if (nameCol < 0) {
+    let best = 0, bestScore = -1;
+    for (let c = 0; c < headers.length && c < 8; c++) {
+      let s = 0; for (const r of rows) { const v = String(r[c] || '').trim(); if (v && isNaN(Number(v)) && v.length > 1) s++; }
+      if (s > bestScore) { bestScore = s; best = c; }
+    }
+    nameCol = best;
+  }
+  if (descCol === nameCol) descCol = -1;
+  if (qtyCol === nameCol || qtyCol === descCol) qtyCol = -1;
+  if (unitCol === nameCol || unitCol === descCol || unitCol === qtyCol) unitCol = -1;
+  return { nameCol, descCol, qtyCol, unitCol };
+}
+
+// 选了电子表格后：填充「列对应」下拉 + 启发式默认 + 预览
+function _showImportColmap(table) {
+  pendingImportTable = table;
+  pendingImportLines = null;
+  const wrap = document.getElementById('import-colmap');
+  const nameSel = document.getElementById('import-name-col');
+  const descSel = document.getElementById('import-desc-col');
+  const qtySel = document.getElementById('import-qty-col');
+  const unitSel = document.getElementById('import-unit-col');
+  const fileEl = document.getElementById('import-colmap-file');
+  if (!wrap || !nameSel || !descSel) return;
+  const opts = table.headers.map((h, i) => `<option value="${i}">${escapeHtml(h)}</option>`).join('');
+  nameSel.innerHTML = opts;
+  descSel.innerHTML = `<option value="-1">（无 / 不导入描述）</option>` + opts;
+  if (qtySel) qtySel.innerHTML = `<option value="-1">（无 / 不导入数量）</option>` + opts;
+  if (unitSel) unitSel.innerHTML = `<option value="-1">（无 / 默认 箱）</option>` + opts;
+  const guess = _guessCols(table.headers, table.rows);
+  nameSel.value = String(guess.nameCol);
+  descSel.value = String(guess.descCol);
+  if (qtySel) qtySel.value = String(guess.qtyCol);
+  if (unitSel) unitSel.value = String(guess.unitCol);
+  if (fileEl) fileEl.textContent = table.filename ? `· ${table.filename}（${table.rows.length} 行）` : `· ${table.rows.length} 行`;
+  const picked = document.getElementById('import-picked-file');
+  if (picked) { picked.textContent = `📄 已选文件：${table.filename || '导入表'}（${table.rows.length} 行）— 选好列对应后点下面「确定导入」`; picked.style.display = ''; }
+  wrap.style.display = '';
+  [nameSel, descSel, qtySel, unitSel].forEach(s => { if (s) s.onchange = _updateColmapPreview; });
+  _updateColmapPreview();
+}
+function _updateColmapPreview() {
+  if (!pendingImportTable) return;
+  const gv = id => parseInt(document.getElementById(id).value, 10);
+  const nc = gv('import-name-col'), dc = gv('import-desc-col'), qc = gv('import-qty-col'), uc = gv('import-unit-col');
+  const prev = document.getElementById('import-colmap-preview');
+  const first = pendingImportTable.rows.find(r => String(r[nc] || '').trim());
+  if (prev) {
+    const cell = c => (first && c >= 0) ? String(first[c] || '').trim() : '';
+    let s = `预览首行 → 型号：<b style="color:var(--ink);">${escapeHtml(first ? String(first[nc] || '').trim() : '—')}</b>`;
+    s += dc >= 0 ? `　描述：<b style="color:var(--ink);">${escapeHtml(cell(dc) || '（空）')}</b>` : '';
+    s += qc >= 0 ? `　数量：<b style="color:var(--ink);">${escapeHtml(cell(qc) || '（空）')}</b>` : '';
+    s += uc >= 0 ? `　单位：<b style="color:var(--ink);">${escapeHtml(cell(uc) || '（空）')}</b>` : '';
+    prev.innerHTML = s;
+  }
+}
+function _hideImportColmap() {
+  pendingImportTable = null;
+  const wrap = document.getElementById('import-colmap');
+  if (wrap) wrap.style.display = 'none';
+  const nameSel = document.getElementById('import-name-col');
+  const descSel = document.getElementById('import-desc-col');
+  const qtySel = document.getElementById('import-qty-col');
+  const unitSel = document.getElementById('import-unit-col');
+  if (nameSel) nameSel.innerHTML = '<option value="-1">（请先从本地选文件）</option>';
+  if (descSel) descSel.innerHTML = '<option value="-1">（无 / 不导入描述）</option>';
+  if (qtySel) qtySel.innerHTML = '<option value="-1">（无 / 不导入数量）</option>';
+  if (unitSel) unitSel.innerHTML = '<option value="-1">（无 / 默认 箱）</option>';
+  const fileEl = document.getElementById('import-colmap-file');
+  if (fileEl) fileEl.textContent = '（选「从本地选文件」后自动识别列）';
+  const prev = document.getElementById('import-colmap-preview');
+  if (prev) prev.innerHTML = '选好文件后，这里会显示首行预览，确认无误再点下面「确定导入」。';
+  const picked = document.getElementById('import-picked-file');
+  if (picked) { picked.textContent = ''; picked.style.display = 'none'; }
+}
+// 用当前列对应把表格展开成 [{name, description, qty, unit}]
+function _buildItemsFromTable() {
+  if (!pendingImportTable) return [];
+  const gv = id => parseInt(document.getElementById(id).value, 10);
+  const nc = gv('import-name-col'), dc = gv('import-desc-col'), qc = gv('import-qty-col'), uc = gv('import-unit-col');
+  const seen = new Set();
+  const items = [];
+  for (const r of pendingImportTable.rows) {
+    const name = String(r[nc] || '').trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const description = dc >= 0 ? String(r[dc] || '').trim() : '';
+    const qty = qc >= 0 ? (parseInt(String(r[qc] || '').replace(/[^\d.-]/g, ''), 10) || 0) : 0;
+    const unit = uc >= 0 ? String(r[uc] || '').trim() : '';
+    items.push({ name, description, qty, unit });
+  }
+  return items;
+}
+
+// 归一化导入项：兼容旧的字符串数组与新的 {name, description, qty, unit} 数组
+function _impNormalize(arr) {
+  return (arr || []).map(x => typeof x === 'string'
+    ? { name: x.trim(), description: '', qty: 0, unit: '' }
+    : { name: (x.name || '').trim(), description: (x.description || '').trim(), qty: x.qty || 0, unit: x.unit || '' }
+  ).filter(it => it.name);
+}
+function _impMakeModel(it, suffix) {
+  const m = { id: 'm_' + Date.now() + '_' + suffix, name: it.name, boxToSetRatio: 40 };
+  if (it.description) m.description = it.description;
+  return m;
+}
+
 function applyImportMode(mode) {
-  const lines = pendingImportLines;
+  const lines = _impNormalize(pendingImportLines);
   if (!lines || !lines.length) { toast('请先选择来源并提供清单'); return; }
   if (mode === 'append-only') {
     // Just append to model library, don't touch shelves
     const existing = new Set(state.models.map(m => m.name.toLowerCase()));
     let added = 0;
-    for (const name of lines) {
-      if (!existing.has(name.toLowerCase())) {
-        state.models.push({ id: 'm_'+Date.now()+'_'+added, name, boxToSetRatio: 40 });
-        existing.add(name.toLowerCase());
+    for (const it of lines) {
+      if (!existing.has(it.name.toLowerCase())) {
+        state.models.push(_impMakeModel(it, added));
+        existing.add(it.name.toLowerCase());
         added++;
+      } else if (it.description) {
+        const exM = state.models.find(m => m.name.toLowerCase() === it.name.toLowerCase());
+        if (exM && !exM.description) exM.description = it.description;
       }
     }
     toast(`✅ 已扩充型号库: 新增 ${added} 个 (跳过 ${lines.length-added} 个重复)`);
   } else if (mode === 'append') {
-    const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 40 }));
+    const newModels = lines.map((it,i) => _impMakeModel(it, i));
     state.models.push(...newModels);
     for (const zone of state.zones.filter(z => z.type === 'shelf')) {
       let mi = 0;
@@ -8146,7 +8327,7 @@ function applyImportMode(mode) {
     }
     toast(`✅ 已追加 ${lines.length} 个型号到货架`);
   } else if (mode === 'append-pallet') {
-    const newModels = lines.map((n,i) => ({ id: 'm_'+Date.now()+'_'+i, name: n, boxToSetRatio: 40 }));
+    const newModels = lines.map((it,i) => _impMakeModel(it, i));
     state.models.push(...newModels);
     const palletZone = state.zones.find(z => z.type === 'pallet');
     let palletFilled = 0;
@@ -8160,7 +8341,7 @@ function applyImportMode(mode) {
     toast(`✅ 已追加 ${palletFilled} 个型号到整箱堆货区`);
   } else if (mode === 'replace') {
     if (!confirm('⚠️ 确认清空所有数据并用此清单重建?\nThis will erase ALL data.')) return;
-    state.models = lines.map((n,i) => ({ id: 'm_'+i+'_'+Date.now(), name: n, boxToSetRatio: 40 }));
+    state.models = lines.map((it,i) => _impMakeModel(it, i));
     for (const zone of state.zones.filter(z => z.type === 'shelf')) {
       zone.aisles = SHELF_AISLE_NAMES.map(n => ({ name: n, shelves: SHELF_NAMES.map(sn => ({ name: sn, slots: Array.from({length: SLOTS_PER_SHELF}, () => newSlot()) })) }));
       let mi = 0;
@@ -8187,23 +8368,30 @@ function applyImportMode(mode) {
 }
 
 function applyImportModes(modes) {
-  const lines = pendingImportLines;
+  const lines = _impNormalize(pendingImportLines);
   if (!lines || !lines.length) { toast('请先选择来源并提供清单'); return; }
 
-  // Step 1: add all to model library (deduped, once)
+  // Step 1: add all to model library (deduped, once). 已存在的型号若带新描述则补上描述。
   const existing = new Set(state.models.map(m => m.name.toLowerCase()));
   const newModels = [];
-  for (const name of lines) {
-    if (!existing.has(name.toLowerCase())) {
-      const m = { id: 'm_' + Date.now() + '_' + newModels.length, name, boxToSetRatio: 40 };
+  for (const it of lines) {
+    if (!existing.has(it.name.toLowerCase())) {
+      const m = _impMakeModel(it, newModels.length);
       state.models.push(m);
       newModels.push(m);
-      existing.add(name.toLowerCase());
+      existing.add(it.name.toLowerCase());
+    } else if (it.description) {
+      const exM = state.models.find(m => m.name.toLowerCase() === it.name.toLowerCase());
+      if (exM && !exM.description) exM.description = it.description;
     }
   }
   const msgs = [`型号库+${newModels.length}`];
   const toPlace = newModels.length ? newModels :
-    lines.map(n => state.models.find(m => m.name.toLowerCase() === n.toLowerCase())).filter(Boolean);
+    lines.map(it => state.models.find(m => m.name.toLowerCase() === it.name.toLowerCase())).filter(Boolean);
+  // 型号名 → {qty, unit}（数量/单位列），填库位时一并写入
+  const _qu = {};
+  for (const it of lines) _qu[it.name.toLowerCase()] = { qty: it.qty || 0, unit: it.unit || '' };
+  const _quFor = (mid) => { const m = getModel(mid); return (m && _qu[m.name.toLowerCase()]) || { qty: 0, unit: '' }; };
 
   // Step 2: fill pallet zone if requested
   if (modes.includes('append-pallet')) {
@@ -8212,7 +8400,11 @@ function applyImportModes(modes) {
     if (palletZone) {
       let mi = 0;
       outer2: for (const a of palletZone.aisles) for (const p of a.pallets) for (const layer of p.layers) {
-        if (!layer.modelId && mi < toPlace.length) { layer.modelId = toPlace[mi].id; layer.unit = '箱'; mi++; filled++; }
+        if (!layer.modelId && mi < toPlace.length) {
+          const qu = _quFor(toPlace[mi].id);
+          layer.modelId = toPlace[mi].id; layer.unit = qu.unit || '箱'; if (qu.qty) layer.qty = qu.qty;
+          mi++; filled++;
+        }
         if (mi >= toPlace.length) break outer2;
       }
     }
@@ -8225,7 +8417,11 @@ function applyImportModes(modes) {
     for (const zone of state.zones.filter(z => z.type === 'shelf')) {
       let mi = 0;
       outer: for (const a of zone.aisles) for (const s of a.shelves) for (let i = 0; i < s.slots.length; i++) {
-        if (!s.slots[i].modelId && mi < toPlace.length) { s.slots[i].modelId = toPlace[mi].id; mi++; filled++; }
+        if (!s.slots[i].modelId && mi < toPlace.length) {
+          const qu = _quFor(toPlace[mi].id);
+          s.slots[i].modelId = toPlace[mi].id; if (qu.qty) s.slots[i].qty = qu.qty; if (qu.unit) s.slots[i].unit = qu.unit;
+          mi++; filled++;
+        }
         if (mi >= toPlace.length) break outer;
       }
     }
@@ -8248,6 +8444,7 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
         if (!txt) return;
         const lines = parseModelLines(txt);
         if (!lines.length) { toast('未识别到型号'); return; }
+        _hideImportColmap();
         pendingImportLines = lines;
         toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
       }, 100);
@@ -8258,22 +8455,24 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
       inp.onchange = async e => {
         const f = e.target.files[0]; if (!f) return;
         const ext = f.name.split('.').pop().toLowerCase();
-        if (['xls','xlsx','wps','et','ods'].includes(ext)) {
+        if (['xls','xlsx','wps','et','ods','csv'].includes(ext)) {
           toast('📊 正在解析电子表格...');
           try {
             const XLSX = await loadSheetJS();
             const ab = await f.arrayBuffer();
             const wb = XLSX.read(ab, { type: 'array' });
-            const lines = xlsxToModelLines(wb);
-            if (!lines.length) { toast('表格未识别到型号，请确认第一列含型号名称'); return; }
-            pendingImportLines = lines;
-            toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
+            const table = xlsxToTable(wb);
+            if (!table.rows.length) { toast('表格为空，请确认有型号数据'); return; }
+            table.filename = f.name;
+            _showImportColmap(table);
+            toast(`✅ 已读取 ${table.rows.length} 行 — 请确认「列对应」后选添加方式`, 5000);
           } catch(err) { toast('❌ 解析失败: ' + err.message); }
         } else {
           const r = new FileReader();
           r.onload = () => {
             const lines = parseModelLines(r.result);
             if (!lines.length) { toast('文件未识别到型号'); return; }
+            _hideImportColmap();
             pendingImportLines = lines;
             toast(`✅ 已读取 ${lines.length} 个型号 — 请选择添加方式`);
           };
@@ -8291,9 +8490,21 @@ document.querySelectorAll('#upload-sheet .action-row').forEach(b => {
       if (document.getElementById('im-append-pallet')?.checked) modes.push('append-pallet');
       if (document.getElementById('im-append')?.checked)        modes.push('append');
       if (!modes.length) { toast('⚠️ 请先勾选至少一种添加方式'); return; }
+      // 若是电子表格导入：先按「列对应」展开成 {name, description, qty, unit}
+      if (pendingImportTable) {
+        const items = _buildItemsFromTable();
+        if (!items.length) { toast('⚠️ 所选「型号列」没有数据，请重选'); return; }
+        pendingImportLines = items;
+      }
       applyImportModes(modes);
+      _hideImportColmap();
     } else if (act === 'upload-replace') {
+      if (pendingImportTable) {
+        const items = _buildItemsFromTable();
+        if (items.length) pendingImportLines = items;
+      }
       applyImportMode('replace');
+      _hideImportColmap();
     } else if (act === 'download-template') {
       const csv = '﻿商品型号,英文名称,中文名称,尺寸,重量(kg),数量,单位,整箱数量\n' + Array(10).fill(',,,,,,,').join('\n');
       (async () => {
