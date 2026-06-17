@@ -1086,7 +1086,9 @@
   .wh-switch-row .wh-role-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:var(--ink); color:var(--paper); flex-shrink:0; }
   .wh-switch-row.wh-current .wh-role-tag { background:var(--red); }
   #invite-form { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
-  #invite-form input, #invite-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
+  #setpw-form { display:flex; flex-direction:column; gap:8px; }
+  #invite-form input, #invite-form select,
+  #setpw-form input, #setpw-form select { padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--bg); font-size:13px; font-family:inherit; outline:none; color:var(--ink); }
   /* ZEHEM.AI footer brand bar */
   #zehem-footer { position:fixed; bottom:0; left:0; right:0; z-index:200; height:42px; background:var(--paper); border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:0 28px; }
   #zehem-footer .zf-left { display:flex; align-items:center; gap:6px; text-decoration:none; }
@@ -1251,7 +1253,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2184,7 +2186,19 @@
         <div class="settings-sec-lbl">TEAM 团队</div>
         <div class="team-section-title">👥 团队成员</div>
         <div id="team-members-list"></div>
+        <div id="setpw-form" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);">🔑 为成员设置 / 重置登录密码</div>
+          <div style="font-size:11px;color:var(--muted);">直接生效，无需邮件确认（企业邮箱也可用）。设好后把「邮箱 + 此密码」交给员工即可登录。</div>
+          <input type="email" id="setpw-email" placeholder="成员邮箱 Email">
+          <input type="text"  id="setpw-pass"  placeholder="为其设定的密码（至少 8 位）" autocomplete="off">
+          <select id="setpw-role">
+            <option value="operator">👷 操作员 Operator</option>
+            <option value="manager">🔑 经理 Manager</option>
+          </select>
+          <button class="auth-btn-primary" onclick="_setMemberPassword()">设置密码并加入团队</button>
+        </div>
         <div id="invite-form">
+          <div style="font-size:11px;color:var(--muted);">或：发送邮件邀请（被邀请人需能收到邮件）</div>
           <input type="email" id="invite-email" placeholder="被邀请人邮箱 Email">
           <select id="invite-role">
             <option value="operator">👷 操作员 Operator</option>
@@ -2325,7 +2339,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.8</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>团队管理新增「为成员设置 / 重置登录密码」：老板可直接为成员设密码加入团队，无需邮件确认，企业邮箱也可用</li>
+            <li>设好后把「邮箱 + 密码」交给员工即可登录；原邮件邀请方式同时保留，两种方式都可用</li>
+            <li>成员名额仍按订阅套餐限制；重置已有成员密码不占用新名额</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.8</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-16</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -10056,6 +10080,44 @@ async function _sendInvite() {
   const data = await res.json();
   if (data.success) { toast('✅ 邀请已发送至 ' + email); document.getElementById('invite-email').value = ''; }
   else toast('❌ ' + (data.error || '发送失败'));
+}
+
+// ── 老板为成员直接设置 / 重置登录密码（绕过邮件邀请）──
+async function _setMemberPassword() {
+  const email = document.getElementById('setpw-email').value.trim();
+  const password = document.getElementById('setpw-pass').value;
+  const role = document.getElementById('setpw-role').value;
+  if (!email || !password) { toast('请输入成员邮箱和要设定的密码'); return; }
+  if (password.length < 8) { toast('密码至少 8 位'); return; }
+  if (!_warehouse) { toast('未登录'); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  toast('⏳ 正在设置成员密码...');
+  let data;
+  try {
+    const res = await fetch('/api/set-member-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ email, password, role, warehouseId: _warehouse.id })
+    });
+    data = await res.json();
+  } catch (e) { toast('❌ 网络错误：' + e.message, 6000); return; }
+  if (data.success) {
+    toast('✅ ' + data.message, 7000);
+    document.getElementById('setpw-email').value = '';
+    document.getElementById('setpw-pass').value = '';
+    // 刷新团队成员列表
+    const { data: members } = await sb.from('warehouse_members')
+      .select('user_id, role, display_name').eq('warehouse_id', _warehouse.id);
+    const listEl = document.getElementById('team-members-list');
+    if (listEl) listEl.innerHTML = (members || []).map(m =>
+      `<div class="team-member-row">
+        <span style="flex:1">${m.display_name || m.user_id}</span>
+        <span class="team-member-role">${m.role === 'boss' ? '👑 老板' : m.role === 'manager' ? '🔑 经理' : '👷 操作员'}</span>
+        ${m.user_id !== _user?.id ? `<button onclick="_removeMember('${m.user_id}')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;">✕</button>` : ''}
+      </div>`
+    ).join('');
+  } else toast('❌ ' + (data.error || '设置失败'), 6000);
 }
 
 // ── Stripe checkout ──
