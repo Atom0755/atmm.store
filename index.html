@@ -1478,7 +1478,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2596,7 +2596,15 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.4</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.5</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>转运/快拆加载失败提示统一，明确指引到 App 实际连接的数据库项目建表</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v5.4</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -10989,7 +10997,7 @@ async function _kcLoadOrders() {
   const listEl = _kcEl('kc-order-list');
   listEl.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">加载中…</div>';
   const { data: orders, error } = await sb.from('atmm_orders').select('*').eq('warehouse_id',_warehouse.id).eq('business','kuaicha').order('created_at',{ascending:false});
-  if (error) { listEl.innerHTML = '<div style="color:var(--red);padding:20px;">加载失败：'+error.message+'<br><small>（是否已在 Supabase 跑 kuaicha.sql 建表？）</small></div>'; return; }
+  if (error) { listEl.innerHTML = '<div style="color:var(--red);padding:20px;">加载失败：'+error.message+'<br><small>（请在 App 连接的 Supabase 项目 vkwndhdqbmuyogieccph 跑 transfer-kuaicha.sql 建表）</small></div>'; return; }
   if (!orders || !orders.length) { listEl.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center;">暂无快拆订单，点上面「➕ 新建快拆订单」开始</div>'; return; }
   const sLabel = { created:'待入库', inbound:'已入库', shipped:'已出库' };
   const sColor = { created:'#b8860b', inbound:'#1a73e8', shipped:'#16a34a' };
@@ -11555,7 +11563,7 @@ async function _tzLoadOrders(){
   const listEl=_tzEl('tz-order-list'); const kw=(_tzVal('tz-search')||'').trim().toLowerCase();
   listEl.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center;">加载中…</div>';
   const { data:orders, error }=await sb.from('atmm_orders').select('*').eq('warehouse_id',_warehouse.id).eq('business','zhuanyun').order('created_at',{ascending:false});
-  if(error){listEl.innerHTML='<div style="color:var(--red);padding:20px;">加载失败：'+error.message+'<br><small>（是否已在 Supabase 跑 transfer-kuaicha.sql 并 notify pgrst reload schema？）</small></div>';return;}
+  if(error){listEl.innerHTML='<div style="color:var(--red);padding:20px;">加载失败：'+error.message+'<br><small>（请在 App 连接的 Supabase 项目 vkwndhdqbmuyogieccph 跑 transfer-kuaicha.sql 建表，再 notify pgrst reload schema）</small></div>';return;}
   let list=(orders||[]).filter(o=>(o.extra&&o.extra.doc_type)!=='picklist');   // JCF 拣货表不混进入库订单列表
   if(kw) list=list.filter(o=>(o.order_no+' '+o.customer_no+' '+(o.bill_no||'')).toLowerCase().includes(kw));
   _tzListCache=list;
