@@ -1251,7 +1251,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨智能仓管表 <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v4.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
     <button class="icon-btn" id="upload-btn" title="📋 型号库管理 (查看/上传新型号清单)" aria-label="型号库管理">📋</button>
     <button class="icon-btn" id="settings-btn" title="⚙️ 设置 / 团队 / 订阅" aria-label="设置">⚙️</button>
@@ -2325,7 +2325,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.7</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v4.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-16</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>二维码升级为品牌风格「Z 字形加粗二维码」：数据格描绘成加粗 Z 字，三角定位块保持实心，扫码秒识别</li>
+            <li>采用 H 级纠错（抗脏污磨损）、纯黑白最高对比、无 Logo 遮挡，内部高分辨率渲染，缩小后依旧清晰</li>
+            <li>库位码、型号码（单个查看 / 批量打印）统一为 Z 字形二维码品牌样式</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v4.7</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-02</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -4543,6 +4553,41 @@ function _loadJsBarcodeLib() {
   ], () => { _jsBarcodeLib = window.JsBarcode; return _jsBarcodeLib; }, '无法加载条码库');
 }
 
+// ── ATMM Z 字形二维码（品牌风格）──────────────────────────────────────
+// 风格：数据格画"粗 Z"（品牌标识），三个角定位块保持实心（扫码秒定位），
+//       H 级纠错（抗脏污磨损），纯黑白最高对比，无 Logo（中心不遮挡→扫得更快）。
+// 内部高分辨率渲染，返回 PNG dataURL；显示尺寸由 <img> 控制，缩小后依旧清晰。
+// 想调 Z 粗细：改 fs(字号占格比) 与 lw(描边粗细)。想恢复黑点：把 isFinder 外分支也用 fillRect。
+async function _genZQR(text, { margin = 4, cell = 11 } = {}) {
+  await _loadQRCodeLib();
+  // 兜底：万一浏览器版 qrcode 没有 create()，退回标准码，保证不报错
+  if (!_qrLib || typeof _qrLib.create !== 'function')
+    return _qrLib.toDataURL(text, { width: 360, margin, color: { dark: '#000000', light: '#ffffff' } });
+  const qr = _qrLib.create(text, { errorCorrectionLevel: 'H' });
+  const mod = qr.modules, n = mod.size, total = n + margin * 2, dim = total * cell;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = dim;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, dim, dim);
+  const off = margin * cell;
+  const isFinder = (r, c) => (r <= 7 && c <= 7) || (r <= 7 && c >= n - 8) || (r >= n - 8 && c <= 7);
+  ctx.fillStyle = '#000000'; ctx.strokeStyle = '#000000';
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const fs = cell * 1.0, lw = cell * 0.20;
+  ctx.font = `900 ${fs}px 'Arial Black', Arial, sans-serif`;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (!mod.data[r * n + c]) continue;
+    const x = off + c * cell, y = off + r * cell;
+    if (isFinder(r, c)) { ctx.fillRect(x, y, cell, cell); continue; }  // 定位块实心
+    const cx = x + cell / 2, cy = y + cell / 2;
+    ctx.lineWidth = lw;
+    ctx.strokeText('Z', cx, cy);
+    ctx.fillText('Z', cx, cy);
+  }
+  return cv.toDataURL('image/png');
+}
+
 function _locToAscii(code) {
   // Code128: new format is already ASCII; keep as safety net for any legacy codes
   return code.replace(/[①②③④⑤⑥⑦⑧]/g, c => String('①②③④⑤⑥⑦⑧'.indexOf(c)+1)).replace(/·/g,'-');
@@ -4559,11 +4604,8 @@ async function openLocCodeSheet(code) {
   try {
     await Promise.all([_loadQRCodeLib(), _loadJsBarcodeLib()]);
 
-    // QR code — toDataURL returns a Promise<string> directly; avoids canvas tainting
-    const qrDataUrl = await _qrLib.toDataURL(code, {
-      width: 220, margin: 2,
-      color: { dark: '#1a1a1a', light: '#faf8f3' }
-    });
+    // QR code — ATMM Z 字形二维码（品牌风格）
+    const qrDataUrl = await _genZQR(code);
     document.getElementById('loccode-qr-img').src = qrDataUrl;
 
     // Barcode — render to the img element directly; JsBarcode sets img.src automatically
@@ -7703,7 +7745,7 @@ async function _renderModelCode() {
   const qrContainer = document.getElementById('model-qr-container');
   qrContainer.innerHTML = '';
   try {
-    const qrDataUrl = await _qrLib.toDataURL(txt, { width: 180, margin: 2, color: { dark: '#1a1a1a', light: '#ffffff' } });
+    const qrDataUrl = await _genZQR(txt);
     const img = document.createElement('img'); img.src = qrDataUrl;
     img.style.cssText = 'width:180px;height:180px;display:block;';
     qrContainer.appendChild(img);
@@ -7778,8 +7820,8 @@ async function _runPrintModelCodes(mods) {
       const barTxt = _barcodeText(txt);
       // QR — uses _qrLib (qrcode@1.5.3, handles unicode)
       let qrUrl = '';
-      try { qrUrl = await _qrLib.toDataURL(txt, { width: 120, margin: 1, color: { dark: '#000000', light: '#ffffff' } }); }
-      catch(e) { try { qrUrl = await _qrLib.toDataURL(barTxt || txt.slice(0,40), { width: 120, margin: 1 }); } catch(e2) {} }
+      try { qrUrl = await _genZQR(txt); }
+      catch(e) { try { qrUrl = await _genZQR(barTxt || txt.slice(0,40)); } catch(e2) {} }
       // Barcode
       const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       tmpSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
