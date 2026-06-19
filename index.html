@@ -1478,7 +1478,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2366,6 +2366,36 @@
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('premium_annual')">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1个月免费期</div>
             </div>
+            <!-- Phase 3: 业务模块加购 + 全业务套餐（真实价格）-->
+            <div style="font-size:11px; font-weight:700; color:#7c3aed; margin:14px 0 6px;">🚚 转运 + 快拆（业务模块加购）</div>
+            <div class="plan-btn" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">转运 + 快拆 加购</span><span class="plan-price">$288/月</span></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_bizPlanInfo()">在「一件代发」基础上加开转运+快拆全套（拣货出库·托板标签·扫码进出库·拍照存档）· 年付 $3,456/年</div>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:#7c3aed; margin:14px 0 6px;">⭐ 全业务套餐（一件代发 + 转运 + 快拆）</div>
+            <div class="plan-btn" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 3 人</span><span class="plan-price">$456/月</span></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋操作员 · 三业务全开 · 年付 $5,008/年</div>
+            </div>
+            <div class="plan-btn" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 4 人</span><span class="plan-price">$568/月</span></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋2 操作员 · 三业务全开 · 年付 $5,688/年</div>
+            </div>
+            <div class="plan-btn" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 5 人</span><span class="plan-price">$588/月</span></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋3 操作员 · 三业务全开 · 年付 $5,888/年</div>
+            </div>
+            <div class="plan-btn" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 6–13 人</span><span class="plan-price">$688/月</span></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋最多 11 操作员 · 三业务全开 · 年付 $8,008/年</div>
+            </div>
+            <div style="font-size:11px; color:var(--muted); margin:4px 0 10px; line-height:1.6;">💡 含转运+快拆的套餐开通后，业务选择页即可进入「🚚 转运+快拆」。在线购买即将开放，需要开通请联系我们。</div>
+
             <div style="margin:4px 0 8px; padding:10px 12px; background:#fff8e6; border:1.5px solid #f5c542; border-radius:10px; font-size:12px; color:#7a5c00; line-height:1.6;">
               🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$299.99/月</b>，年付另加 <b>$3,599.88/年</b>。<br>
               如两个仓库高级版：月付 $299.99＋$299.99＝$599.98/月，年付 $3,599.88＋$3,599.88＝$7,199.76/年。
@@ -2596,7 +2626,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.5</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-18</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>订阅按「业务模块」开通：仓库可单独拥有一件代发、或加开转运+快拆</li>
+            <li>业务选择页对未开通的业务显示「🔒 升级解锁」，点击引导到订阅页</li>
+            <li>订阅页新增「转运+快拆 加购」与「全业务套餐」展示（在线购买即将开放）</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v5.5</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-17</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -10871,17 +10911,23 @@ function _showWelcome() {
   const enabled = _enabledModules();
   const grid = document.getElementById('welcome-cards');
   if (grid) grid.innerHTML = Object.values(MODULES).map(m => {
-    // Phase 2：ready 即可进入以便试用；订阅 gating 留到 Phase 3（定价）
-    const usable = m.ready;
-    const badge = !m.ready ? '<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:5px;padding:1px 6px;margin-left:6px;">即将上线</span>' : '';
-    const action = usable ? `_enterModule('${m.key}')` : `_welcomeLocked('${m.key}')`;
-    return `<button onclick="${action}" style="display:flex; align-items:center; gap:14px; text-align:left; padding:18px; border-radius:14px; border:2px solid ${usable?'var(--red)':'var(--line)'}; background:var(--paper); cursor:pointer; opacity:${usable?1:.65}; font-family:inherit;">
+    const on = enabled.includes(m.key);
+    const usable = m.ready && on;              // 已开通且已上线 → 可进入
+    let badge = '', rightIcon = '→', action = `_enterModule('${m.key}')`, bcolor = 'var(--red)';
+    if (!m.ready) {
+      badge = '<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:5px;padding:1px 6px;margin-left:6px;">即将上线</span>';
+      rightIcon = '🚧'; action = `_welcomeLocked('${m.key}')`; bcolor = 'var(--line)';
+    } else if (!on) {                          // 已上线但未订阅 → 升级解锁
+      badge = '<span style="font-size:10px;font-weight:700;color:#7c3aed;background:#f3e8ff;border-radius:5px;padding:1px 6px;margin-left:6px;">🔒 升级解锁</span>';
+      rightIcon = '🔒'; action = `_bizUpgrade('${m.key}')`; bcolor = 'var(--line)';
+    }
+    return `<button onclick="${action}" style="display:flex; align-items:center; gap:14px; text-align:left; padding:18px; border-radius:14px; border:2px solid ${bcolor}; background:var(--paper); cursor:pointer; opacity:${usable?1:.7}; font-family:inherit;">
       <span style="font-size:32px; flex-shrink:0;">${m.icon}</span>
       <span style="flex:1;">
         <span style="display:block; font-size:17px; font-weight:800; color:var(--ink);">${m.name}${badge}</span>
         <span style="display:block; font-size:12px; color:var(--muted); margin-top:3px;">${m.desc}</span>
       </span>
-      <span style="font-size:20px; color:var(--muted); flex-shrink:0;">${usable?'→':'🔒'}</span>
+      <span style="font-size:20px; color:var(--muted); flex-shrink:0;">${rightIcon}</span>
     </button>`;
   }).join('');
   const v = document.getElementById('welcome-view');
@@ -10894,10 +10940,18 @@ function _welcomeLocked(key) {
   toast('该业务尚未开通，可在「设置 → 订阅」升级解锁');
 }
 
+// 未订阅该业务 → 引导去订阅页
+function _bizUpgrade(key) {
+  const m = MODULES[key];
+  const v = document.getElementById('welcome-view'); if (v) v.style.display = 'none';
+  toast('🔒 ' + (m ? m.name : '该业务') + ' 需开通后使用，请在订阅里选择含该业务的套餐', 6000);
+  if (typeof _openSettings === 'function') setTimeout(_openSettings, 300);
+}
+
 function _enterModule(key) {
   if (!MODULES[key]) key = 'yijian';
   if (!MODULES[key].ready) { _welcomeLocked(key); return; }
-  // 注：订阅 gating 在 Phase 3（定价）加入；当前所有 ready 模块均可进入以便试用
+  if (!_enabledModules().includes(key)) { _bizUpgrade(key); return; }   // 订阅 gating
   _currentModule = key;
   localStorage.setItem('lastModule', key);
   const v = document.getElementById('welcome-view'); if (v) v.style.display = 'none';
@@ -10911,6 +10965,8 @@ function _enterModule(key) {
 function _bizToWelcome(){ try{ _tzClose(); }catch(e){} try{ _kcClose(); }catch(e){} _showWelcome(); }
 function _gotoKuaicha(){ try{ _tzClose(); }catch(e){} _kcOpen(); }
 function _gotoZhuanyun(){ try{ _kcClose(); }catch(e){} _tzOpen(); }
+// 业务模块/全业务套餐 购买说明（在线支付即将开放）
+function _bizPlanInfo(){ toast('💜 该套餐含「转运+快拆」业务。在线购买即将开放，现在需要开通请联系我们为你开通。', 7000); }
 
 // 入口路由：登录后 / 游客都调用。开通 1 个直接进；多个则按上次选择或显示欢迎页。
 function _routeModulesOnEntry() {
