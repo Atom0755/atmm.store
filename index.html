@@ -1476,9 +1476,79 @@
   </div>
 </div>
 
+<!-- ===== 一件代发·出库拣货 YJ（移植自 JCCBA）===== -->
+<!-- ===== 一件代发 出库拣货单（YJ-P1）===== -->
+<div id="yj-overlay" style="display:none; position:fixed; inset:0; z-index:9500; background:var(--paper); overflow-y:auto;">
+  <div style="position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--ink); color:var(--paper);">
+    <button onclick="_yjClose()" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; font-family:inherit;">← 返回</button>
+    <div style="font-size:16px; font-weight:800; flex:1;">📦 一件代发 · 出库拣货</div>
+    <button onclick="window.open('shipping.html?tab=labels','_blank')" title="打单 / 地址核查 / API" style="background:transparent; border:1.5px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; font-family:inherit; white-space:nowrap;">发货管理 ↗</button>
+  </div>
+  <div style="padding:14px; max-width:920px; margin:0 auto;">
+    <div class="kc-card">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:130px;"><div class="kc-step">客户号</div><input id="yj-cust-no" style="width:100%;box-sizing:border-box;text-transform:uppercase;"></div>
+        <div style="flex:1;min-width:130px;"><div class="kc-step">出库单号</div><input id="yj-order-no" readonly style="width:100%;box-sizing:border-box;background:var(--bg);"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+        <div style="flex:1;min-width:130px;"><div class="kc-step">客户名称</div><input id="yj-cust-name" style="width:100%;box-sizing:border-box;"></div>
+        <div style="flex:1;min-width:130px;"><div class="kc-step">联系方式</div><input id="yj-cust-contact" style="width:100%;box-sizing:border-box;"></div>
+      </div>
+    </div>
+    <div class="kc-card">
+      <div class="kc-step">添加型号（搜索SKU库 或 导入出货 CSV）</div>
+      <div style="position:relative;">
+        <input id="yj-search" oninput="_yjSearch()" placeholder="🔍 搜索SKU名称 / SKU…" style="width:100%;box-sizing:border-box;">
+        <div id="yj-search-results" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:5;background:var(--paper);border:1.5px solid var(--line);border-radius:8px;max-height:240px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,.12);"></div>
+      </div>
+      <button onclick="_yjImportCsv()" class="kc-btn" style="margin-top:8px;border-color:#1a73e8;color:#1a73e8;">📄 导入出货 CSV（ShipStation/Veeqo）</button>
+      <input id="yj-csv-file" type="file" accept=".csv,.xlsx,.xls,.txt" onchange="_yjOnCsv(this)" style="display:none;">
+    </div>
+    <div class="kc-card">
+      <div class="kc-step">出库清单（数量/单位可改，库位·重量·体积自动带出）</div>
+      <div id="yj-items"></div>
+    </div>
+    <button onclick="_yjSave()" class="kc-btn-primary">💾 保存出库单 + 生成拣货表</button>
+    <button id="yj-scan-btn" onclick="_yjStartScan()" class="kc-btn" style="display:none;border-color:#16a34a;color:#16a34a;">📷 扫码核对出库（先扫库位 → 再扫商品）</button>
+  </div>
+</div>
+
+<!-- ===== 一件代发 出库扫码核对（YJ-P2）===== -->
+<div id="yj-scan-overlay" style="display:none; position:fixed; inset:0; z-index:9600; background:#000; color:#fff; flex-direction:column;">
+  <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:#111; flex-shrink:0;">
+    <button onclick="_yjScanClose()" style="background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">← 取消</button>
+    <div id="yj-scan-title" style="font-size:15px; font-weight:800; flex:1; text-align:center;">📷 扫码核对出库</div>
+    <button onclick="_yjScanFinish()" style="background:#16a34a; border:none; color:#fff; border-radius:8px; padding:8px 18px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit;">完成</button>
+  </div>
+  <div style="display:flex; gap:10px; padding:8px 14px 10px; background:#111; flex-shrink:0;">
+    <button onclick="_yjScanRestart()" style="flex:1; padding:12px; border:none; border-radius:10px; background:#2563eb; color:#fff; font-size:16px; font-weight:800; cursor:pointer; font-family:inherit;">🔄 再拍（黑屏/扫不出就点这里重开摄像头）</button>
+  </div>
+  <div style="position:relative; background:#000; flex-shrink:0;">
+    <video id="yj-scan-video" onclick="_yjScanRestart()" autoplay playsinline muted style="width:100%; max-height:40vh; object-fit:cover; display:block; cursor:pointer;"></video>
+    <div class="kc-scanline"></div>
+    <div style="position:absolute; left:0; right:0; bottom:6px; text-align:center; color:#fff; font-size:12px; text-shadow:0 1px 3px #000; pointer-events:none;">👆 黑屏或扫不出？点画面 = 重开摄像头</div>
+  </div>
+  <div id="yj-scan-status" style="text-align:center; padding:10px 12px; font-size:16px; font-weight:800; min-height:24px;">请扫【库位码】</div>
+  <div id="yj-scan-progress" style="text-align:center; font-size:14px; color:#9fe6b0; font-weight:800; margin-bottom:4px;"></div>
+  <div id="yj-scan-manual" style="display:none; padding:0 12px 8px; flex-shrink:0;">
+    <div style="background:#2a2a2a; border:1px solid #555; border-radius:10px; padding:10px;">
+      <div style="font-size:12px; color:#ffd24d; margin-bottom:6px;">⌨️ 扫不出？手动输入补充（库位 + 商品型号）：</div>
+      <input id="yj-manual-loc" placeholder="库位编号 如 T1-F1-1-1" style="width:100%;box-sizing:border-box;margin-bottom:6px;padding:8px;border-radius:8px;border:1px solid #666;background:#1a1a1a;color:#fff;text-transform:uppercase;">
+      <input id="yj-manual-model" placeholder="商品型号 / SKU" style="width:100%;box-sizing:border-box;margin-bottom:6px;padding:8px;border-radius:8px;border:1px solid #666;background:#1a1a1a;color:#fff;">
+      <button onclick="_yjScanManualConfirm()" class="kc-btn-primary" style="width:100%;margin:0;">确认这一项</button>
+    </div>
+  </div>
+  <div style="display:flex; gap:10px; padding:0 12px 8px; flex-shrink:0;">
+    <button id="yj-scan-torch" onclick="_yjScanTorch()" style="flex:1; padding:11px; border:1.5px solid rgba(255,255,255,.4); border-radius:10px; background:transparent; color:#fff; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">🔦 手电筒</button>
+    <button onclick="_yjScanUpload()" style="flex:1; padding:11px; border:1.5px solid rgba(255,255,255,.4); border-radius:10px; background:transparent; color:#fff; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;">📤 上传照片识别</button>
+    <input id="yj-scan-file" type="file" accept="image/*" onchange="_yjOnScanFile(this)" style="display:none;">
+  </div>
+  <div id="yj-scan-grid" style="flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:1fr; gap:6px; align-content:start;"></div>
+</div>
+
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2626,7 +2696,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>发货管理新增「扫码录入」：进入一件代发·出库拣货流程（建客户/出库单、搜SKU或导CSV录型号、自动带库位重量体积、生成拣货表、逐件扫码核对、出库报表）</li>
+            <li>出库单号前缀也支持老板自定义（默认 DF）；打印抬头用仓库名</li>
+            <li>原「手动录入」「CSV 导入」出货扣库存方式保留不变</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v5.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-18</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -9974,6 +10054,12 @@ async function _onSignIn(user) {
 
   // 业务模块入口路由（订阅决定可见业务）
   _routeModulesOnEntry();
+
+  // 发货页「扫码录入」跳转：?yjout=1 → 打开一件代发·出库拣货
+  if (new URLSearchParams(location.search).get('yjout') === '1') {
+    history.replaceState({}, '', '/');
+    setTimeout(() => { try { _yjOpen(); } catch(e){} }, 600);
+  }
 }
 
 // ── Cloud load ──
@@ -10980,7 +11066,7 @@ function _routeModulesOnEntry() {
 // ===== 转运 / 快拆 业务逻辑（Phase 2 移植自 JCCBA，去 JC 化）=====
 function _tzBrand(){ return (_warehouse && _warehouse.name) ? _warehouse.name : "ZEHEM 哲亨"; }
 // 单号前缀（老板可自定义，存 atmm_settings.data.prefixes）
-const _ORD_PFX_DEFAULT = { zhuanyun_in:'TZ', zhuanyun_pick:'TF', kuaicha:'QC' };
+const _ORD_PFX_DEFAULT = { zhuanyun_in:'TZ', zhuanyun_pick:'TF', kuaicha:'QC', yijian:'DF' };
 let _atmmSettings = null;  // {prefixes:{...}, free_days, logo_url, ...}
 function _ordPfx(kind){ return (_atmmSettings && _atmmSettings.prefixes && _atmmSettings.prefixes[kind]) || _ORD_PFX_DEFAULT[kind]; }
 async function _loadAtmmSettings(){
@@ -12459,6 +12545,254 @@ async function _tzPrintTzLabels(mode, onlyGroup){
   win.document.close();
 }
 
+
+// ===== 一件代发·出库拣货 YJ（Phase3 移植自 JCCBA，去 JC 化）=====
+// ============================================================
+// 一件代发 出库拣货 + 扫码核对（YJ）— 正式云端订单 JCY + 客户号
+// YJ-P1：建客户/JCY单 + 录入型号(搜型号 / CSV) + 自动带库位·重量·体积 + 生成出库拣货表
+// ============================================================
+let _yjItems = [];
+const _yjEl = id => document.getElementById(id);
+function _yjOpen(){
+  if(!_warehouse){ _pulseLoginBtn?.(); toast('请先登录'); return; }
+  _loadAtmmSettings();   // 加载单号前缀等设置
+  _yjItems = [];
+  _yjLastSaved=null;
+  _yjEl('yj-overlay').style.display='block';
+  _yjEl('yj-cust-name').value=''; _yjEl('yj-cust-contact').value=''; _yjEl('yj-search').value='';
+  _yjEl('yj-search-results').style.display='none';
+  const sb2=_yjEl('yj-scan-btn'); if(sb2) sb2.style.display='none';
+  _yjRenderItems(); _yjInitNos();
+}
+function _yjClose(){ _yjEl('yj-overlay').style.display='none'; }
+async function _yjInitNos(){
+  _yjEl('yj-cust-no').value = await _kcNextCustomerNo();
+  _yjEl('yj-order-no').value = await _yjNextOrderNo();
+}
+async function _yjNextOrderNo(){
+  const { data } = await sb.from('atmm_orders').select('order_no').eq('warehouse_id',_warehouse.id).eq('business','yijian').order('order_no',{ascending:false}).limit(1);
+  let n=1; if(data&&data[0]){ const m=new RegExp('^'+_ordPfx('yijian')+'(\\d+)$').exec(data[0].order_no); if(m) n=parseInt(m[1])+1; }
+  return _ordPfx('yijian')+String(n).padStart(7,'0');
+}
+// 找型号所在库位(第一处)+在库总数
+function _yjModelInfo(modelId){
+  let loc='', total=0;
+  for(const zone of state.zones){
+    const ck=zone.type==='shelf'?'shelves':'pallets', sk=zone.type==='shelf'?'slots':'layers';
+    (zone.aisles||[]).forEach((a,ai)=>(a[ck]||[]).forEach((c,ci)=>(c[sk]||[]).forEach((slot,si)=>{
+      if(slot.modelId===modelId){ total+=(slot.qty||0); if(!loc) loc=makeLocationCode(zone.id,ai,ci,si); }
+    })));
+  }
+  return { loc, total };
+}
+function _yjVolume(m){
+  const d=(m?.dimensions||'').replace(/[×xX*]/g,' ').split(/\s+/).map(parseFloat).filter(v=>!isNaN(v));
+  if(d.length>=3){ const v=d[0]*d[1]*d[2]; return { v:Math.round(v*1000)/1000, u:(m.dimensionUnit||'')+'³' }; }
+  return { v:'', u:'' };
+}
+function _yjSearch(){
+  const q=(_yjEl('yj-search').value||'').trim().toLowerCase();
+  const box=_yjEl('yj-search-results');
+  if(!q){ box.style.display='none'; return; }
+  const list=state.models.filter(m=>(m.name+' '+(m.enName||'')+' '+(m.codeText||'')).toLowerCase().includes(q)).slice(0,12);
+  box.style.display='';
+  box.innerHTML = list.length ? list.map(m=>{ const info=_yjModelInfo(m.id);
+    return `<div onclick="_yjAddItem('${m.id}')" style="padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer;"><b>${escapeHtml(m.name)}</b> <span style="font-size:11px;color:var(--muted);">库位 ${info.loc||'未上架'} · 在库 ${info.total}</span></div>`;
+  }).join('') : '<div style="padding:10px;color:var(--muted);">无匹配型号</div>';
+}
+function _yjAddItem(modelId){
+  const m=getModel(modelId); if(!m) return;
+  if(_yjItems.some(it=>it.modelId===modelId)){ toast('该型号已在清单'); _yjEl('yj-search-results').style.display='none'; return; }
+  const info=_yjModelInfo(modelId), vol=_yjVolume(m);
+  _yjItems.push({ modelId, name:m.name, codeText:(m.codeText||m.name), qty:1, unit:'箱', weight:(m.weight||''), weightUnit:(m.weightUnit||''), volume:vol.v, volumeUnit:vol.u, location:info.loc });
+  _yjEl('yj-search').value=''; _yjEl('yj-search-results').style.display='none';
+  _yjRenderItems();
+}
+function _yjDelItem(i){ _yjItems.splice(i,1); _yjRenderItems(); }
+function _yjQty(i,v){ const n=parseInt(v,10); _yjItems[i].qty=isNaN(n)?0:n; }
+function _yjUnit(i,v){ _yjItems[i].unit=v; }
+function _yjRenderItems(){
+  const t=_yjEl('yj-items');
+  if(!_yjItems.length){ t.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center;">还没有型号——搜索SKU添加，或导入出货 CSV</div>'; return; }
+  t.innerHTML='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:var(--bg);"><th style="padding:6px;border:1px solid var(--line);">型号</th><th style="padding:6px;border:1px solid var(--line);">数量</th><th style="padding:6px;border:1px solid var(--line);">单位</th><th style="padding:6px;border:1px solid var(--line);">重量</th><th style="padding:6px;border:1px solid var(--line);">体积</th><th style="padding:6px;border:1px solid var(--line);">库位</th><th style="border:1px solid var(--line);"></th></tr>'+
+    _yjItems.map((it,i)=>`<tr><td style="padding:6px;border:1px solid var(--line);font-weight:700;">${escapeHtml(it.name)}</td><td style="padding:4px;border:1px solid var(--line);"><input type="number" min="0" value="${it.qty}" oninput="_yjQty(${i},this.value)" style="width:54px;padding:4px;border:1px solid var(--line);border-radius:6px;"></td><td style="padding:4px;border:1px solid var(--line);"><input value="${escapeHtml(it.unit)}" oninput="_yjUnit(${i},this.value)" style="width:44px;padding:4px;border:1px solid var(--line);border-radius:6px;"></td><td style="padding:6px;border:1px solid var(--line);">${it.weight!==''?escapeHtml(String(it.weight))+(it.weightUnit||''):'—'}</td><td style="padding:6px;border:1px solid var(--line);">${it.volume!==''?it.volume+(it.volumeUnit||''):'—'}</td><td style="padding:6px;border:1px solid var(--line);font-family:monospace;">${it.location||'<span style="color:#c00;">未上架</span>'}</td><td style="padding:4px;border:1px solid var(--line);text-align:center;"><button onclick="_yjDelItem(${i})" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:15px;">✕</button></td></tr>`).join('')+'</table></div>';
+}
+function _yjImportCsv(){ _yjEl('yj-csv-file').click(); }
+async function _yjOnCsv(input){
+  const file=input.files&&input.files[0]; if(!file) return; input.value='';
+  toast('解析中…'); await loadSheetJS();
+  const ab=await file.arrayBuffer();
+  const wb=XLSX.read(ab,{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(rows.length<2){ toast('文件为空'); return; }
+  const hdr=rows[0].map(h=>String(h).toLowerCase().trim());
+  const nameI=hdr.findIndex(h=>/item sku|^sku$|name|型号|名称/.test(h));
+  const qtyI=hdr.findIndex(h=>/quantity|qty|数量/.test(h));
+  if(nameI<0){ toast('未找到型号/SKU列(需含 SKU/Name/型号)'); return; }
+  let added=0,missing=0;
+  for(let r=1;r<rows.length;r++){
+    const nm=String(rows[r][nameI]||'').trim(); if(!nm) continue;
+    const qty=qtyI>=0?(parseInt(rows[r][qtyI],10)||1):1;
+    const m=state.models.find(x=>x.name.toLowerCase()===nm.toLowerCase()||(x.codeText||'').toLowerCase()===nm.toLowerCase()||(x.enName||'').toLowerCase()===nm.toLowerCase());
+    if(!m){ missing++; continue; }
+    const ex=_yjItems.find(it=>it.modelId===m.id);
+    if(ex){ ex.qty+=qty; } else { const info=_yjModelInfo(m.id),vol=_yjVolume(m); _yjItems.push({ modelId:m.id, name:m.name, codeText:(m.codeText||m.name), qty, unit:'箱', weight:(m.weight||''), weightUnit:(m.weightUnit||''), volume:vol.v, volumeUnit:vol.u, location:info.loc }); }
+    added++;
+  }
+  _yjRenderItems();
+  toast(`✅ 导入 ${added} 行${missing?`，${missing} 行SKU库里没有(已跳过)`:''}`,6000);
+}
+async function _yjSave(){
+  const items=_yjItems.filter(it=>it.qty>0);
+  if(!items.length){ toast('请先添加要出库的型号'); return; }
+  const custNo=(_yjEl('yj-cust-no').value||'').trim().toUpperCase();
+  const custName=(_yjEl('yj-cust-name').value||'').trim();
+  const contact=(_yjEl('yj-cust-contact').value||'').trim();
+  if(!custNo){ toast('客户号不能为空'); return; }
+  toast('⏳ 保存中…');
+  let customerId=null;
+  const { data:ex }=await sb.from('atmm_customers').select('id').eq('warehouse_id',_warehouse.id).eq('customer_no',custNo).maybeSingle();
+  if(ex){ customerId=ex.id; if(custName||contact) await sb.from('atmm_customers').update({name:custName,contact}).eq('id',ex.id); }
+  else { const { data:ins,error:ce }=await sb.from('atmm_customers').insert({warehouse_id:_warehouse.id,customer_no:custNo,name:custName,contact}).select('id').single(); if(ce){toast('客户保存失败：'+ce.message,6000);return;} customerId=ins?.id; }
+  const orderNo=_yjEl('yj-order-no').value;
+  const { data:ord, error }=await sb.from('atmm_orders').insert({
+    warehouse_id:_warehouse.id, customer_id:customerId, customer_no:custNo, order_no:orderNo, business:'yijian',
+    status:'created', pallet_count:items.length, extra:{ items, customer_name:custName, contact }
+  }).select('*').single();
+  if(error){ toast('保存失败：'+error.message,6000); return; }
+  toast('✅ 出库单已保存：'+orderNo,5000);
+  _yjLastSaved = { order:ord, items };
+  const sb2=_yjEl('yj-scan-btn'); if(sb2) sb2.style.display='';   // 显示"扫码核对出库"
+  _yjPrintPickList(ord, items, custName, contact);
+}
+function _yjPrintPickList(order, items, custName, contact){
+  const now=_kcFmtDT(new Date().toISOString());
+  const rows=items.map((it,i)=>`<tr><td>${i+1}</td><td style="font-weight:700;">${escapeHtml(it.name)}</td><td style="text-align:center;">${it.qty} ${escapeHtml(it.unit||'')}</td><td style="text-align:center;">${it.weight!==''?escapeHtml(String(it.weight))+(it.weightUnit||''):'—'}</td><td style="text-align:center;">${it.volume!==''?it.volume+(it.volumeUnit||''):'—'}</td><td style="text-align:center;font-family:monospace;font-weight:700;">${escapeHtml(it.location||'未上架')}</td><td style="width:34px;text-align:center;">☐</td></tr>`).join('');
+  const win=window.open('','_blank'); if(!win){toast('请允许弹出窗口');return;}
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>一件代发拣货表 ${order.order_no}</title>
+<style>body{font-family:-apple-system,sans-serif;padding:16px;color:#111;max-width:840px;margin:0 auto;}h1{font-size:20px;margin-bottom:4px;}.sub{color:#666;font-size:13px;margin-bottom:10px;line-height:1.7;}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;}th{background:#f5f5f5;}@media print{.noprint{display:none;}}</style></head><body>
+<h1>${_tzBrand()} · 一件代发拣货表</h1>
+<div class="sub">单号 <b>${order.order_no}</b> · 客户 ${order.customer_no}${custName?(' '+escapeHtml(custName)):''}${contact?(' · '+escapeHtml(contact)):''}<br>导出 ${now} · 共 ${items.length} 个型号</div>
+<table><tr><th>#</th><th>型号</th><th>数量</th><th>重量</th><th>体积</th><th>库位编号</th><th>拣</th></tr>${rows}</table>
+<div class="noprint" style="margin-top:16px;"><button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer;">🖨 打印 / 转 PDF</button></div>
+</body></html>`);
+  win.document.close();
+}
+
+// ===== YJ-P2：两步扫码核对（先扫库位码 → 再扫商品码）复用 _kcStartScanner 引擎 =====
+let _yjLastSaved=null, _yjScan=null, _yjScanStop=null, _yjTorchOn2=false, _yjRestarting2=false;
+const _yjNorm = s => String(s||'').trim().toUpperCase().replace(/\s+/g,'');
+function _yjSetStatus(c,t){ const s=_yjEl('yj-scan-status'); if(s){ s.style.color=c; s.textContent=t; } }
+async function _yjStartScan(){
+  if(!_yjLastSaved || !_yjLastSaved.items.length){ toast('请先保存出库单'); return; }
+  _kcBeep(true);   // 用户手势内预热音频
+  _yjScan={ order:_yjLastSaved.order, items:_yjLastSaved.items.map(it=>({...it,done:false})), stage:'loc', idx:null, wrong:0 };
+  _yjEl('yj-scan-overlay').style.display='flex';
+  _yjEl('yj-scan-manual').style.display='none';
+  _yjRenderScanGrid(); _yjScanProgress();
+  _yjSetStatus('#fff','请扫【库位码】（先库位，后商品）');
+  await new Promise(r=>setTimeout(r,200));
+  try{ _yjScanStop=await _kcStartScanner(_yjEl('yj-scan-video'), _yjOnScan); _yjTorchOn2=false; setTimeout(()=>_yjScanTorch(),700); }
+  catch(e){ _yjSetStatus('#ff6b6b','❌ 摄像头启动失败：'+(e.message||e)); }
+}
+function _yjScanProgress(){ if(!_yjScan) return; const d=_yjScan.items.filter(x=>x.done).length; _yjEl('yj-scan-progress').textContent=`已完成 ${d}/${_yjScan.items.length}`; }
+function _yjRenderScanGrid(){
+  if(!_yjScan) return;
+  _yjEl('yj-scan-grid').innerHTML=_yjScan.items.map((it,i)=>{
+    const cur=_yjScan.idx===i;
+    const bg=it.done?'background:#16a34a;color:#fff;':(cur?'background:#2563eb;color:#fff;':'background:#222;color:#bbb;border:1px solid #444;');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;${bg}"><span style="font-weight:800;">${it.done?'✓':(cur?'▶':'○')}</span><span style="flex:1;font-weight:700;">${escapeHtml(it.name)}</span><span style="font-size:12px;opacity:.85;">${escapeHtml(it.location||'未上架')} · ${it.qty}${escapeHtml(it.unit||'')}</span></div>`;
+  }).join('');
+}
+function _yjOnScan(text){
+  if(!_yjScan) return;
+  const code=_yjNorm(text);
+  if(_yjScan.stage==='loc'){
+    const i=_yjScan.items.findIndex(x=>!x.done && x.location && _yjNorm(x.location)===code);
+    if(i>=0){ _yjScan.idx=i; _yjScan.stage='prod'; _yjScan.wrong=0; _yjEl('yj-scan-manual').style.display='none'; _yjRenderScanGrid(); _kcBeep(true); _yjSetStatus('#7CFC9A',`库位 ${_yjScan.items[i].location} ✓ — 请扫该位【商品码】`); }
+    else { _yjScanWrong(`⛔ 该库位不在本单清单：${text}`); }
+  } else {
+    const it=_yjScan.items[_yjScan.idx];
+    if(it && (_yjNorm(it.codeText)===code || _yjNorm(it.name)===code)){ _yjItemDone(); }
+    else { _yjScanWrong(`⛔ 商品码不对，应为【${it?it.name:''}】`); }
+  }
+}
+function _yjScanWrong(msg){
+  _yjScan.wrong++; _kcBeep(false); if(navigator.vibrate) navigator.vibrate([90,50,90]);   // 错误音=200Hz低鸣(区别于成功"嘀")
+  _yjSetStatus('#ff6b6b', msg + (_yjScan.wrong>=2?'（已错2次，可在下方手动输入补充）':''));
+  if(_yjScan.wrong>=2) _yjEl('yj-scan-manual').style.display='';
+}
+function _yjItemDone(){
+  const it=_yjScan.items[_yjScan.idx]; if(it) it.done=true;
+  _kcBeep(true); _yjScan.stage='loc'; _yjScan.idx=null; _yjScan.wrong=0; _yjEl('yj-scan-manual').style.display='none';
+  _yjRenderScanGrid(); _yjScanProgress();
+  if(_yjScan.items.every(x=>x.done)){ _yjSetStatus('#7CFC9A','🎉 全部核对完成！'); setTimeout(()=>_yjScanReport(),300); }
+  else _yjSetStatus('#fff','✓ 完成一项 — 请扫下一个【库位码】');
+}
+function _yjScanManualConfirm(){
+  if(!_yjScan) return;
+  const loc=_yjNorm(_yjEl('yj-manual-loc').value), mdl=_yjNorm(_yjEl('yj-manual-model').value);
+  if(!loc||!mdl){ toast('请填库位和型号'); return; }
+  const i=_yjScan.items.findIndex(x=>!x.done && _yjNorm(x.location)===loc && (_yjNorm(x.codeText)===mdl||_yjNorm(x.name)===mdl));
+  if(i<0){ _kcBeep(false); _yjSetStatus('#ff6b6b','⛔ 手动输入的库位+型号不匹配本单任何待出项'); return; }
+  _yjScan.idx=i; _yjEl('yj-manual-loc').value=''; _yjEl('yj-manual-model').value=''; _yjItemDone();
+}
+async function _yjScanRestart(){
+  if(!_yjScan || _yjRestarting2) return; _yjRestarting2=true; const want=_yjTorchOn2;
+  _yjSetStatus('#fff','🔄 重新开启摄像头…');
+  try{ _yjScanStop && _yjScanStop(); }catch(e){} _yjScanStop=null; _yjTorchOn2=false;
+  await new Promise(r=>setTimeout(r,200));
+  try{
+    _yjScanStop=await _kcStartScanner(_yjEl('yj-scan-video'), _yjOnScan);
+    _yjSetStatus('#fff', _yjScan.stage==='loc'?'请扫【库位码】':'请扫【商品码】');
+    if(want) setTimeout(async()=>{ const ok=await applyTorch(_kcScanStream,true); if(ok){ _yjTorchOn2=true; const b=_yjEl('yj-scan-torch'); if(b){ b.style.background='#f5c518'; b.style.color='#111'; } } },500);
+  }catch(e){ _yjSetStatus('#ff6b6b','❌ 摄像头重启失败'); }
+  finally{ _yjRestarting2=false; }
+}
+async function _yjScanTorch(){
+  _yjTorchOn2=!_yjTorchOn2; const ok=await applyTorch(_kcScanStream,_yjTorchOn2);
+  if(!ok&&_yjTorchOn2){ _yjTorchOn2=false; toast('此设备不支持手电筒'); }
+  const b=_yjEl('yj-scan-torch'); if(b){ b.style.background=_yjTorchOn2?'#f5c518':'transparent'; b.style.color=_yjTorchOn2?'#111':'#fff'; }
+}
+function _yjScanUpload(){ _yjEl('yj-scan-file').click(); }
+async function _yjOnScanFile(input){
+  const f=input.files&&input.files[0]; if(!f) return; input.value='';
+  _yjSetStatus('#fff','识别照片中…'); const url=URL.createObjectURL(f);
+  try{
+    let text=null;
+    if('BarcodeDetector' in window){ try{ const img=await createImageBitmap(f); const det=new window.BarcodeDetector({formats:await window.BarcodeDetector.getSupportedFormats()}); const c=await det.detect(img); if(c&&c.length) text=c[0].rawValue; }catch(e){} }
+    if(!text){ await _kcEnsureZxingBrowser(); const ZXB=window.ZXingBrowser,ZX=window.ZXing; const reader=ZXB?.BrowserMultiFormatReader?new ZXB.BrowserMultiFormatReader():(ZX?.BrowserMultiFormatReader?new ZX.BrowserMultiFormatReader():null);
+      if(reader){ const img=await new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=url; });
+        if(img&&reader.decodeFromImageElement){ try{ const r=await reader.decodeFromImageElement(img); text=r.getText?r.getText():String(r); }catch(e){} }
+        if(!text&&reader.decodeFromImageUrl){ try{ const r=await reader.decodeFromImageUrl(url); text=r.getText?r.getText():String(r); }catch(e){} } } }
+    if(text) _yjOnScan(text); else _yjSetStatus('#ffd24d','⚠️ 没识别到，换张更清晰的');
+  }catch(e){ _yjSetStatus('#ff6b6b','识别失败'); } finally{ URL.revokeObjectURL(url); }
+}
+function _yjScanClose(){ try{ _yjScanStop && _yjScanStop(); }catch(e){} _yjScanStop=null; _yjEl('yj-scan-overlay').style.display='none'; _yjScan=null; }
+function _yjScanFinish(){ const left=_yjScan?_yjScan.items.filter(x=>!x.done).length:0; if(left>0 && !confirm(`还有 ${left} 项未核对完成，确定结束吗？`)) return; _yjScanClose(); }
+async function _yjScanReport(){
+  if(!_yjScan) return; const order=_yjScan.order, items=_yjScan.items, now=_kcFmtDT(new Date().toISOString());
+  try{ await sb.from('atmm_orders').update({status:'shipped', outbound_done_at:new Date().toISOString()}).eq('id',order.id); }catch(e){}
+  try{ _yjScanStop && _yjScanStop(); }catch(e){} _yjScanStop=null; _yjEl('yj-scan-overlay').style.display='none';
+  const rows=items.map((it,i)=>`<tr><td>${i+1}</td><td style="font-weight:700;">${escapeHtml(it.name)}</td><td style="text-align:center;">${it.qty} ${escapeHtml(it.unit||'')}</td><td style="text-align:center;">${it.weight!==''?escapeHtml(String(it.weight))+(it.weightUnit||''):'—'}</td><td style="text-align:center;">${it.volume!==''?it.volume+(it.volumeUnit||''):'—'}</td><td style="text-align:center;font-family:monospace;">${escapeHtml(it.location||'—')}</td><td style="text-align:center;color:${it.done?'#16a34a':'#c00'};font-weight:700;">${it.done?'✓ 已出':'未完成'}</td></tr>`).join('');
+  const totQty=items.reduce((s,it)=>s+(it.done?(it.qty||0):0),0);
+  const win=window.open('','_blank'); if(!win){ toast('✅ 核对完成（弹窗被拦截，未生成报表）'); _yjScan=null; return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>出库报表 ${order.order_no}</title>
+<style>body{font-family:-apple-system,sans-serif;padding:16px;color:#111;max-width:840px;margin:0 auto;}h1{font-size:20px;margin-bottom:4px;}h3{margin:16px 0 4px;}.sub{color:#666;font-size:13px;margin-bottom:10px;line-height:1.7;}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;}th{background:#f5f5f5;}@media print{.noprint{display:none;}}</style></head><body>
+<h1>${_tzBrand()} · 一件代发出库报表</h1>
+<div class="sub">单号 <b>${order.order_no}</b> · 客户 ${order.customer_no} · 完成 ${now}<br>共 ${items.length} 个型号 · 出库 ${totQty} 件</div>
+<table><tr><th>#</th><th>型号</th><th>数量</th><th>重量</th><th>体积</th><th>库位</th><th>状态</th></tr>${rows}</table>
+<h3>计价预留（填入单价即可作第三方代发收费单）</h3>
+<table><tr><th>项目</th><th>计费量</th><th>单价</th><th>金额</th></tr>
+<tr><td>拣货/出库操作费（按件）</td><td>${totQty} 件</td><td>＿＿＿ / 件</td><td>＿＿＿＿</td></tr>
+<tr><td>拣货/出库操作费（按型号）</td><td>${items.length} 个型号</td><td>＿＿＿ / 型号</td><td>＿＿＿＿</td></tr>
+<tr><td>其他费用</td><td>—</td><td>—</td><td>＿＿＿＿</td></tr>
+<tr><td style="font-weight:700;">合计应收</td><td>—</td><td>—</td><td style="font-weight:700;">＿＿＿＿</td></tr></table>
+<div class="noprint" style="margin-top:16px;"><button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer;">🖨 打印 / 转 PDF</button></div>
+</body></html>`);
+  win.document.close();
+  toast('✅ 出库核对完成，已生成报表'); _yjScan=null;
+}
 
 // ── Auth init (entry point) ──
 async function _initAuth() {
