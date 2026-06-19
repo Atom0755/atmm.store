@@ -427,26 +427,21 @@
     </div>
   </div>
 
-  <div class="out-method-grid" style="gap:8px; margin-bottom:12px;">
-    <div class="out-method-card selected" id="mc-csv" onclick="switchOutMethod('csv')" style="padding:10px 8px;">
-      <span class="ico" style="font-size:20px; margin-bottom:4px;">📄</span>
-      <h4>CSV 导入</h4>
-      <p style="font-size:10px;">ShipStation / Veeqo</p>
-    </div>
-    <div class="out-method-card" id="mc-manual" onclick="switchOutMethod('manual')" style="padding:10px 8px;">
-      <span class="ico" style="font-size:20px; margin-bottom:4px;">✏️</span>
-      <h4>手动录入</h4>
-      <p style="font-size:10px;">搜索型号输入数量</p>
-    </div>
+  <!-- CSV 导入：从出货表直接扣库存（快速，不建单）-->
+  <div class="out-method-card selected" id="mc-csv" onclick="switchOutMethod('csv')" style="padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:10px; text-align:left;">
+    <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">📄</span>
+    <div style="flex:1;"><h4 style="margin:0;">CSV 导入</h4><p style="font-size:10px; margin:2px 0 0;">ShipStation / Veeqo 出货表 → 直接扣库存（不建单）</p></div>
   </div>
 
-  <!-- 扫码录入（一件代发·出库拣货，跳转到主应用 YJ 流程）-->
+  <!-- 出库拣货流程：手动 / 扫码 两个入口，均进入 YJ 出库拣货（建客户/出库单 → 生成拣货表）-->
+  <div class="out-method-card" onclick="location.href='/?yjout=1'" style="padding:10px 12px; margin-bottom:8px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
+    <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">✏️</span>
+    <div style="flex:1;"><h4 style="margin:0;">手动录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 搜索 SKU 加货 → 生成拣货表</p></div>
+    <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
+  </div>
   <div class="out-method-card" onclick="location.href='/?yjout=1'" style="padding:10px 12px; margin-bottom:12px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
     <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">📷</span>
-    <div style="flex:1;">
-      <h4 style="margin:0;">扫码录入</h4>
-      <p style="font-size:10px; margin:2px 0 0;">出库拣货单 + 扫码核对（建客户/出库单·生成拣货表·逐件扫码）</p>
-    </div>
+    <div style="flex:1;"><h4 style="margin:0;">扫码录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 生成拣货表 → 逐件扫码核对</p></div>
     <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
   </div>
 
@@ -1023,10 +1018,14 @@ function matchModelBySku(inv, sku) {
 
 function switchOutMethod(method) {
   outMethod = method;
-  document.getElementById('mc-csv').classList.toggle('selected', method === 'csv');
-  document.getElementById('mc-manual').classList.toggle('selected', method === 'manual');
-  document.getElementById('out-csv-section').style.display = method === 'csv' ? '' : 'none';
-  document.getElementById('out-manual-section').style.display = method === 'manual' ? '' : 'none';
+  const csvCard = document.getElementById('mc-csv');
+  const manualCard = document.getElementById('mc-manual');   // 手动录入已改为跳转出库拣货，可能不存在
+  const csvSec = document.getElementById('out-csv-section');
+  const manualSec = document.getElementById('out-manual-section');
+  if (csvCard) csvCard.classList.toggle('selected', method === 'csv');
+  if (manualCard) manualCard.classList.toggle('selected', method === 'manual');
+  if (csvSec) csvSec.style.display = method === 'csv' ? '' : 'none';
+  if (manualSec) manualSec.style.display = method === 'manual' ? '' : 'none';
 }
 
 function showOutPaste() {
