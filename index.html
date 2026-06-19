@@ -1510,6 +1510,10 @@
     </div>
     <button id="yj-save-btn" onclick="_yjSave()" class="kc-btn-primary">💾 保存出库单 + 生成拣货表</button>
     <button id="yj-scan-btn" onclick="_yjStartScan()" class="kc-btn" style="display:none;border-color:#16a34a;color:#16a34a;">📷 扫码核对出库（先扫库位 → 再扫商品）</button>
+    <div class="kc-card" style="margin-top:14px;">
+      <div class="kc-step" style="display:flex;align-items:center;justify-content:space-between;">出库单记录<button onclick="_yjLoadHistory()" style="border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;">↻ 刷新</button></div>
+      <div id="yj-history" style="margin-top:6px;"></div>
+    </div>
   </div>
 </div>
 
@@ -1548,7 +1552,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2410,31 +2414,22 @@
               <div class="plan-btn-top" onclick="_startCheckout('basic_monthly')"><span class="plan-btn-name">基础版 Basic</span><span class="plan-price"><span class="plan-orig">$99.99/月</span>$29.99/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_monthly','基础版 Basic','$29.99/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('basic_monthly')">1账户（老板）· 独立经营，单人管理 · 订阅即送1周免费期</div>
-            </div>
-            <div class="plan-btn" id="plan-basic-y">
-              <div class="plan-btn-top" onclick="_startCheckout('basic_annual')"><span class="plan-btn-name">基础版 年付</span><span class="plan-price"><span class="plan-orig">$1,199.88/年</span>$359.88/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$359.88/年')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_startCheckout('basic_annual')">1账户（老板）· 独立经营，单人管理 · 订阅即送1个月免费期</div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('basic_annual')"><span>💰 年付 <b style="color:var(--ink);">$359.88/年</b> <span class="plan-orig">$1,199.88/年</span> · 送1个月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('basic_annual','基础版 年付','$359.88/年')" title="扫码付款">📲</button></div>
             </div>
             <div class="plan-btn" id="plan-standard-m">
               <div class="plan-btn-top" onclick="_startCheckout('standard_monthly')"><span class="plan-btn-name">标准版 Standard</span><span class="plan-price"><span class="plan-orig">$168.99/月</span>$138.99/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_monthly','标准版 Standard','$138.99/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('standard_monthly')">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1周免费期</div>
-            </div>
-            <div class="plan-btn" id="plan-standard-y">
-              <div class="plan-btn-top" onclick="_startCheckout('standard_annual')"><span class="plan-btn-name">标准版 年付</span><span class="plan-price"><span class="plan-orig">$2,027.88/年</span>$1,667.88/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$1,667.88/年')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_startCheckout('standard_annual')">2账户（老板＋经理或操作员）· 小团队协作 · 订阅即送1个月免费期</div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('standard_annual')"><span>💰 年付 <b style="color:var(--ink);">$1,667.88/年</b> <span class="plan-orig">$2,027.88/年</span> · 送1个月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('standard_annual','标准版 年付','$1,667.88/年')" title="扫码付款">📲</button></div>
             </div>
             <div class="plan-btn" id="plan-premium-m">
               <div class="plan-btn-top" onclick="_startCheckout('premium_monthly')"><span class="plan-btn-name">高级版 Premium</span><span class="plan-price"><span class="plan-orig">$328.99/月</span>$299.99/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_monthly','高级版 Premium','$299.99/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" onclick="_startCheckout('premium_monthly')">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1周免费期</div>
-            </div>
-            <div class="plan-btn" id="plan-premium-y">
-              <div class="plan-btn-top" onclick="_startCheckout('premium_annual')"><span class="plan-btn-name">高级版 年付</span><span class="plan-price"><span class="plan-orig">$3,947.88/年</span>$3,599.88/年</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$3,599.88/年')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_startCheckout('premium_annual')">3账户（老板＋经理＋操作员）· 全团队配置 · 订阅即送1个月免费期</div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('premium_annual')"><span>💰 年付 <b style="color:var(--ink);">$3,599.88/年</b> <span class="plan-orig">$3,947.88/年</span> · 送1个月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$3,599.88/年')" title="扫码付款">📲</button></div>
             </div>
             <!-- Phase 3: 业务模块加购 + 全业务套餐（真实价格）-->
             <div style="font-size:11px; font-weight:700; color:#7c3aed; margin:14px 0 6px;">🚚 转运 + 快拆（业务模块加购）</div>
@@ -2696,7 +2691,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.0</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.1</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>出库拣货页新增「出库单记录」列表（云端同步），可查看历史出库单并重打拣货表</li>
+            <li>发货管理出货方式重排：扫码录入置顶（量大首选）、CSV 居中、手动录入垫底（少量用）</li>
+            <li>订阅卡精简版面：基础/标准/高级版的年付并到月付下方一行显示</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v6.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -12597,7 +12602,7 @@ function _yjOpen(mode){
   // 按模式调整保存按钮文案
   const saveBtn=_yjEl('yj-save-btn');
   if(saveBtn) saveBtn.textContent = _yjMode==='manual' ? '✅ 确定出库（扣减库存）' : '💾 保存出库单 + 生成拣货表';
-  _yjRenderItems(); _yjInitNos();
+  _yjRenderItems(); _yjInitNos(); _yjLoadHistory();
 }
 // 出库扣减货架库存：逐型号在 state 各库位扣减 qty，返回缺货情况
 function _yjDeductStock(items){
@@ -12621,6 +12626,25 @@ function _yjDeductStock(items){
   return { allOk, report };
 }
 function _yjClose(){ _yjEl('yj-overlay').style.display='none'; }
+// 出库单记录（云端 atmm_orders, business=yijian）
+async function _yjLoadHistory(){
+  const el=_yjEl('yj-history'); if(!el) return;
+  if(!_warehouse){ el.innerHTML=''; return; }
+  el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;">加载中…</div>';
+  const { data, error }=await sb.from('atmm_orders').select('*').eq('warehouse_id',_warehouse.id).eq('business','yijian').order('created_at',{ascending:false}).limit(30);
+  if(error){ el.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px;">加载失败：'+error.message+'</div>'; return; }
+  if(!data||!data.length){ el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;text-align:center;">暂无出库单</div>'; return; }
+  el.innerHTML=data.map(o=>{
+    const items=(o.extra&&o.extra.items)||[]; const cnt=items.length;
+    const totQty=items.reduce((s,it)=>s+(parseInt(it.qty,10)||0),0);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px;">
+      <div style="flex:1;min-width:0;"><div style="font-weight:700;">${escapeHtml(o.order_no)} <span style="color:var(--muted);font-weight:400;">· ${escapeHtml(o.customer_no||'')}</span></div>
+      <div style="font-size:11px;color:var(--muted);">${_kcFmtDT(o.created_at)} · ${cnt} 型号 / ${totQty} 件${o.extra&&o.extra.customer_name?(' · '+escapeHtml(o.extra.customer_name)):''}</div></div>
+      ${cnt?`<button onclick='_yjReprint(${JSON.stringify(o).replace(/'/g,"&#39;")})' style="border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;">🖨 拣货表</button>`:''}
+    </div>`;
+  }).join('');
+}
+function _yjReprint(o){ const items=(o.extra&&o.extra.items)||[]; _yjPrintPickList(o, items, (o.extra&&o.extra.customer_name)||'', (o.extra&&o.extra.contact)||''); }
 async function _yjInitNos(){
   _yjEl('yj-cust-no').value = await _kcNextCustomerNo();
   _yjEl('yj-order-no').value = await _yjNextOrderNo();
@@ -12725,11 +12749,12 @@ async function _yjSave(){
   if(_yjMode==='manual'){
     // 手动录入：确定出库扣库存，不生成拣货表/不扫码，自动准备下一单
     toast('✅ 已出库并扣减库存：'+orderNo+shortMsg, 7000);
-    _yjItems=[]; _yjRenderItems(); _yjInitNos();
+    _yjItems=[]; _yjRenderItems(); _yjInitNos(); _yjLoadHistory();
   } else {
     toast('✅ 出库单已保存并扣减库存：'+orderNo+shortMsg, 6000);
     const sb2=_yjEl('yj-scan-btn'); if(sb2) sb2.style.display='';   // 显示"扫码核对出库"
     _yjPrintPickList(ord, items, custName, contact);
+    _yjLoadHistory();
   }
 }
 function _yjPrintPickList(order, items, custName, contact){

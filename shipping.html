@@ -427,22 +427,23 @@
     </div>
   </div>
 
+  <!-- 扫码录入（置顶，出库量大首选）：进入出库拣货 · 生成拣货表 → 逐件扫码核对(防错) -->
+  <div class="out-method-card" onclick="location.href='/?yjout=1'" style="padding:10px 12px; margin-bottom:8px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
+    <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">📷</span>
+    <div style="flex:1;"><h4 style="margin:0;">扫码录入</h4><p style="font-size:10px; margin:2px 0 0;">出库量大首选 · 出库拣货：客户/出库单/日期 → 生成拣货表 → 逐件扫码核对（防错）</p></div>
+    <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
+  </div>
+
   <!-- CSV 导入：从出货表直接扣库存（快速，不建单）-->
   <div class="out-method-card selected" id="mc-csv" onclick="switchOutMethod('csv')" style="padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:10px; text-align:left;">
     <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">📄</span>
     <div style="flex:1;"><h4 style="margin:0;">CSV 导入</h4><p style="font-size:10px; margin:2px 0 0;">ShipStation / Veeqo 出货表 → 直接扣库存（不建单）</p></div>
   </div>
 
-  <!-- 手动录入：进入出库拣货(填客户/出库单/日期) · 手动输入SKU+数量+单位 → 确定出库扣库存(不生成拣货表/不扫码) -->
-  <div class="out-method-card" onclick="location.href='/?yjout=1&m=manual'" style="padding:10px 12px; margin-bottom:8px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
+  <!-- 手动录入（垫底，少量出货用）：进入出库拣货 · 手动输入SKU+数量+单位 → 确定出库扣库存 -->
+  <div class="out-method-card" onclick="location.href='/?yjout=1&m=manual'" style="padding:10px 12px; margin-bottom:12px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
     <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">✏️</span>
-    <div style="flex:1;"><h4 style="margin:0;">手动录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 客户/出库单/日期 + 手动输入 SKU·数量·单位 → 确定出库扣库存</p></div>
-    <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
-  </div>
-  <!-- 扫码录入：进入出库拣货 · 生成拣货表 → 逐件扫码核对(防错) -->
-  <div class="out-method-card" onclick="location.href='/?yjout=1'" style="padding:10px 12px; margin-bottom:12px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
-    <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">📷</span>
-    <div style="flex:1;"><h4 style="margin:0;">扫码录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 客户/出库单/日期 → 生成拣货表 → 逐件扫码核对（防错）</p></div>
+    <div style="flex:1;"><h4 style="margin:0;">手动录入</h4><p style="font-size:10px; margin:2px 0 0;">少量出货用 · 出库拣货：客户/出库单/日期 + 手动输入 SKU·数量·单位 → 确定出库扣库存</p></div>
     <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
   </div>
 
