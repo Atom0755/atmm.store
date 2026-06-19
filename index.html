@@ -1508,7 +1508,7 @@
       <div class="kc-step">出库清单（数量/单位可改，库位·重量·体积自动带出）</div>
       <div id="yj-items"></div>
     </div>
-    <button onclick="_yjSave()" class="kc-btn-primary">💾 保存出库单 + 生成拣货表</button>
+    <button id="yj-save-btn" onclick="_yjSave()" class="kc-btn-primary">💾 保存出库单 + 生成拣货表</button>
     <button id="yj-scan-btn" onclick="_yjStartScan()" class="kc-btn" style="display:none;border-color:#16a34a;color:#16a34a;">📷 扫码核对出库（先扫库位 → 再扫商品）</button>
   </div>
 </div>
@@ -1548,7 +1548,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v5.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2696,7 +2696,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v5.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.0</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>出库拣货「确定出库」现在会真实扣减货架库存并云端保存（多人/多设备同步）</li>
+            <li>手动录入＝完整出库流程（客户/出库单号/日期 + 手动输入 SKU·数量·单位）→ 确定出库扣库存，不生成拣货表/不扫码</li>
+            <li>扫码录入＝同一出库流程，生成拣货表后逐件扫码核对（防错）</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v5.9</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -10073,10 +10083,12 @@ async function _onSignIn(user) {
   // 业务模块入口路由（订阅决定可见业务）
   _routeModulesOnEntry();
 
-  // 发货页「扫码录入」跳转：?yjout=1 → 打开一件代发·出库拣货
-  if (new URLSearchParams(location.search).get('yjout') === '1') {
+  // 发货页跳转：?yjout=1 打开一件代发·出库拣货；m=manual 为手动录入模式
+  const _yjQp = new URLSearchParams(location.search);
+  if (_yjQp.get('yjout') === '1') {
+    const _yjM = _yjQp.get('m');
     history.replaceState({}, '', '/');
-    setTimeout(() => { try { _yjOpen(); } catch(e){} }, 600);
+    setTimeout(() => { try { _yjOpen(_yjM); } catch(e){} }, 600);
   }
 }
 
@@ -12570,9 +12582,11 @@ async function _tzPrintTzLabels(mode, onlyGroup){
 // YJ-P1：建客户/JCY单 + 录入型号(搜型号 / CSV) + 自动带库位·重量·体积 + 生成出库拣货表
 // ============================================================
 let _yjItems = [];
+let _yjMode = 'scan';   // 'manual'=手动录入(确定出库扣库存,不生成拣货表) / 'scan'=扫码录入(拣货表+扫码核对)
 const _yjEl = id => document.getElementById(id);
-function _yjOpen(){
+function _yjOpen(mode){
   if(!_warehouse){ _pulseLoginBtn?.(); toast('请先登录'); return; }
+  _yjMode = (mode === 'manual') ? 'manual' : 'scan';
   _loadAtmmSettings();   // 加载单号前缀等设置
   _yjItems = [];
   _yjLastSaved=null;
@@ -12580,7 +12594,31 @@ function _yjOpen(){
   _yjEl('yj-cust-name').value=''; _yjEl('yj-cust-contact').value=''; _yjEl('yj-search').value='';
   _yjEl('yj-search-results').style.display='none';
   const sb2=_yjEl('yj-scan-btn'); if(sb2) sb2.style.display='none';
+  // 按模式调整保存按钮文案
+  const saveBtn=_yjEl('yj-save-btn');
+  if(saveBtn) saveBtn.textContent = _yjMode==='manual' ? '✅ 确定出库（扣减库存）' : '💾 保存出库单 + 生成拣货表';
   _yjRenderItems(); _yjInitNos();
+}
+// 出库扣减货架库存：逐型号在 state 各库位扣减 qty，返回缺货情况
+function _yjDeductStock(items){
+  let allOk=true; const report=[];
+  for(const it of items){
+    let need=it.qty||0; const want=need;
+    for(const z of (state.zones||[])){
+      for(const a of (z.aisles||[])){
+        for(const c of ((a.shelves||a.pallets)||[])){
+          for(const s of ((c.slots||c.layers)||[])){
+            if(need<=0) break;
+            if(s.modelId===it.modelId && (s.qty||0)>0){ const d=Math.min(need,s.qty); s.qty-=d; need-=d; }
+            for(const sm of (s.subModels||[])){ if(need<=0) break; if(sm.modelId===it.modelId && (sm.qty||0)>0){ const d=Math.min(need,sm.qty); sm.qty-=d; need-=d; } }
+          }
+        }
+      }
+    }
+    if(need>0) allOk=false;
+    report.push({ name:it.name, deducted:want-need, short:need });
+  }
+  return { allOk, report };
 }
 function _yjClose(){ _yjEl('yj-overlay').style.display='none'; }
 async function _yjInitNos(){
@@ -12678,10 +12716,21 @@ async function _yjSave(){
     status:'created', pallet_count:items.length, extra:{ items, customer_name:custName, contact }
   }).select('*').single();
   if(error){ toast('保存失败：'+error.message,6000); return; }
-  toast('✅ 出库单已保存：'+orderNo,5000);
   _yjLastSaved = { order:ord, items };
-  const sb2=_yjEl('yj-scan-btn'); if(sb2) sb2.style.display='';   // 显示"扫码核对出库"
-  _yjPrintPickList(ord, items, custName, contact);
+  // 扣减货架库存 + 云端持久化
+  const ded=_yjDeductStock(items);
+  try{ render(); }catch(e){}
+  try{ await _cloudSave(); }catch(e){}
+  const shortMsg = ded.allOk ? '' : '（库存不足：'+ded.report.filter(r=>r.short>0).map(r=>r.name+' 差'+r.short).join('、')+'）';
+  if(_yjMode==='manual'){
+    // 手动录入：确定出库扣库存，不生成拣货表/不扫码，自动准备下一单
+    toast('✅ 已出库并扣减库存：'+orderNo+shortMsg, 7000);
+    _yjItems=[]; _yjRenderItems(); _yjInitNos();
+  } else {
+    toast('✅ 出库单已保存并扣减库存：'+orderNo+shortMsg, 6000);
+    const sb2=_yjEl('yj-scan-btn'); if(sb2) sb2.style.display='';   // 显示"扫码核对出库"
+    _yjPrintPickList(ord, items, custName, contact);
+  }
 }
 function _yjPrintPickList(order, items, custName, contact){
   const now=_kcFmtDT(new Date().toISOString());
