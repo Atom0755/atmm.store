@@ -433,15 +433,15 @@
     <div style="flex:1;"><h4 style="margin:0;">CSV 导入</h4><p style="font-size:10px; margin:2px 0 0;">ShipStation / Veeqo 出货表 → 直接扣库存（不建单）</p></div>
   </div>
 
-  <!-- 出库拣货流程：手动 / 扫码 两个入口，均进入 YJ 出库拣货（建客户/出库单 → 生成拣货表）-->
-  <div class="out-method-card" onclick="location.href='/?yjout=1'" style="padding:10px 12px; margin-bottom:8px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
+  <!-- 手动录入：直接输入 SKU+数量+单位 → 确定出库（不建单、不生成拣货表、不扫码）-->
+  <div class="out-method-card" id="mc-manual" onclick="switchOutMethod('manual')" style="padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:10px; text-align:left;">
     <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">✏️</span>
-    <div style="flex:1;"><h4 style="margin:0;">手动录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 搜索 SKU 加货 → 生成拣货表</p></div>
-    <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
+    <div style="flex:1;"><h4 style="margin:0;">手动录入</h4><p style="font-size:10px; margin:2px 0 0;">直接输入 SKU + 数量 + 单位 → 确定出库（不建单 / 不扫码，最快）</p></div>
   </div>
+  <!-- 扫码录入：进入出库拣货（生成拣货表 → 逐件扫码核对，防错）-->
   <div class="out-method-card" onclick="location.href='/?yjout=1'" style="padding:10px 12px; margin-bottom:12px; border-color:#7c3aed; display:flex; align-items:center; gap:10px; text-align:left;">
     <span class="ico" style="font-size:22px; margin:0; flex-shrink:0;">📷</span>
-    <div style="flex:1;"><h4 style="margin:0;">扫码录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 生成拣货表 → 逐件扫码核对</p></div>
+    <div style="flex:1;"><h4 style="margin:0;">扫码录入</h4><p style="font-size:10px; margin:2px 0 0;">出库拣货 · 生成拣货表 → 逐件扫码核对（防错）</p></div>
     <span style="font-size:18px; color:#7c3aed; flex-shrink:0;">→</span>
   </div>
 
@@ -501,7 +501,7 @@
       </table>
     </div>
     <div id="out-unmatched"></div>
-    <button class="out-btn-hero" onclick="confirmOutbound()">✅ 确认扣减库存</button>
+    <button class="out-btn-hero" onclick="confirmOutbound()">✅ 确定出库（扣减库存）</button>
     <button class="btn" onclick="clearOutPreview()" style="width:100%; margin-bottom:16px;">✖ 清除</button>
   </div>
 
@@ -1285,7 +1285,7 @@ function addManualItem(modelId, modelName) {
   if (manualItems.find(i => i.modelId === modelId)) { alert('该型号已在列表中'); return; }
   const inv = loadInventory();
   const currentQty = inv ? getModelTotalQty(inv, modelId) : 0;
-  manualItems.push({ modelId, modelName, qty: 1, currentQty });
+  manualItems.push({ modelId, modelName, qty: 1, unit: '箱', currentQty });
   renderManualItems();
 }
 
@@ -1300,15 +1300,18 @@ function renderManualItems() {
             <div style="font-weight:700; font-size:13px;">${escHtml(item.modelName)}</div>
             <div style="font-size:11px; color:var(--muted);">当前库存: ${item.currentQty}</div>
           </div>
-          <input type="number" min="1" value="${item.qty}" onchange="updateManualQty(${i}, this.value)"
-            style="width:72px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; font-size:14px; font-weight:700; text-align:center; font-family:inherit;">
+          <input type="number" min="1" value="${item.qty}" onchange="updateManualQty(${i}, this.value)" title="数量"
+            style="width:60px; padding:6px 6px; border:1.5px solid var(--line); border-radius:6px; font-size:14px; font-weight:700; text-align:center; font-family:inherit;">
+          <input type="text" value="${escHtml(item.unit||'箱')}" onchange="updateManualUnit(${i}, this.value)" title="单位" placeholder="单位"
+            style="width:50px; padding:6px 6px; border:1.5px solid var(--line); border-radius:6px; font-size:13px; text-align:center; font-family:inherit;">
           <button onclick="removeManualItem(${i})" style="background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:2px 6px; line-height:1;">×</button>
         </div>`).join('')}
     </div>
-    <button class="btn primary" onclick="buildManualPreview()" style="width:100%; margin-bottom:8px;">📋 生成预览</button>`;
+    <button class="btn primary" onclick="buildManualPreview()" style="width:100%; margin-bottom:8px;">📋 生成出库预览（确认库存）</button>`;
 }
 
 function updateManualQty(i, val) { manualItems[i].qty = Math.max(1, parseInt(val) || 1); }
+function updateManualUnit(i, val) { manualItems[i].unit = (val||'').trim() || '箱'; }
 
 function removeManualItem(i) {
   manualItems.splice(i, 1);
