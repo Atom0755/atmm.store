@@ -96,8 +96,24 @@ module.exports = async function handler(req, res) {
       traffic_30d = await cnt(d30);
     } catch (e) { /* 表未建则忽略 */ }
 
+    // 访客来源：最近访客 + 国家分布（近30天）
+    let visits = [], visit_countries = [];
+    try {
+      const now2 = Date.now();
+      const d30b = new Date(now2 - 30 * 86400000).toISOString();
+      const { data: vs } = await sb.from('atmm_visits')
+        .select('created_at,country,city,region,ref,ua,lang,email,path')
+        .order('created_at', { ascending: false }).limit(80);
+      visits = vs || [];
+      const { data: vc } = await sb.from('atmm_visits').select('country').gte('created_at', d30b);
+      const cmap = {};
+      (vc || []).forEach(v => { const c = v.country || '未知'; cmap[c] = (cmap[c] || 0) + 1; });
+      visit_countries = Object.entries(cmap).map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count).slice(0, 12);
+    } catch (e) { /* 忽略 */ }
+
     res.json({ total_users, total_warehouses, daily, users, rows, campaigns: [],
-      traffic_today, traffic_7d, traffic_30d });
+      traffic_today, traffic_7d, traffic_30d, visits, visit_countries });
   } catch (e) {
     console.error('admin-stats error:', e);
     res.status(500).json({ error: e.message || 'Server error' });

@@ -183,6 +183,24 @@
       <div id="tbl-count" style="font-size:12px; color:var(--muted); margin-top:10px;"></div>
     </div>
 
+    <!-- Visitor source -->
+    <div class="section" id="visits-section">
+      <h2>🌍 访客来源（近期）</h2>
+      <div id="visit-countries" style="display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 14px;"></div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead><tr style="text-align:left; color:var(--muted);">
+            <th style="padding:6px 8px;">时间</th>
+            <th style="padding:6px 8px;">国家/城市</th>
+            <th style="padding:6px 8px;">来源</th>
+            <th style="padding:6px 8px;">邮箱</th>
+            <th style="padding:6px 8px;">设备</th>
+          </tr></thead>
+          <tbody id="visits-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Campaign management -->
     <div class="section" id="campaign-section">
       <h2>🎁 推荐活动管理</h2>
@@ -335,6 +353,25 @@ function renderStats(data) {
   document.getElementById('s-traffic-today').textContent = data.traffic_today || 0;
   document.getElementById('s-traffic-7d').textContent    = data.traffic_7d || 0;
   document.getElementById('s-traffic-30d').textContent   = data.traffic_30d || 0;
+
+  // 访客来源
+  const vcEl = document.getElementById('visit-countries');
+  if (vcEl) vcEl.innerHTML = (data.visit_countries || []).map(c =>
+    `<span style="background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:3px 10px;font-size:12px;">${esc(c.country)} · ${c.count}</span>`
+  ).join('') || '<span style="color:var(--muted);font-size:12px;">暂无数据</span>';
+  const vtb = document.getElementById('visits-tbody');
+  if (vtb) vtb.innerHTML = (data.visits || []).map(v => {
+    const dev = /mobile|android|iphone|ipad/i.test(v.ua || '') ? '📱 手机' : '💻 电脑';
+    const loc = [v.country, v.city].filter(Boolean).join(' / ') || '—';
+    let ref = '直接访问';
+    if (v.ref) { try { ref = new URL(v.ref).hostname; } catch (e) { ref = v.ref.slice(0, 30); } }
+    return `<tr style="border-top:1px solid var(--line);">
+      <td style="padding:6px 8px;">${fmt(v.created_at)}</td>
+      <td style="padding:6px 8px;">${esc(loc)}</td>
+      <td style="padding:6px 8px;">${esc(ref)}</td>
+      <td style="padding:6px 8px;">${esc(v.email || '（未登录访客）')}</td>
+      <td style="padding:6px 8px;">${dev}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" style="padding:12px;text-align:center;color:var(--muted);">暂无访客记录</td></tr>';
 
   // Chart
   renderChart(data.daily || []);

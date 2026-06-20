@@ -11,6 +11,14 @@ create table if not exists atmm_visits (
   ua          text,
   created_at  timestamptz default now()
 );
+-- 来源/设备/登录邮箱等字段（已建过基础表的话，这些 ALTER 会补齐）
+alter table atmm_visits add column if not exists lang    text;
+alter table atmm_visits add column if not exists country text;
+alter table atmm_visits add column if not exists city    text;
+alter table atmm_visits add column if not exists region  text;
+alter table atmm_visits add column if not exists email   text;
+alter table atmm_visits add column if not exists user_id uuid;
+
 create index if not exists idx_atmm_visits_created on atmm_visits(created_at desc);
 
 alter table atmm_visits enable row level security;
