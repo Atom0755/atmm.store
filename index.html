@@ -1145,6 +1145,7 @@
     <button class="auth-btn-primary" onclick="_doLogin()">登录 Sign In</button>
     <div class="auth-divider">— 或 or —</div>
     <button class="auth-btn-secondary" onclick="_showAuth('register')">注册 · 免费试用</button>
+    <button class="auth-btn-secondary" onclick="_demoLogin()" style="background:#7c3aed;color:#fff;border-color:#6d28d9;">🆓 免费体验全业务（无需注册）</button>
     <button class="auth-link" onclick="_doForgot()">忘记密码?</button>
   </div>
   <div class="auth-card" id="auth-register" style="display:none">
@@ -1250,6 +1251,12 @@
       <button onclick="_saveUsernameIdx()" style="flex:1;padding:12px;background:var(--red);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">保存</button>
     </div>
   </div>
+</div>
+
+<!-- 体验账号横幅（仅体验账号登录时显示）-->
+<div id="demo-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:8000; background:#7c3aed; color:#fff; padding:7px 12px; font-size:12px; align-items:center; justify-content:center; gap:10px; text-align:center; box-shadow:0 -2px 10px rgba(0,0,0,.2);">
+  <span>🆓 你正在使用体验账号 · 数据会定时重置 · 想真正使用请注册自己的账号</span>
+  <button onclick="_doLogout()" style="background:#fff; color:#7c3aed; border:none; border-radius:6px; padding:3px 10px; font-weight:700; cursor:pointer; font-family:inherit; flex-shrink:0;">退出去注册</button>
 </div>
 
 <!-- ===== 业务模块欢迎 / 选择页（Phase 1）===== -->
@@ -1552,7 +1559,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2700,7 +2707,16 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.3</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.4</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>登录页新增「🆓 免费体验全业务」一键进入共享体验账号，无需注册即可走完各业务流程</li>
+            <li>体验账号底部显示提示横幅、数据每小时自动重置；不占成员名额防滥用</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v6.3</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -9719,6 +9735,20 @@ async function _doLogin() {
   if (error) _authErr('err-login', error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
 }
 
+// ── 免费体验账号（共享，数据定时重置）──
+const _DEMO_EMAIL = 'trial@atmm.store';
+async function _demoLogin() {
+  _authErr('err-login', '');
+  toast('⏳ 正在进入体验账号…');
+  const { error } = await sb.auth.signInWithPassword({ email: _DEMO_EMAIL, password: 'Trial123456' });
+  if (error) _authErr('err-login', '体验账号暂不可用，请稍后再试或直接注册');
+}
+function _applyDemoUI() {
+  const isDemo = _user && (_user.email || '').toLowerCase() === _DEMO_EMAIL;
+  const b = document.getElementById('demo-banner');
+  if (b) b.style.display = isDemo ? 'flex' : 'none';
+}
+
 // ── Register helpers ──
 function _onRegDomainChange() {
   const domain = document.getElementById('reg-domain').value;
@@ -10114,6 +10144,7 @@ async function _onSignIn(user) {
 
   // 业务模块入口路由（订阅决定可见业务）
   _routeModulesOnEntry();
+  _applyDemoUI();   // 体验账号横幅
 
   // 发货页跳转：?yjout=1 打开一件代发·出库拣货；m=manual 为手动录入模式
   const _yjQp = new URLSearchParams(location.search);
