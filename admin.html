@@ -463,16 +463,22 @@ function renderTable(rows) {
     past_due: '<span class="badge badge-past_due">逾期</span>',
   };
   const fmt = s => s ? s.slice(0,10) : '—';
-  const body = rows.map(r => `<tr>
+  const body = rows.map(r => {
+    const isDemo = (r.owner_email || '').toLowerCase().endsWith('@atmm.store');
+    const statusCell = isDemo
+      ? '<span class="badge" style="background:#ede9fe;color:#6d28d9;">🆓 已通过</span>'
+      : (STATUS_BADGE[r.sub_status] || r.sub_status);
+    return `<tr>
     <td>${esc(r.owner_email)}</td>
     <td>${esc(r.warehouse_name)}</td>
     <td>${fmt(r.registered_at)}</td>
     <td>${fmt(r.trial_ends_at)}</td>
-    <td>${STATUS_BADGE[r.sub_status] || r.sub_status}</td>
+    <td>${statusCell}</td>
     <td>${PLAN_LABEL[r.plan] || r.plan}</td>
     <td>${fmt(r.period_end)}</td>
     <td style="text-align:center">${r.member_count}</td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
   document.getElementById('tbl-body').innerHTML = body || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">暂无数据</td></tr>';
   document.getElementById('tbl-count').textContent = `共 ${rows.length} 条`;
 }
