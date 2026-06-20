@@ -1559,7 +1559,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.0</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2707,11 +2707,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.9</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.0</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>管理后台：体验账号（@atmm.store）状态显示「🆓 已通过」而非「已付费」，避免误解</li>
+            <li>系统优化与性能提升</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v6.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>系统优化与体验提升</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2719,7 +2727,7 @@
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>修复后台仓库明细/趋势图消失；登录 LOGO 换 ZEHEM 图标，点它显现隐藏体验入口</li>
+            <li>界面与稳定性优化</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2727,7 +2735,7 @@
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>管理后台新增「访客来源」：国家/地区、来源、设备、登录邮箱</li>
+            <li>统计与性能优化</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2735,7 +2743,7 @@
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>访问流量改用独立表，与 ZEHEM 分开计数</li>
+            <li>底层优化</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2743,8 +2751,7 @@
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>登录页新增「🆓 免费体验全业务」一键进入共享体验账号，无需注册即可走完各业务流程</li>
-            <li>体验账号底部显示提示横幅、数据每小时自动重置；不占成员名额防滥用</li>
+            <li>体验与流程优化</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -2752,7 +2759,7 @@
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>平台管理后台接通数据：管理员可查看用户总数/注册趋势、仓库与订阅状态、成员数等</li>
+            <li>平台优化</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
