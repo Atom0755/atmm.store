@@ -1552,7 +1552,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2431,35 +2431,44 @@
               <div class="plan-btn-sep"></div>
               <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('premium_annual')"><span>💰 年付 <b style="color:var(--ink);">$3,599.88/年</b> <span class="plan-orig">$3,947.88/年</span> · 送1个月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('premium_annual','高级版 年付','$3,599.88/年')" title="扫码付款">📲</button></div>
             </div>
-            <!-- Phase 3: 业务模块加购 + 全业务套餐（真实价格）-->
-            <div style="font-size:11px; font-weight:700; color:#7c3aed; margin:14px 0 6px;">🚚 转运 + 快拆（业务模块加购）</div>
-            <div class="plan-btn" style="border-color:#c4b5fd;">
-              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">转运 + 快拆 加购</span><span class="plan-price">$288/月</span></div>
+            <!-- Phase 3b: 含转运+快拆的套餐（真实价格 + 在线下单）-->
+            <div style="font-size:11px; font-weight:700; color:#7c3aed; margin:14px 0 6px;">🚚 含「转运 + 快拆」套餐（一件代发 + 转运 + 快拆）</div>
+            <div class="plan-btn" id="plan-ztk" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_startCheckout('ztk_monthly')"><span class="plan-btn-name">转运+快拆 · 1-2人</span><span class="plan-price">$288/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('ztk_monthly','转运+快拆 1-2人','$288/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_bizPlanInfo()">在「一件代发」基础上加开转运+快拆全套（拣货出库·托板标签·扫码进出库·拍照存档）· 年付 $3,456/年</div>
-            </div>
-            <div style="font-size:11px; font-weight:700; color:#7c3aed; margin:14px 0 6px;">⭐ 全业务套餐（一件代发 + 转运 + 快拆）</div>
-            <div class="plan-btn" style="border-color:#c4b5fd;">
-              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 3 人</span><span class="plan-price">$456/月</span></div>
+              <div class="plan-desc" onclick="_startCheckout('ztk_monthly')">含一件代发+转运+快拆全套（拣货出库·托板标签·扫码进出库·拍照存档）· 1-2 账户</div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋操作员 · 三业务全开 · 年付 $5,008/年</div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('ztk_annual')"><span>💰 年付 <b style="color:var(--ink);">$3,456/年</b></span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('ztk_annual','转运+快拆 年付','$3,456/年')" title="扫码付款">📲</button></div>
             </div>
-            <div class="plan-btn" style="border-color:#c4b5fd;">
-              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 4 人</span><span class="plan-price">$568/月</span></div>
+            <div class="plan-btn" id="plan-full3" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_startCheckout('full3_monthly')"><span class="plan-btn-name">全业务 · 3 人</span><span class="plan-price">$456/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full3_monthly','全业务 3人','$456/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋2 操作员 · 三业务全开 · 年付 $5,688/年</div>
-            </div>
-            <div class="plan-btn" style="border-color:#c4b5fd;">
-              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 5 人</span><span class="plan-price">$588/月</span></div>
+              <div class="plan-desc" onclick="_startCheckout('full3_monthly')">老板＋经理＋操作员 · 三业务全开</div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋3 操作员 · 三业务全开 · 年付 $5,888/年</div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('full3_annual')"><span>💰 年付 <b style="color:var(--ink);">$5,008/年</b></span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full3_annual','全业务 3人 年付','$5,008/年')" title="扫码付款">📲</button></div>
             </div>
-            <div class="plan-btn" style="border-color:#c4b5fd;">
-              <div class="plan-btn-top" onclick="_bizPlanInfo()"><span class="plan-btn-name">全业务 · 6–13 人</span><span class="plan-price">$688/月</span></div>
+            <div class="plan-btn" id="plan-full4" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_startCheckout('full4_monthly')"><span class="plan-btn-name">全业务 · 4 人</span><span class="plan-price">$568/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full4_monthly','全业务 4人','$568/月')" title="扫码付款">📲</button></div>
               <div class="plan-btn-sep"></div>
-              <div class="plan-desc" onclick="_bizPlanInfo()">老板＋经理＋最多 11 操作员 · 三业务全开 · 年付 $8,008/年</div>
+              <div class="plan-desc" onclick="_startCheckout('full4_monthly')">老板＋经理＋2 操作员 · 三业务全开</div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('full4_annual')"><span>💰 年付 <b style="color:var(--ink);">$5,688/年</b></span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full4_annual','全业务 4人 年付','$5,688/年')" title="扫码付款">📲</button></div>
             </div>
-            <div style="font-size:11px; color:var(--muted); margin:4px 0 10px; line-height:1.6;">💡 含转运+快拆的套餐开通后，业务选择页即可进入「🚚 转运+快拆」。在线购买即将开放，需要开通请联系我们。</div>
+            <div class="plan-btn" id="plan-full5" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_startCheckout('full5_monthly')"><span class="plan-btn-name">全业务 · 5 人</span><span class="plan-price">$588/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full5_monthly','全业务 5人','$588/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('full5_monthly')">老板＋经理＋3 操作员 · 三业务全开</div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('full5_annual')"><span>💰 年付 <b style="color:var(--ink);">$5,888/年</b></span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full5_annual','全业务 5人 年付','$5,888/年')" title="扫码付款">📲</button></div>
+            </div>
+            <div class="plan-btn" id="plan-full13" style="border-color:#c4b5fd;">
+              <div class="plan-btn-top" onclick="_startCheckout('full13_monthly')"><span class="plan-btn-name">全业务 · 6–13 人</span><span class="plan-price">$688/月</span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full13_monthly','全业务 6-13人','$688/月')" title="扫码付款">📲</button></div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" onclick="_startCheckout('full13_monthly')">老板＋经理＋最多 11 操作员 · 三业务全开</div>
+              <div class="plan-btn-sep"></div>
+              <div class="plan-desc" style="display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="_startCheckout('full13_annual')"><span>💰 年付 <b style="color:var(--ink);">$8,008/年</b></span><button class="plan-qr-btn" onclick="event.stopPropagation();_showPlanQR('full13_annual','全业务 6-13人 年付','$8,008/年')" title="扫码付款">📲</button></div>
+            </div>
+            <div style="font-size:11px; color:var(--muted); margin:4px 0 10px; line-height:1.6;">💡 含转运+快拆的套餐付款后，业务选择页即可进入「🚚 转运+快拆」。</div>
 
             <div style="margin:4px 0 8px; padding:10px 12px; background:#fff8e6; border:1.5px solid #f5c542; border-radius:10px; font-size:12px; color:#7a5c00; line-height:1.6;">
               🏭 <b>多仓库加购</b>：每增加一个仓库，月付另加 <b>$299.99/月</b>，年付另加 <b>$3,599.88/年</b>。<br>
@@ -2691,7 +2700,17 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.1</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.2</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>含转运+快拆的套餐支持在线订阅下单，付款成功后自动开通对应业务模块与成员名额</li>
+            <li>订阅付款回写打通（套餐/人数/业务模块/有效期），退订自动降级</li>
+            <li>每个套餐支持扫码付款，可转发他人代付</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v6.1</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-19</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">

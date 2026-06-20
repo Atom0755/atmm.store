@@ -1,13 +1,28 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
+// 套餐目录（amount 单位=美分）。modules/members 由 webhook 付款后回写到订阅。
+// ⚠️ webhook 里有同一份配置，改价请两处同步。
 const PLANS = {
-  basic_monthly:    { amount:   1900, interval: 'month', trialDays:  7, members: 1, label: 'Basic Monthly'    },
-  basic_annual:     { amount:  36500, interval: 'year',  trialDays: 30, members: 1, label: 'Basic Annual'     },
-  standard_monthly: { amount:   6800, interval: 'month', trialDays:  7, members: 2, label: 'Standard Monthly' },
-  standard_annual:  { amount:  88800, interval: 'year',  trialDays: 30, members: 2, label: 'Standard Annual'  },
-  premium_monthly:  { amount:  18800, interval: 'month', trialDays:  7, members: 3, label: 'Premium Monthly'  },
-  premium_annual:   { amount: 188800, interval: 'year',  trialDays: 30, members: 3, label: 'Premium Annual'   },
+  // 一件代发（按人数）
+  basic_monthly:    { amount:   1900, interval: 'month', trialDays:  7, members: 1, modules:['yijian'], label: 'Basic Monthly'    },
+  basic_annual:     { amount:  36500, interval: 'year',  trialDays: 30, members: 1, modules:['yijian'], label: 'Basic Annual'     },
+  standard_monthly: { amount:   6800, interval: 'month', trialDays:  7, members: 2, modules:['yijian'], label: 'Standard Monthly' },
+  standard_annual:  { amount:  88800, interval: 'year',  trialDays: 30, members: 2, modules:['yijian'], label: 'Standard Annual'  },
+  premium_monthly:  { amount:  18800, interval: 'month', trialDays:  7, members: 3, modules:['yijian'], label: 'Premium Monthly'  },
+  premium_annual:   { amount: 188800, interval: 'year',  trialDays: 30, members: 3, modules:['yijian'], label: 'Premium Annual'   },
+  // 转运+快拆（全业务·1-2人）
+  ztk_monthly:      { amount:  28800, interval: 'month', trialDays:  0, members: 2,  modules:['yijian','zhuanyun'], label: '转运快拆 1-2人 月付' },
+  ztk_annual:       { amount: 345600, interval: 'year',  trialDays:  0, members: 2,  modules:['yijian','zhuanyun'], label: '转运快拆 1-2人 年付' },
+  // 全业务套餐（一件代发+转运+快拆，按人数）
+  full3_monthly:    { amount:  45600, interval: 'month', trialDays:  0, members: 3,  modules:['yijian','zhuanyun'], label: '全业务 3人 月付' },
+  full3_annual:     { amount: 500800, interval: 'year',  trialDays:  0, members: 3,  modules:['yijian','zhuanyun'], label: '全业务 3人 年付' },
+  full4_monthly:    { amount:  56800, interval: 'month', trialDays:  0, members: 4,  modules:['yijian','zhuanyun'], label: '全业务 4人 月付' },
+  full4_annual:     { amount: 568800, interval: 'year',  trialDays:  0, members: 4,  modules:['yijian','zhuanyun'], label: '全业务 4人 年付' },
+  full5_monthly:    { amount:  58800, interval: 'month', trialDays:  0, members: 5,  modules:['yijian','zhuanyun'], label: '全业务 5人 月付' },
+  full5_annual:     { amount: 588800, interval: 'year',  trialDays:  0, members: 5,  modules:['yijian','zhuanyun'], label: '全业务 5人 年付' },
+  full13_monthly:   { amount:  68800, interval: 'month', trialDays:  0, members: 13, modules:['yijian','zhuanyun'], label: '全业务 6-13人 月付' },
+  full13_annual:    { amount: 800800, interval: 'year',  trialDays:  0, members: 13, modules:['yijian','zhuanyun'], label: '全业务 6-13人 年付' },
 };
 
 module.exports = async function handler(req, res) {
@@ -75,12 +90,16 @@ module.exports = async function handler(req, res) {
     }
 
     const origin = req.headers.origin || 'https://atmm.store';
+    const subMeta = { warehouse_id: warehouseId, plan_key: planKey };
+    const subscription_data = plan.trialDays > 0
+      ? { trial_period_days: plan.trialDays, metadata: subMeta }
+      : { metadata: subMeta };
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: plan.trialDays },
+      subscription_data,
       success_url: `${origin}/?checkout=success`,
       cancel_url:  `${origin}/?checkout=canceled`,
       metadata: { warehouse_id: warehouseId, plan_key: planKey },
