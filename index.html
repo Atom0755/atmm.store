@@ -1106,7 +1106,7 @@
 <div id="auth-overlay" class="hidden">
   <div class="auth-card" id="auth-login">
     <button class="auth-close-btn" onclick="_closeAuthModal()">✕</button>
-    <div class="auth-logo">🏪</div>
+    <div class="auth-logo"><img src="/ZEHEM-LOGO-28.png" alt="ZEHEM" onclick="_revealDemo()" title="ZEHEM" style="height:38px; cursor:pointer; border-radius:8px;"></div>
     <h2>ATMM.AI&amp;ZEHEM.AI Store</h2>
     <p class="auth-sub">快速盘库补货进销存系统</p>
     <div class="auth-err" id="err-login"></div>
@@ -1145,7 +1145,7 @@
     <button class="auth-btn-primary" onclick="_doLogin()">登录 Sign In</button>
     <div class="auth-divider">— 或 or —</div>
     <button class="auth-btn-secondary" onclick="_showAuth('register')">注册 · 免费试用</button>
-    <button class="auth-btn-secondary" onclick="_demoLogin()" style="background:#7c3aed;color:#fff;border-color:#6d28d9;">🆓 免费体验全业务（无需注册）</button>
+    <button class="auth-btn-secondary" id="demo-login-btn" onclick="_demoLogin()" style="display:none; background:#7c3aed;color:#fff;border-color:#6d28d9;">🆓 体验账号登录（Trial）</button>
     <button class="auth-link" onclick="_doForgot()">忘记密码?</button>
   </div>
   <div class="auth-card" id="auth-register" style="display:none">
@@ -1559,7 +1559,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v6.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2707,12 +2707,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.7</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v6.8</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
-            <li>管理后台新增「访客来源」：记录国家/地区、来源网站、设备、登录邮箱（匿名访客无邮箱但有来源信息）</li>
-            <li>访问流量统计（今日/7天/30天）+ 国家分布 + 最近访客明细</li>
+            <li>修复管理后台仓库明细/趋势图因访客渲染报错而消失的问题</li>
+            <li>登录窗口 LOGO 换为 ZEHEM 图标，点击它才显现「体验账号登录」入口（隐藏）</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v6.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-20</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>管理后台新增「访客来源」：国家/地区、来源、设备、登录邮箱</li>
           </ul>
           <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -9754,6 +9762,11 @@ async function _doLogin() {
 
 // ── 免费体验账号（共享，数据定时重置）──
 const _DEMO_EMAIL = 'trial@atmm.store';
+// 点击登录窗口 LOGO 才显现体验入口（隐藏，仅告知特定人使用）
+function _revealDemo() {
+  const b = document.getElementById('demo-login-btn');
+  if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
+}
 async function _demoLogin() {
   _authErr('err-login', '');
   toast('⏳ 正在进入体验账号…');

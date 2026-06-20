@@ -366,7 +366,7 @@ function renderStats(data) {
     let ref = '直接访问';
     if (v.ref) { try { ref = new URL(v.ref).hostname; } catch (e) { ref = v.ref.slice(0, 30); } }
     return `<tr style="border-top:1px solid var(--line);">
-      <td style="padding:6px 8px;">${fmt(v.created_at)}</td>
+      <td style="padding:6px 8px;">${esc((v.created_at || '').slice(0, 16).replace('T', ' '))}</td>
       <td style="padding:6px 8px;">${esc(loc)}</td>
       <td style="padding:6px 8px;">${esc(ref)}</td>
       <td style="padding:6px 8px;">${esc(v.email || '（未登录访客）')}</td>
