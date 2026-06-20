@@ -87,7 +87,7 @@ module.exports = async function handler(req, res) {
       const d7 = new Date(now - 7 * 86400000).toISOString();
       const d30 = new Date(now - 30 * 86400000).toISOString();
       const cnt = async (since) => {
-        const { count } = await sb.from('site_visits')
+        const { count } = await sb.from('atmm_visits')
           .select('id', { count: 'exact', head: true }).gte('created_at', since);
         return count || 0;
       };
