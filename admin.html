@@ -138,6 +138,7 @@
       <div class="stat-card"><div class="label">📈 今日访问</div><div class="value" id="s-traffic-today">—</div></div>
       <div class="stat-card"><div class="label">📈 近 7 天访问</div><div class="value" id="s-traffic-7d">—</div></div>
       <div class="stat-card"><div class="label">📈 近 30 天访问</div><div class="value" id="s-traffic-30d">—</div></div>
+      <div class="stat-card"><div class="label">🆓 体验访客累计</div><div class="value" id="s-demo">—</div></div>
     </div>
 
     <!-- Daily chart -->
@@ -353,6 +354,7 @@ function renderStats(data) {
   document.getElementById('s-traffic-today').textContent = data.traffic_today || 0;
   document.getElementById('s-traffic-7d').textContent    = data.traffic_7d || 0;
   document.getElementById('s-traffic-30d').textContent   = data.traffic_30d || 0;
+  const sDemo = document.getElementById('s-demo'); if (sDemo) sDemo.textContent = data.demo_count || 0;
 
   // 访客来源
   const vcEl = document.getElementById('visit-countries');

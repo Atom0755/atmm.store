@@ -38,11 +38,15 @@ module.exports = async function handler(req, res) {
         registered_at: u.created_at,
       };
     });
-    const total_users = users.length;
+    // 体验账号(@atmm.store)不计入真实注册，单独统计
+    const isDemoEmail = e => (e || '').toLowerCase().endsWith('@atmm.store');
+    const realUsers = users.filter(u => !isDemoEmail(u.email));
+    const total_users = realUsers.length;
+    const demo_count = users.length - realUsers.length;
 
-    // 注册趋势（按天）
+    // 注册趋势（按天，仅真实用户）
     const dailyMap = {};
-    for (const u of users) {
+    for (const u of realUsers) {
       const d = (u.registered_at || '').slice(0, 10);
       if (d) dailyMap[d] = (dailyMap[d] || 0) + 1;
     }
@@ -76,8 +80,8 @@ module.exports = async function handler(req, res) {
         period_end: s.current_period_end || null,
         member_count: memberCount[w.id] || 0,
       };
-    });
-    const total_warehouses = (whs || []).length;
+    }).filter(r => !isDemoEmail(r.owner_email));   // 体验仓库不进明细
+    const total_warehouses = rows.length;
 
     // 访问流量（site_visits；表不存在则返回 0，不报错）
     let traffic_today = 0, traffic_7d = 0, traffic_30d = 0;
@@ -112,7 +116,7 @@ module.exports = async function handler(req, res) {
         .sort((a, b) => b.count - a.count).slice(0, 12);
     } catch (e) { /* 忽略 */ }
 
-    res.json({ total_users, total_warehouses, daily, users, rows, campaigns: [],
+    res.json({ total_users, total_warehouses, demo_count, daily, users: realUsers, rows, campaigns: [],
       traffic_today, traffic_7d, traffic_30d, visits, visit_countries });
   } catch (e) {
     console.error('admin-stats error:', e);
