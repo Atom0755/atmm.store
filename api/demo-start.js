@@ -8,6 +8,17 @@ const DEMO_PASSWORD = 'Trial123456';
 const TEMPLATE_WH = 'b3d5f647-dda4-4434-9283-8700f96e4682'; // 克隆示例数据的模板仓库
 const VALID_DAYS = 2, BLOCK_DAYS = 7;
 
+// 记一条带体验邮箱的访问，便于后台「访客来源」按顺序号看到体验访客
+async function _logDemoVisit(h, email) {
+  try {
+    await sb.from('atmm_visits').insert({
+      path: '/', ref: '免费体验', ua: (h['user-agent'] || '').slice(0, 250),
+      country: h['x-vercel-ip-country'] || null, city: h['x-vercel-ip-city'] || null,
+      region: h['x-vercel-ip-country-region'] || null, email,
+    });
+  } catch (e) {}
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -22,6 +33,7 @@ module.exports = async function handler(req, res) {
     if (last && last.email) {
       const age = now - new Date(last.created_at).getTime();
       if (age < VALID_DAYS * 86400000) {
+        await _logDemoVisit(req.headers, last.email);
         return res.json({ ok: true, email: last.email, password: DEMO_PASSWORD, resume: true });
       }
       if (age < BLOCK_DAYS * 86400000) {
@@ -57,6 +69,7 @@ module.exports = async function handler(req, res) {
     } catch (e) { /* 克隆失败不阻断 */ }
 
     await sb.from('atmm_demo').update({ email, user_id: uid, warehouse_id: wh.id }).eq('id', ins.id);
+    await _logDemoVisit(req.headers, email);
     res.json({ ok: true, email, password: DEMO_PASSWORD, resume: false });
   } catch (e) {
     console.error('[demo-start] error:', e.message);
