@@ -79,7 +79,25 @@ module.exports = async function handler(req, res) {
     });
     const total_warehouses = (whs || []).length;
 
-    res.json({ total_users, total_warehouses, daily, users, rows, campaigns: [] });
+    // 访问流量（site_visits；表不存在则返回 0，不报错）
+    let traffic_today = 0, traffic_7d = 0, traffic_30d = 0;
+    try {
+      const now = Date.now();
+      const todayStart = new Date().toISOString().slice(0, 10) + 'T00:00:00Z';
+      const d7 = new Date(now - 7 * 86400000).toISOString();
+      const d30 = new Date(now - 30 * 86400000).toISOString();
+      const cnt = async (since) => {
+        const { count } = await sb.from('site_visits')
+          .select('id', { count: 'exact', head: true }).gte('created_at', since);
+        return count || 0;
+      };
+      traffic_today = await cnt(todayStart);
+      traffic_7d = await cnt(d7);
+      traffic_30d = await cnt(d30);
+    } catch (e) { /* 表未建则忽略 */ }
+
+    res.json({ total_users, total_warehouses, daily, users, rows, campaigns: [],
+      traffic_today, traffic_7d, traffic_30d });
   } catch (e) {
     console.error('admin-stats error:', e);
     res.status(500).json({ error: e.message || 'Server error' });
