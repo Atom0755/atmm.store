@@ -131,14 +131,14 @@
       <div class="stat-card clickable" onclick="openUserModal()"        title="点击查看全部注册用户"><div class="label">注册用户</div><div class="value" id="s-users">—</div></div>
       <div class="stat-card clickable" onclick="quickFilter('all')"     title="点击查看全部仓库"><div class="label">仓库数</div><div class="value" id="s-wh">—</div></div>
       <div class="stat-card clickable" onclick="quickFilter('active')"  title="点击查看付费仓库"><div class="label">付费仓库</div><div class="value" id="s-paid">—</div></div>
-      <div class="stat-card clickable" onclick="quickFilter('today')"   title="点击查看今日新增"><div class="label">今日新增</div><div class="value" id="s-today">—</div></div>
+      <div class="stat-card clickable" onclick="openUserModal('today')" title="点击查看今日新增用户"><div class="label">今日新增</div><div class="value" id="s-today">—</div></div>
     </div>
     <!-- 访问流量 -->
     <div class="stat-row" style="margin-top:12px;">
-      <div class="stat-card"><div class="label">📈 今日访问</div><div class="value" id="s-traffic-today">—</div></div>
-      <div class="stat-card"><div class="label">📈 近 7 天访问</div><div class="value" id="s-traffic-7d">—</div></div>
-      <div class="stat-card"><div class="label">📈 近 30 天访问</div><div class="value" id="s-traffic-30d">—</div></div>
-      <div class="stat-card"><div class="label">🆓 体验访客累计</div><div class="value" id="s-demo">—</div></div>
+      <div class="stat-card clickable" onclick="scrollToVisits()" title="点击查看访客明细"><div class="label">📈 今日访问</div><div class="value" id="s-traffic-today">—</div></div>
+      <div class="stat-card clickable" onclick="scrollToVisits()" title="点击查看访客明细"><div class="label">📈 近 7 天访问</div><div class="value" id="s-traffic-7d">—</div></div>
+      <div class="stat-card clickable" onclick="scrollToVisits()" title="点击查看访客明细"><div class="label">📈 近 30 天访问</div><div class="value" id="s-traffic-30d">—</div></div>
+      <div class="stat-card clickable" onclick="openUserModal('demo')" title="点击查看体验账号"><div class="label">🆓 体验访客累计</div><div class="value" id="s-demo">—</div></div>
     </div>
 
     <!-- Daily chart -->
@@ -294,7 +294,11 @@ const _SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const ADMIN_EMAIL = 'atom22628@gmail.com';
 const sb = supabase.createClient(_SUPA_URL, _SUPA_ANON);
 
-let _allRows = [], _allUsers = [], _allCampaigns = [], _sortKey = 'registered_at', _sortAsc = false;
+let _allRows = [], _allUsers = [], _allCampaigns = [], _allDemo = [], _umFilter = null, _sortKey = 'registered_at', _sortAsc = false;
+// 美国加州（洛杉矶）太平洋时间
+function laTime(iso){ try{ return new Date(iso).toLocaleString('sv-SE',{timeZone:'America/Los_Angeles'}).slice(0,16); }catch(e){ return (iso||'').slice(0,16).replace('T',' '); } }
+function dec(s){ try{ return decodeURIComponent(s||''); }catch(e){ return s||''; } }
+function scrollToVisits(){ const el=document.getElementById('visits-section'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 let _admToken = null;
 
 // ── Auth ──────────────────────────────────────────────────
@@ -364,11 +368,11 @@ function renderStats(data) {
   const vtb = document.getElementById('visits-tbody');
   if (vtb) vtb.innerHTML = (data.visits || []).map(v => {
     const dev = /mobile|android|iphone|ipad/i.test(v.ua || '') ? '📱 手机' : '💻 电脑';
-    const loc = [v.country, v.city].filter(Boolean).join(' / ') || '—';
+    const loc = [v.country, dec(v.city)].filter(Boolean).join(' / ') || '—';
     let ref = '直接访问';
     if (v.ref) { try { ref = new URL(v.ref).hostname; } catch (e) { ref = v.ref.slice(0, 30); } }
     return `<tr style="border-top:1px solid var(--line);">
-      <td style="padding:6px 8px;">${esc((v.created_at || '').slice(0, 16).replace('T', ' '))}</td>
+      <td style="padding:6px 8px;">${esc(laTime(v.created_at))}</td>
       <td style="padding:6px 8px;">${esc(loc)}</td>
       <td style="padding:6px 8px;">${esc(ref)}</td>
       <td style="padding:6px 8px;">${esc(v.email || '（未登录访客）')}</td>
@@ -382,6 +386,7 @@ function renderStats(data) {
   _allUsers    = data.users     || [];
   _allRows     = data.rows      || [];
   _allCampaigns = data.campaigns || [];
+  _allDemo     = data.demo_list || [];
   renderTable(_allRows);
   renderCampaigns(_allCampaigns);
 }
@@ -570,7 +575,8 @@ async function campaignAction(action, id) {
 }
 
 // ── User modal ────────────────────────────────────────────
-function openUserModal() {
+function openUserModal(filter) {
+  _umFilter = filter || null;
   document.getElementById('um-search').value = '';
   renderUserModal();
   document.getElementById('user-modal-overlay').classList.add('open');
@@ -608,9 +614,25 @@ async function deleteAnonUsers() {
   }
 }
 function renderUserModal() {
+  const titleEl = document.querySelector('#user-modal .um-header-top h2');
+  // 体验账号列表
+  if (_umFilter === 'demo') {
+    if (titleEl) titleEl.textContent = '🆓 体验访客账号';
+    document.getElementById('um-count').textContent = `共 ${_allDemo.length} 个体验账号`;
+    document.getElementById('um-body').innerHTML = _allDemo.map(d => `<tr>
+      <td style="padding:9px 24px; font-size:13px;">${esc(d.email)}</td>
+      <td style="padding:9px 12px; font-size:13px; color:var(--muted);">体验访客</td>
+      <td style="padding:9px 12px; font-size:12px; color:var(--muted);">${esc(laTime(d.created_at))}</td>
+      <td style="padding:9px 12px; text-align:center; font-size:13px;">—</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:24px">暂无体验账号</td></tr>';
+    return;
+  }
+  if (titleEl) titleEl.textContent = _umFilter === 'today' ? '👤 今日新增用户' : '👤 注册用户列表';
+  const today    = new Date().toISOString().slice(0, 10);
   const q        = document.getElementById('um-search').value.toLowerCase();
   const hideAnon = document.getElementById('um-hide-anon').checked;
   const users = _allUsers.filter(u => {
+    if (_umFilter === 'today' && (u.registered_at || '').slice(0, 10) !== today) return false;
     if (hideAnon && !u.email) return false;
     return !q || u.email.toLowerCase().includes(q) || u.display_name.toLowerCase().includes(q);
   });

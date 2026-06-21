@@ -116,8 +116,16 @@ module.exports = async function handler(req, res) {
         .sort((a, b) => b.count - a.count).slice(0, 12);
     } catch (e) { /* 忽略 */ }
 
+    // 体验账号明细（按编号倒序）
+    let demo_list = [];
+    try {
+      const { data: dl } = await sb.from('atmm_demo')
+        .select('id,email,created_at').order('id', { ascending: false }).limit(300);
+      demo_list = (dl || []).filter(d => d.email);
+    } catch (e) { /* 表未建则忽略 */ }
+
     res.json({ total_users, total_warehouses, demo_count, daily, users: realUsers, rows, campaigns: [],
-      traffic_today, traffic_7d, traffic_30d, visits, visit_countries });
+      traffic_today, traffic_7d, traffic_30d, visits, visit_countries, demo_list });
   } catch (e) {
     console.error('admin-stats error:', e);
     res.status(500).json({ error: e.message || 'Server error' });
