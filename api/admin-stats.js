@@ -61,11 +61,14 @@ module.exports = async function handler(req, res) {
       .select('warehouse_id,plan,status,max_members,current_period_end');
 
     const subByWh = {}; (subs || []).forEach(s => { subByWh[s.warehouse_id] = s; });
-    const memberCount = {}, bossByWh = {};
+    const memberCount = {}, bossByWh = {}, whCountByUser = {};
     (mems || []).forEach(m => {
       memberCount[m.warehouse_id] = (memberCount[m.warehouse_id] || 0) + 1;
+      whCountByUser[m.user_id] = (whCountByUser[m.user_id] || 0) + 1;
       if (m.role === 'boss') bossByWh[m.warehouse_id] = m.user_id;
     });
+    // 有仓库成员关系 = ATMM.store 用户；无 = ZEHEM.AI 用户
+    users.forEach(u => { u.wh_count = whCountByUser[u.id] || 0; });
 
     const rows = (whs || []).map(w => {
       const s = subByWh[w.id] || {};

@@ -275,6 +275,7 @@
       <table style="width:100%">
         <thead>
           <tr>
+            <th style="padding:10px 12px; text-align:center">#</th>
             <th style="padding:10px 24px">邮箱 / 账号</th>
             <th style="padding:10px 12px">用户名</th>
             <th style="padding:10px 12px">注册时间</th>
@@ -619,12 +620,13 @@ function renderUserModal() {
   if (_umFilter === 'demo') {
     if (titleEl) titleEl.textContent = '🆓 体验访客账号';
     document.getElementById('um-count').textContent = `共 ${_allDemo.length} 个体验账号`;
-    document.getElementById('um-body').innerHTML = _allDemo.map(d => `<tr>
+    document.getElementById('um-body').innerHTML = _allDemo.map((d, i) => `<tr>
+      <td style="padding:9px 12px; font-size:12px; color:var(--muted); text-align:center;">${i + 1}</td>
       <td style="padding:9px 24px; font-size:13px;">${esc(d.email)}</td>
       <td style="padding:9px 12px; font-size:13px; color:var(--muted);">体验访客</td>
       <td style="padding:9px 12px; font-size:12px; color:var(--muted);">${esc(laTime(d.created_at))}</td>
       <td style="padding:9px 12px; text-align:center; font-size:13px;">—</td>
-    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:24px">暂无体验账号</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:24px">暂无体验账号</td></tr>';
     return;
   }
   if (titleEl) titleEl.textContent = _umFilter === 'today' ? '👤 今日新增用户' : '👤 注册用户列表';
@@ -639,9 +641,11 @@ function renderUserModal() {
   const anonCount = _allUsers.filter(u => !u.email).length;
   document.getElementById('um-count').textContent =
     `共 ${users.length} 位用户` + (anonCount ? `（其中 ${anonCount} 位匿名用户）` : '');
-  const rows = users.map(u => {
+  const rows = users.map((u, i) => {
     const hasEmail = !!u.email;
     const hasPhone = !!u.phone;
+    const isAtmm = (u.wh_count || 0) > 0;   // 有仓库 = ATMM.store 用户
+    const cangTag = isAtmm ? '<span title="ATMM.store 仓管用户" style="display:inline-block;background:#7c3aed;color:#fff;font-size:11px;font-weight:800;border-radius:5px;padding:1px 6px;margin-right:6px;">仓</span>' : '';
     let accountCell;
     if (hasEmail) {
       accountCell = esc(u.email);
@@ -652,13 +656,14 @@ function renderUserModal() {
       accountCell = '<span style="font-size:11px; background:#f3f4f6; color:#6b7280; padding:2px 8px; border-radius:12px; font-weight:600;">匿名用户</span>';
     }
     return `<tr style="${!hasEmail ? 'opacity:.6;' : ''}">
-      <td style="padding:9px 24px; font-size:13px;">${accountCell}</td>
+      <td style="padding:9px 12px; font-size:12px; color:var(--muted); text-align:center;">${i + 1}</td>
+      <td style="padding:9px 24px; font-size:13px;">${cangTag}${accountCell}</td>
       <td style="padding:9px 12px; font-size:13px; color:${u.display_name ? 'var(--ink)' : 'var(--muted)'};">${esc(u.display_name) || '—'}</td>
       <td style="padding:9px 12px; font-size:12px; color:var(--muted);">${(u.registered_at||'').slice(0,10) || '—'}</td>
       <td style="padding:9px 12px; text-align:center; font-size:13px;">${u.wh_count || 0}</td>
     </tr>`;
   }).join('');
-  document.getElementById('um-body').innerHTML = rows || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:24px">暂无数据</td></tr>';
+  document.getElementById('um-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:24px">暂无数据</td></tr>';
 }
 
 // ── Init ──────────────────────────────────────────────────

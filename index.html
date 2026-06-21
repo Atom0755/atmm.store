@@ -1582,7 +1582,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2730,7 +2730,15 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.5</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-21</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>订单接入支持「字段映射」：客户订单字段名与默认不同时也能对接</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v7.5</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-21</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -12891,7 +12899,30 @@ function _renderApiPanel(){
     +'<button onclick="_genApiKey()" style="border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:6px;font-family:inherit;">重置</button></div>'
     +'<div style="margin-top:6px;color:var(--muted);">客户调用示例：</div>'
     +'<pre style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;overflow-x:auto;font-size:11px;white-space:pre-wrap;">'+escapeHtml(sample)+'</pre>'
-    +'<div style="color:var(--muted);">推单成功后出现在上方「出库单记录」，点 🖨 即可打印拣货表。</div>';
+    +'<div style="color:var(--muted);">推单成功后出现在上方「出库单记录」，点 🖨 即可打印拣货表。</div>'
+    + _apiMappingForm();
+}
+// 字段映射表单（客户字段名与默认不同时填）
+function _apiMappingForm(){
+  const m=(_atmmSettings&&_atmmSettings.order_mapping)||{};
+  const inp=(k,ph)=>'<label style="display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);">'+
+    {items:'订单数组字段',sku:'型号字段',qty:'数量字段',unit:'单位字段',customer_no:'客户号字段',customer_name:'客户名字段',contact:'联系方式字段',order_no:'单号字段'}[k]+
+    '<input id="map-'+k+'" value="'+escapeHtml(m[k]||'')+'" placeholder="默认 '+ph+'" style="padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;"></label>';
+  return '<details style="margin-top:10px;"><summary style="cursor:pointer;color:#7c3aed;font-weight:700;">字段映射（选填：客户字段名与默认不同时填）</summary>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">'
+    +inp('items','items')+inp('sku','sku')+inp('qty','qty')+inp('unit','unit')
+    +inp('customer_no','customer_no')+inp('customer_name','customer_name')+inp('contact','contact')+inp('order_no','order_no')
+    +'</div><button onclick="_saveOrderMapping()" class="kc-btn" style="width:auto;margin:8px 0 0;padding:7px 16px;">保存映射</button></details>';
+}
+async function _saveOrderMapping(){
+  if(_role!=='boss'){ toast('仅老板可操作'); return; }
+  const keys=['items','sku','qty','unit','customer_no','customer_name','contact','order_no'];
+  const mapping={};
+  keys.forEach(k=>{ const v=(document.getElementById('map-'+k)?.value||'').trim(); if(v) mapping[k]=v; });
+  _atmmSettings=Object.assign({}, _atmmSettings||{}, { order_mapping:mapping });
+  try{ await sb.from('atmm_settings').upsert({ warehouse_id:_warehouse.id, data:_atmmSettings, updated_at:new Date().toISOString() }, { onConflict:'warehouse_id' }); }
+  catch(e){ toast('保存失败：'+(e.message||''),5000); return; }
+  toast('✅ 字段映射已保存');
 }
 async function _genApiKey(){
   if(_role!=='boss'){ toast('仅老板可操作'); return; }

@@ -20,25 +20,33 @@ module.exports = async function handler(req, res) {
     const whId = setting.warehouse_id;
 
     const body = req.body || {};
-    const itemsIn = Array.isArray(body.items) ? body.items : [];
+    // 字段映射（老板在「订单接入」面板配置；客户字段名与默认不同时用）
+    const map = (setting.data && setting.data.order_mapping) || {};
+    const pick = (obj, ourKey, ...stdKeys) => {
+      if (map[ourKey] && obj[map[ourKey]] !== undefined && obj[map[ourKey]] !== '') return obj[map[ourKey]];
+      for (const k of stdKeys) if (obj[k] !== undefined && obj[k] !== '') return obj[k];
+      return undefined;
+    };
+    const itemsKey = (map.items && Array.isArray(body[map.items])) ? map.items : 'items';
+    const itemsIn = Array.isArray(body[itemsKey]) ? body[itemsKey] : [];
     if (!itemsIn.length) return res.status(400).json({ error: 'items 不能为空' });
     const items = itemsIn.map(it => ({
-      name: String(it.sku || it.name || '').trim(),
-      qty: parseInt(it.qty, 10) || 1,
-      unit: (it.unit || '箱').toString().trim(),
+      name: String(pick(it, 'sku', 'sku', 'name') || '').trim(),
+      qty: parseInt(pick(it, 'qty', 'qty', 'quantity'), 10) || 1,
+      unit: (pick(it, 'unit', 'unit', 'uom') || '箱').toString().trim(),
     })).filter(it => it.name);
-    if (!items.length) return res.status(400).json({ error: 'items 缺少 sku/name' });
+    if (!items.length) return res.status(400).json({ error: 'items 缺少 型号字段(sku/name 或映射字段)' });
 
     // 客户号：给了就用，没给自动 C+4
-    let customerNo = (body.customer_no || '').trim().toUpperCase();
+    let customerNo = (pick(body, 'customer_no', 'customer_no') || '').toString().trim().toUpperCase();
     if (!customerNo) {
       const { data: c } = await sb.from('atmm_customers').select('customer_no')
         .eq('warehouse_id', whId).like('customer_no', 'C%').order('customer_no', { ascending: false }).limit(1);
       let n = 1; if (c && c[0]) { const m = /^C(\d+)$/.exec(c[0].customer_no); if (m) n = parseInt(m[1]) + 1; }
       customerNo = 'C' + String(n).padStart(4, '0');
     }
-    const custName = (body.customer_name || '').trim();
-    const contact = (body.contact || '').trim();
+    const custName = (pick(body, 'customer_name', 'customer_name') || '').toString().trim();
+    const contact = (pick(body, 'contact', 'contact') || '').toString().trim();
     let customerId = null;
     const { data: ex } = await sb.from('atmm_customers').select('id')
       .eq('warehouse_id', whId).eq('customer_no', customerNo).maybeSingle();
@@ -46,7 +54,7 @@ module.exports = async function handler(req, res) {
     else { const { data: ins } = await sb.from('atmm_customers').insert({ warehouse_id: whId, customer_no: customerNo, name: custName, contact }).select('id').single(); customerId = ins?.id; }
 
     // 出库单号：给了就用，没给自动 前缀+7位（前缀取设置，默认 DF）
-    let orderNo = (body.order_no || '').trim();
+    let orderNo = (pick(body, 'order_no', 'order_no') || '').toString().trim();
     if (!orderNo) {
       const pfx = (setting.data && setting.data.prefixes && setting.data.prefixes.yijian) || 'DF';
       const { data: o } = await sb.from('atmm_orders').select('order_no')
