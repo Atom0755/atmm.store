@@ -1539,6 +1539,11 @@
       <div class="kc-step" style="display:flex;align-items:center;justify-content:space-between;">出库单记录<button onclick="_yjLoadHistory()" style="border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;">↻ 刷新</button></div>
       <div id="yj-history" style="margin-top:6px;"></div>
     </div>
+    <!-- 订单接入（老板：给客户系统自动推单）-->
+    <div class="kc-card" id="yj-api-card" style="margin-top:14px; display:none;">
+      <div class="kc-step">🔌 订单接入（客户系统自动推单 → 自动建出库单）</div>
+      <div id="yj-api-body" style="margin-top:6px; font-size:12px; line-height:1.8; color:var(--ink);"></div>
+    </div>
   </div>
 </div>
 
@@ -1577,7 +1582,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2725,7 +2730,15 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.4</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.5</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-21</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>新增「订单接入」接口：客户系统可凭密钥自动推送订单，自动生成出库单，在出库拣货页一键打印拣货表</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v7.4</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-21</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -12793,7 +12806,7 @@ const _yjEl = id => document.getElementById(id);
 function _yjOpen(mode){
   if(!_warehouse){ _pulseLoginBtn?.(); toast('请先登录'); return; }
   _yjMode = (mode === 'manual') ? 'manual' : 'scan';
-  _loadAtmmSettings();   // 加载单号前缀等设置
+  _loadAtmmSettings().then(()=>{ try{ _renderApiPanel(); }catch(e){} });   // 加载设置后渲染订单接入面板
   _yjItems = [];
   _yjLastSaved=null;
   _yjEl('yj-overlay').style.display='block';
@@ -12845,7 +12858,50 @@ async function _yjLoadHistory(){
     </div>`;
   }).join('');
 }
-function _yjReprint(o){ const items=(o.extra&&o.extra.items)||[]; _yjPrintPickList(o, items, (o.extra&&o.extra.customer_name)||'', (o.extra&&o.extra.contact)||''); }
+function _yjReprint(o){
+  // 打印时按当前货架实时补库位/重量/体积（API 推来的单只存了型号+数量）
+  const raw=(o.extra&&o.extra.items)||[];
+  const items=raw.map(it=>{
+    const base=Object.assign({ weight:'', weightUnit:'', volume:'', volumeUnit:'', location:'' }, it);
+    if(base.location) return base;
+    const nm=(base.name||'').toLowerCase();
+    const m=state.models.find(x=>x.name.toLowerCase()===nm||(x.codeText||'').toLowerCase()===nm||(x.enName||'').toLowerCase()===nm);
+    if(!m) return base;
+    const info=_yjModelInfo(m.id), vol=_yjVolume(m);
+    return Object.assign(base,{ location:info.loc, weight:(m.weight||''), weightUnit:(m.weightUnit||''), volume:vol.v, volumeUnit:vol.u });
+  });
+  _yjPrintPickList(o, items, (o.extra&&o.extra.customer_name)||'', (o.extra&&o.extra.contact)||'');
+}
+// 订单接入面板（老板）：显示/生成 API 密钥 + 接口地址 + 示例
+function _renderApiPanel(){
+  const card=document.getElementById('yj-api-card'); if(!card) return;
+  if(_role!=='boss'){ card.style.display='none'; return; }
+  card.style.display='';
+  const body=document.getElementById('yj-api-body');
+  const key=(_atmmSettings&&_atmmSettings.api_key)||'';
+  const url=location.origin+'/api/orders-inbound';
+  if(!key){
+    body.innerHTML='<div style="color:var(--muted);margin-bottom:8px;">还没生成订单接入密钥。生成后把「接口地址 + 密钥」给客户系统，他们推订单过来即自动建出库单。</div>'
+      +'<button onclick="_genApiKey()" class="kc-btn" style="width:auto;margin:0;padding:8px 16px;">🔑 生成订单接入密钥</button>';
+    return;
+  }
+  const sample='curl -X POST '+url+' \\\n  -H "x-api-key: '+key+'" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"customer_no":"C0001","items":[{"sku":"A123color","qty":2,"unit":"箱"}]}\'';
+  body.innerHTML='<div>接口地址：<b style="user-select:all;">'+url+'</b></div>'
+    +'<div>密钥：<b style="user-select:all;color:#7c3aed;">'+escapeHtml(key)+'</b>'
+    +'<button onclick="_genApiKey()" style="border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:6px;font-family:inherit;">重置</button></div>'
+    +'<div style="margin-top:6px;color:var(--muted);">客户调用示例：</div>'
+    +'<pre style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;overflow-x:auto;font-size:11px;white-space:pre-wrap;">'+escapeHtml(sample)+'</pre>'
+    +'<div style="color:var(--muted);">推单成功后出现在上方「出库单记录」，点 🖨 即可打印拣货表。</div>';
+}
+async function _genApiKey(){
+  if(_role!=='boss'){ toast('仅老板可操作'); return; }
+  if(_atmmSettings&&_atmmSettings.api_key&&!confirm('重置后旧密钥立即失效，需把新密钥给客户。确定重置？')) return;
+  const key='atmmk_'+((window.crypto&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,''):(Date.now().toString(36)+Math.random().toString(36).slice(2)));
+  _atmmSettings=Object.assign({}, _atmmSettings||{}, { api_key:key });
+  try{ await sb.from('atmm_settings').upsert({ warehouse_id:_warehouse.id, data:_atmmSettings, updated_at:new Date().toISOString() }, { onConflict:'warehouse_id' }); }
+  catch(e){ toast('保存失败：'+(e.message||''),5000); return; }
+  _renderApiPanel(); toast('✅ 订单接入密钥已生成');
+}
 async function _yjInitNos(){
   _yjEl('yj-cust-no').value = await _kcNextCustomerNo();
   _yjEl('yj-order-no').value = await _yjNextOrderNo();
