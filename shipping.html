@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>ATMM 发货管理 — 地址核查 &amp; 打单</title>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/barcodes/JsBarcode.code128.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root {
     --ink: #1a1a1a; --paper: #fffef8; --muted: #6b6b6b; --line: rgba(0,0,0,0.12);
@@ -577,6 +578,12 @@
   </div>
 
   <div class="label-form">
+    <h3>🔌 订单接入密钥（客户系统自动推单）</h3>
+    <div id="api-intake-body" style="font-size:13px; line-height:1.8; color:var(--ink);">加载中…</div>
+    <div style="font-size:11px; color:var(--muted); margin-top:6px;">💡 同一个密钥也可在 <b>主应用 → 出库拣货页 →「🔌 订单接入」</b> 处管理。把「接口地址 + 密钥」给客户系统，他们推订单过来会自动生成出库单。</div>
+  </div>
+
+  <div class="label-form">
     <h3>🖨️ 打印机设置</h3>
     <div class="field-row">
       <div class="field-group">
@@ -603,6 +610,45 @@
 </div>
 
 <script>
+// ── 订单接入密钥（与主应用同一个，存云端 atmm_settings）──
+const _SB_URL = 'https://vkwndhdqbmuyogieccph.supabase.co';
+const _SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrd25kaGRxYm11eW9naWVjY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDg2NzcsImV4cCI6MjA4MTkyNDY3N30.Q2Kf4rzJWJdWnYjpLRofmGUp6DNWBgFoDkFJ4yr473k';
+let _isb = null; try { _isb = window.supabase.createClient(_SB_URL, _SB_ANON); } catch (e) {}
+let _intakeWh = null, _intakeData = null;
+async function _loadApiKeySection() {
+  const body = document.getElementById('api-intake-body'); if (!body || !_isb) return;
+  try {
+    const { data: { session } } = await _isb.auth.getSession();
+    if (!session) { body.innerHTML = '请先在主应用登录后再来此页查看密钥。'; return; }
+    const { data: mem } = await _isb.from('warehouse_members').select('warehouse_id').eq('user_id', session.user.id).eq('role', 'boss').maybeSingle();
+    if (!mem) { body.innerHTML = '仅老板账号可生成订单接入密钥。'; return; }
+    _intakeWh = mem.warehouse_id;
+    const { data: st } = await _isb.from('atmm_settings').select('data').eq('warehouse_id', _intakeWh).maybeSingle();
+    _intakeData = (st && st.data) || {};
+    _renderIntake();
+  } catch (e) { body.innerHTML = '加载失败：' + (e.message || ''); }
+}
+function _renderIntake() {
+  const body = document.getElementById('api-intake-body');
+  const key = _intakeData.api_key || '';
+  const url = location.origin + '/api/orders-inbound';
+  if (!key) { body.innerHTML = '<button class="btn primary" onclick="_genIntakeKey()">🔑 生成订单接入密钥</button>'; return; }
+  const sample = 'curl -X POST ' + url + ' -H "x-api-key: ' + key + '" -H "Content-Type: application/json" -d \'{"customer_no":"C0001","items":[{"sku":"A1","qty":2}]}\'';
+  body.innerHTML = '<div>接口地址：<b style="user-select:all;">' + url + '</b></div>'
+    + '<div>密钥：<b style="user-select:all;color:#7c3aed;">' + key + '</b> <button class="btn" style="padding:2px 8px;font-size:11px;" onclick="_genIntakeKey()">重置</button></div>'
+    + '<pre style="background:#f6f6f6;border-radius:8px;padding:8px;overflow-x:auto;font-size:11px;white-space:pre-wrap;">' + sample.replace(/</g, '&lt;') + '</pre>';
+}
+async function _genIntakeKey() {
+  if (!_intakeWh) return;
+  if (_intakeData && _intakeData.api_key && !confirm('重置后旧密钥立即失效，需把新密钥给客户。确定？')) return;
+  const key = 'atmmk_' + ((window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+  _intakeData = Object.assign({}, _intakeData || {}, { api_key: key });
+  try { await _isb.from('atmm_settings').upsert({ warehouse_id: _intakeWh, data: _intakeData, updated_at: new Date().toISOString() }, { onConflict: 'warehouse_id' }); }
+  catch (e) { alert('保存失败：' + (e.message || '')); return; }
+  _renderIntake();
+}
+setTimeout(() => { try { _loadApiKeySection(); } catch (e) {} }, 300);
+
 // ═══════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════
