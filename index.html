@@ -1582,7 +1582,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v7.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2696,6 +2696,34 @@
             <div class="help-q">如何取消或管理订阅？<span class="help-arr">▶</span></div>
             <div class="help-a">设置 → 订阅状态 → 点击"管理订阅"，进入 Stripe 账户门户，可以查看账单历史、更改方案或取消订阅。</div>
           </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">怎么切换业务（一件代发 / 转运+快拆）？<span class="help-arr">▶</span></div>
+            <div class="help-a">点顶部「⊞ 业务」按钮 → 在业务选择页点要进入的业务。开通了哪些业务由订阅决定；未开通的会显示「🔒 升级解锁」。一件代发=货架/堆货仓管；转运+快拆=转运拣货出库与快拆分货。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">转运业务怎么用？<span class="help-arr">▶</span></div>
+            <div class="help-a">进入「转运+快拆」→ 新建转运订单（导入提货单）→ 自动「列对应」识别 → 按目的地/承运商分类算托板数 → 生成标签打印 → 逐托扫码入库（可拍照）→ 出库时预选托板扫码出库。单号前缀老板可在「⚙️前缀」自定义。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">快拆业务怎么用？<span class="help-arr">▶</span></div>
+            <div class="help-a">在转运业务台点顶部「✂️ 快拆」切换 → 新建快拆订单（建客户/录运单）→ 生成四行 Z 字形标签打印 → 逐托扫码进出库。适合到货后快速拆箱分货。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">出库拣货：手动录入和扫码录入有什么区别？<span class="help-arr">▶</span></div>
+            <div class="help-a">发货管理 → 出货：①扫码录入＝生成拣货表后逐件扫库位+商品核对（防错，量大首选）；②CSV 导入＝从出货表直接扣库存；③手动录入＝手动搜 SKU 填数量单位后确定出库。前两者会建客户/出库单/日期。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">型号库导入「列对应」怎么用？<span class="help-arr">▶</span></div>
+            <div class="help-a">型号库管理 → 从本地选文件（.xlsx/.csv 等）→ 系统自动识别哪列是型号/描述/数量/单位，可手动改 → 看首行预览无误 → 选添加方式 → 确定导入。描述、数量、单位会一并写入型号库与货架/堆货区。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">怎么直接给成员设密码加入团队？<span class="help-arr">▶</span></div>
+            <div class="help-a">老板登录 → 设置 → 团队成员 → 「为成员设置/重置登录密码」→ 填邮箱+密码+角色 → 直接生效（无需邮件确认，企业邮箱也可用）。把「邮箱+密码」交给员工即可登录；原邮件邀请方式也保留。</div>
+          </div>
+          <div class="help-item" onclick="this.classList.toggle('open')">
+            <div class="help-q">客户系统能自动把订单推过来吗？<span class="help-arr">▶</span></div>
+            <div class="help-a">能。进出库拣货页底部「🔌 订单接入」生成接入密钥，把「接口地址+密钥」给客户系统，他们推订单过来会自动生成出库单，在「出库单记录」点🖨即可打印拣货表。客户字段名不同可在「字段映射」里配置。</div>
+          </div>
         </div>
         <div class="help-contact">
           📧 <a href="mailto:Support.WithHelp@gmail.com" style="color:var(--red); font-weight:700;">Support.WithHelp@gmail.com</a><br>
@@ -2730,7 +2758,15 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v7.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-21</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>「HELP 帮助」新增多条说明：业务切换、转运、快拆、出库拣货、列对应、设密码加成员、订单接入</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v7.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-21</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
