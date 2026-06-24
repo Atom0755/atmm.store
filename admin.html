@@ -87,6 +87,9 @@
   #user-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000; align-items:center; justify-content:center; padding:24px; }
   #user-modal-overlay.open { display:flex; }
   #user-modal { background:var(--paper); border-radius:16px; width:100%; max-width:700px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  #zehem-card-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100; align-items:flex-start; justify-content:center; padding:60px 24px 24px; }
+  #zehem-card-overlay.open { display:flex; }
+  #zehem-card-box { background:var(--paper); border-radius:16px; width:100%; max-width:420px; max-height:82vh; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,.3); }
   .um-header { padding:16px 24px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
   .um-header-top { display:flex; align-items:center; gap:8px; }
   .um-header-top h2 { font-size:16px; font-weight:800; flex:1; }
@@ -286,6 +289,11 @@
       </table>
     </div>
   </div>
+</div>
+
+<!-- ZEHEM 资料卡 modal（后台内嵌，仅管理员可见）-->
+<div id="zehem-card-overlay" onclick="if(event.target===this)closeZehemCard()">
+  <div id="zehem-card-box"></div>
 </div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -495,6 +503,49 @@ function esc(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ── ZEHEM 资料卡（点用户邮箱 → 后台内嵌显示该用户 ZEHEM 资料）──
+function openZehemCard(id) {
+  const u = _allUsers.find(x => x.id === id);
+  if (!u) return;
+  const z = u.zehem || {};
+  const name = z.nickname || z.full_name || z.username || u.display_name || u.email || '—';
+  const num  = z.user_number ? '#' + String(z.user_number).padStart(10, '0') : '';
+  const avatar = z.avatar_url
+    ? `<img src="${esc(z.avatar_url)}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--line);">`
+    : `<div style="width:72px;height:72px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:30px;">👤</div>`;
+  const rowsArr = [
+    ['用户名', z.username], ['真实姓名', z.full_name], ['职业', z.job], ['城市', z.city],
+    ['签名', z.signature], ['简介', z.bio], ['网站', z.website],
+    ['联系邮箱', z.email_contact], ['电话', z.phone], ['微信', z.wechat],
+    ['Z Credits', z.coins], ['ATMM 邮箱', u.email],
+    ['ZEHEM 注册', z.created_at ? laTime(z.created_at) : ''],
+  ].filter(r => r[1] !== undefined && r[1] !== null && r[1] !== '');
+  const rowsHtml = rowsArr.map(r =>
+    `<tr><td style="padding:7px 0;color:var(--muted);font-size:12px;white-space:nowrap;vertical-align:top;width:84px;">${esc(r[0])}</td>
+         <td style="padding:7px 0 7px 12px;font-size:13px;word-break:break-all;">${esc(r[1])}</td></tr>`).join('');
+  const link = z.user_number
+    ? `<a href="https://zehem.ai/?profile=${z.user_number}" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;font-size:12px;color:#2563eb;">↗ 在 ZEHEM.AI 打开主页（仅对方已公开名片时有效）</a>`
+    : '';
+  document.getElementById('zehem-card-box').innerHTML = `
+    <div style="padding:16px 22px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;">
+      <h2 style="font-size:15px;font-weight:800;flex:1;">🪪 ZEHEM 资料卡</h2>
+      <button onclick="closeZehemCard()" style="padding:6px 14px;background:transparent;border:1.5px solid var(--line);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">关闭</button>
+    </div>
+    <div style="padding:20px 22px;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        ${avatar}
+        <div style="min-width:0;">
+          <div style="font-size:17px;font-weight:800;word-break:break-all;">${esc(name)}</div>
+          ${num ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;">${esc(num)}</div>` : ''}
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">${rowsHtml}</table>
+      ${link}
+    </div>`;
+  document.getElementById('zehem-card-overlay').classList.add('open');
+}
+function closeZehemCard() { document.getElementById('zehem-card-overlay').classList.remove('open'); }
+
 // ── Campaign management ───────────────────────────────────────
 function renderCampaigns(camps) {
   const el = document.getElementById('camp-list');
@@ -649,7 +700,7 @@ function renderUserModal() {
     let accountCell;
     if (hasEmail) {
       accountCell = u.user_number
-        ? `<span onclick="window.open('https://zehem.ai/?profile=${u.user_number}','_blank')" title="点击打开该用户在 ZEHEM.AI 的主页" style="color:#2563eb; cursor:pointer; text-decoration:underline;">${esc(u.email)}</span>`
+        ? `<span onclick="openZehemCard('${u.id}')" title="点击查看该用户的 ZEHEM 资料卡" style="color:#2563eb; cursor:pointer; text-decoration:underline;">${esc(u.email)}</span>`
         : esc(u.email);
     } else if (hasPhone) {
       accountCell = `<span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-weight:600;">📱 手机号用户</span>

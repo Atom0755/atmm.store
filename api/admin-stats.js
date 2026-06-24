@@ -75,11 +75,20 @@ module.exports = async function handler(req, res) {
     });
     // 有仓库成员关系 = ATMM.store 用户；无 = ZEHEM.AI 用户
     users.forEach(u => { u.wh_count = whCountByUser[u.id] || 0; });
-    // 用户编号（ZEHEM 主页深链 ?profile=编号 用）
+    // 用户编号 + ZEHEM 资料卡（后台弹窗内嵌显示，不依赖 ZEHEM 端权限）
     try {
-      const { data: profs } = await sb.from('profiles').select('id,user_number');
-      const numById = {}; (profs || []).forEach(p => { numById[p.id] = p.user_number; });
-      users.forEach(u => { u.user_number = numById[u.id] || null; });
+      const { data: profs } = await sb.from('profiles').select('*');   // 服务密钥读取，绕过 RLS
+      const pById = {}; (profs || []).forEach(p => { pById[p.id] = p; });
+      const PICK = ['user_number','username','nickname','full_name','avatar_url','bio',
+        'signature','website','phone','email_contact','wechat','job','city','created_at','coins'];
+      users.forEach(u => {
+        const p = pById[u.id];
+        u.user_number = p ? (p.user_number || null) : null;
+        if (p) {
+          u.zehem = {};
+          PICK.forEach(k => { if (p[k] !== undefined && p[k] !== null && p[k] !== '') u.zehem[k] = p[k]; });
+        }
+      });
     } catch (e) { /* 忽略 */ }
 
     const rows = (whs || []).map(w => {
