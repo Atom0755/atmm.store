@@ -648,7 +648,9 @@ function renderUserModal() {
     const cangTag = isAtmm ? '<span title="ATMM.store 仓管用户" style="background:#7c3aed;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:0 2px;">仓</span>' : '';
     let accountCell;
     if (hasEmail) {
-      accountCell = esc(u.email);
+      accountCell = u.user_number
+        ? `<span onclick="window.open('https://zehem.ai/?profile=${u.user_number}','_blank')" title="点击打开该用户在 ZEHEM.AI 的主页" style="color:#2563eb; cursor:pointer; text-decoration:underline;">${esc(u.email)}</span>`
+        : esc(u.email);
     } else if (hasPhone) {
       accountCell = `<span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-weight:600;">📱 手机号用户</span>
         <span style="font-size:11px; color:var(--muted); margin-left:4px;">${esc(u.phone)}</span>`;

@@ -75,6 +75,12 @@ module.exports = async function handler(req, res) {
     });
     // 有仓库成员关系 = ATMM.store 用户；无 = ZEHEM.AI 用户
     users.forEach(u => { u.wh_count = whCountByUser[u.id] || 0; });
+    // 用户编号（ZEHEM 主页深链 ?profile=编号 用）
+    try {
+      const { data: profs } = await sb.from('profiles').select('id,user_number');
+      const numById = {}; (profs || []).forEach(p => { numById[p.id] = p.user_number; });
+      users.forEach(u => { u.user_number = numById[u.id] || null; });
+    } catch (e) { /* 忽略 */ }
 
     const rows = (whs || []).map(w => {
       const s = subByWh[w.id] || {};
