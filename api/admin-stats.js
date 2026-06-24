@@ -42,7 +42,13 @@ module.exports = async function handler(req, res) {
     const isDemoEmail = e => (e || '').toLowerCase().endsWith('@atmm.store');
     const realUsers = users.filter(u => !isDemoEmail(u.email));
     const total_users = realUsers.length;
-    const demo_count = users.length - realUsers.length;
+    // 体验访客累计 = 历史发出的最大 trial 编号（永不下降；老账号删除也不回退）
+    let demo_count = 0;
+    try {
+      const { data: maxRow } = await sb.from('atmm_demo')
+        .select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+      if (maxRow) demo_count = Number(maxRow.id) || 0;
+    } catch (e) { /* 表未建则 0 */ }
 
     // 注册趋势（按天，仅真实用户）
     const dailyMap = {};
