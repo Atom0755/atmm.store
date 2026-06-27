@@ -1629,7 +1629,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2849,7 +2849,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.5</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.6</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>平面图「生成双排」改为一键即时生成（去掉会卡顿的确认弹窗），可随时「改回平行」撤销，操作更顺滑</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v8.5</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -14490,7 +14501,7 @@ function _planApply() {
 // ── 布局模式切换 + 双排生成（复制 ABCD→EFGH，真实写入 zone.aisles，列表/总览同步）──
 function _updateModeBtn() {
   const btn = document.getElementById('plan2d-mode'); if (!btn) return;
-  btn.textContent = _zoneLayout(_planZone) === 'dual' ? '⇄ 改平行' : '⇅ 改双排';
+  btn.textContent = _zoneLayout(_planZone) === 'dual' ? '⇄ 改回平行' : '⇅ 生成双排';
 }
 function _dualCreateLower(zone) {
   const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
@@ -14512,28 +14523,33 @@ function _dualCreateLower(zone) {
 }
 function _planToggleMode() {
   if (!_isBoss()) { toast('⛔ 仅老板可操作'); return; }
-  const zone = _planZone; if (!zone) return;
-  if (_zoneLayout(zone) === 'dual') {
-    zone.layout = zone.layout || {}; zone.layout.mode = 'linear';
-    saveState(); render();
+  const zone = _planZone; if (!zone) { toast('未选择区域'); return; }
+  try {
+    if (_zoneLayout(zone) === 'dual') {
+      zone.layout = zone.layout || {}; zone.layout.mode = 'linear';
+      saveState(); render();
+      _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
+      toast('已切换为平行排列（货架保留）');
+      return;
+    }
+    // 之前已生成过下排 → 直接恢复双排，不重复克隆
+    if (zone.layout && zone.layout.split && zone.aisles.length > zone.layout.split) {
+      zone.layout.mode = 'dual';
+      saveState(); render();
+      _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
+      toast('✅ 已恢复上下双排'); return;
+    }
+    // 首次：复制当前货架作下排（立即执行，无需确认；可随时「改回平行」）
+    const n = zone.aisles.length;
+    _dualCreateLower(zone);
+    zone.layout = { mode: 'dual', split: n, mainW: _zoneMainW(zone) };
+    render();   // 重渲染列表/总览以显示新货架，并自动 saveState
     _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
-    toast('已切换为平行排列（货架保留）');
-    return;
+    toast('✅ 已生成上下双排（下排新增 ' + n + ' 个空货架，已写入列表/总览）');
+  } catch (e) {
+    toast('❌ 生成双排出错：' + (e && e.message ? e.message : e));
+    console.error('[planToggleMode]', e);
   }
-  // 之前已生成过下排 → 直接恢复双排，不重复克隆
-  if (zone.layout && zone.layout.split && zone.aisles.length > zone.layout.split) {
-    zone.layout.mode = 'dual';
-    saveState(); render();
-    _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
-    toast('✅ 已恢复上下双排'); return;
-  }
-  const n = zone.aisles.length;
-  if (!confirm('将复制当前 ' + n + ' 个货架作为下排（新增空库位货架，会出现在「列表/总览」），形成"上下双排 + 中央主通道"。继续？')) return;
-  _dualCreateLower(zone);
-  zone.layout = { mode: 'dual', split: n, mainW: _zoneMainW(zone) };
-  render();   // 重渲染列表/总览以显示新货架，并自动 saveState
-  _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
-  toast('✅ 已生成上下双排（下排新增 ' + n + ' 个空货架）');
 }
 
 _initAuth(); // All vars declared above — safe entry point
