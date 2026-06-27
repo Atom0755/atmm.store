@@ -741,6 +741,33 @@
   #three-dim-panel #dim-apply { flex:0 0 64px; background:#2563eb; color:#fff; border:none; font-weight:700; cursor:pointer; }
   #three-dim-panel #dim-apply:active { background:#1d4ed8; }
   .dim-hint { font-size:11px; color:#94a3b8; line-height:1.5; min-height:16px; }
+  /* Phase2 平面图入口（左下角，仅老板）*/
+  #three-plan-toggle { display:none; position:absolute; left:12px; bottom:12px; z-index:21;
+    background:rgba(15,23,42,.85); color:#e2e8f0; border:1px solid rgba(148,163,184,.4);
+    border-radius:999px; padding:8px 14px; font-size:13px; font-family:inherit; cursor:pointer;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  /* Phase2 平面图设计器（全屏）*/
+  #plan2d-overlay { display:none; position:fixed; inset:0; z-index:1200; background:#0b1220;
+    flex-direction:column; }
+  #plan2d-overlay.open { display:flex; }
+  #plan2d-topbar { display:flex; align-items:center; gap:8px; padding:10px 14px;
+    background:#0f172a; border-bottom:1px solid rgba(148,163,184,.25); color:#e2e8f0; }
+  #plan2d-title { font-size:14px; font-weight:700; flex:1; min-width:0; }
+  #plan2d-title b { color:#38bdf8; }
+  .p2btn { background:rgba(148,163,184,.16); color:#e2e8f0; border:1px solid rgba(148,163,184,.35);
+    border-radius:8px; padding:7px 12px; font-size:13px; font-family:inherit; cursor:pointer; }
+  .p2btn.p2close { background:#dc2626; border-color:#dc2626; color:#fff; }
+  #plan2d-canvas { flex:1; width:100%; min-height:0; display:block; touch-action:none; background:#0b1220; }
+  #plan2d-hint { text-align:center; font-size:11px; color:#64748b; padding:5px 10px; background:#0f172a; }
+  #plan2d-edit { background:#0f172a; border-top:1px solid rgba(148,163,184,.25); padding:10px 14px 14px; }
+  .p2-sel { font-size:13px; font-weight:700; color:#e2e8f0; margin-bottom:8px; }
+  .p2-row { display:flex; gap:8px; }
+  #plan2d-edit input, #plan2d-edit select { flex:1; min-width:0; background:#0b1220; color:#e2e8f0;
+    border:1px solid rgba(148,163,184,.4); border-radius:9px; padding:9px 10px; font-size:14px; font-family:inherit; outline:none; }
+  #plan2d-edit input:disabled, #plan2d-edit select:disabled { opacity:.45; }
+  #plan2d-edit #plan2d-unit { flex:0 0 66px; }
+  #plan2d-edit #plan2d-apply { flex:0 0 64px; background:#2563eb; color:#fff; border:none; font-weight:700; cursor:pointer; }
+  #plan2d-edit #plan2d-apply:disabled { background:#334155; cursor:default; }
   .aisles-row { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 6px; }
   .grid-aisle { background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; padding: 5px; }
   .grid-aisle-name { font-weight: 700; font-size: 11px; text-align: center; padding: 3px 0 6px; }
@@ -1602,7 +1629,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.3</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -1663,8 +1690,30 @@
       </div>
       <div id="dim-hint" class="dim-hint"></div>
     </div>
+    <!-- Phase2: 俯视平面图设计器入口（老板/经理）-->
+    <button id="three-plan-toggle" onclick="_planOpen()" title="俯视平面图设计">🗺️ 平面图</button>
   </div>
   <div class="delete-zone" id="delete-zone">🗑️ 拖到这里删除整箱(已搬走)</div>
+</div>
+
+<!-- Phase2: 俯视平面图设计器（全屏覆盖）-->
+<div id="plan2d-overlay">
+  <div id="plan2d-topbar">
+    <span id="plan2d-title">🗺️ 平面图 · <b id="plan2d-zone"></b></span>
+    <button onclick="_planFit()" class="p2btn" title="适配视图">⤢</button>
+    <button onclick="_planClose()" class="p2btn p2close">✕ 关闭</button>
+  </div>
+  <canvas id="plan2d-canvas"></canvas>
+  <div id="plan2d-hint">手指上下拖动货架可调通道（下游货架随之顺移）· 点货架/通道可改尺寸</div>
+  <div id="plan2d-edit">
+    <div class="p2-sel" id="plan2d-sel">点一个货架或通道来选择</div>
+    <div class="p2-row">
+      <input id="plan2d-value" type="number" inputmode="decimal" step="0.1" min="0" placeholder="尺寸" disabled>
+      <select id="plan2d-axis" onchange="_planAxisChange()" disabled></select>
+      <select id="plan2d-unit" onchange="_planSyncEdit()"><option value="cm">CM</option><option value="in">IN</option></select>
+      <button id="plan2d-apply" onclick="_planApply()" disabled>应用</button>
+    </div>
+  </div>
 </div>
 
 <div class="sheet-backdrop modal-style" id="color-sheet">
@@ -2799,7 +2848,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.3</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.4</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>3D 找货页新增「🗺️ 平面图」俯视设计器（仅老板）：从上往下按真实比例查看本区货架与通道布局，最大通道自动标为「主通道」</li>
+            <li>可手指上下拖动货架调整通道（下游货架随之顺移、彼此间距不变），或点选货架/通道直接改尺寸（CM / IN），与 3D 和找货路径完全同源</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v8.3</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -13971,6 +14032,9 @@ async function _3dOpen() {
   if (dimT) dimT.style.display = _canManage() ? 'block' : 'none';
   const dimP = document.getElementById('three-dim-panel');
   if (dimP) dimP.classList.remove('open');
+  // 平面图设计：仅老板可见
+  const planT = document.getElementById('three-plan-toggle');
+  if (planT) planT.style.display = _isBoss() ? 'block' : 'none';
 }
 function _3dClose() {
   if (_3dAnimId) { cancelAnimationFrame(_3dAnimId); _3dAnimId = null; }
@@ -14077,6 +14141,238 @@ function _dimApply() {
   _3dRenderZone(zone, true);   // 保持当前视角
   toast('✅ 尺寸已更新');
   _dimSyncValue();
+}
+
+// ══════ Phase2：俯视平面图设计器（仅老板）═══════════════════════════
+// 与 3D / 找货路径同源（都读 WHC_rowZ / _shelfDim / _gapAt）；俯视：世界X→屏幕X，世界Z→屏幕Y
+function _isBoss() { return !_role || _role === 'boss'; }
+let _planZone = null, _planSel = null, _planView = { scale: 1, ox: 0, oy: 0 };
+let _planCanvas = null, _planCtx = null, _planDpr = 1, _planBound = false, _planDrag = null;
+function _planCurZone() { return state.zones.find(z => z.id === currentTable); }
+
+function _planShelf(zone, ai) {
+  const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+  const cols = (zone.aisles[ai] && zone.aisles[ai][ck] || []).length || 1;
+  const sw = _shelfDim(zone, ai, 'sw'), cg = _shelfDim(zone, ai, 'cg'), sd = _shelfDim(zone, ai, 'sd');
+  const totW = (cols - 1) * (sw + cg) + sw;
+  const zc = WHC_rowZ(zone, ai);
+  return { x0: -sw / 2, x1: totW - sw / 2, z0: zc - sd / 2, z1: zc + sd / 2 };
+}
+function _planBounds(zone) {
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  zone.aisles.forEach((a, ai) => {
+    const r = _planShelf(zone, ai);
+    minX = Math.min(minX, r.x0); maxX = Math.max(maxX, r.x1);
+    minZ = Math.min(minZ, r.z0); maxZ = Math.max(maxZ, r.z1);
+  });
+  const ex = zone.entryX ?? -1.5, ez = zone.entryZ ?? -1.0;
+  minX = Math.min(minX, ex); maxX = Math.max(maxX, ex);
+  minZ = Math.min(minZ, ez); maxZ = Math.max(maxZ, ez);
+  if (!isFinite(minX)) { minX = 0; maxX = 1; minZ = 0; maxZ = 1; }
+  return { minX, maxX, minZ, maxZ };
+}
+function _planResize() {
+  const cv = _planCanvas; if (!cv) return;
+  _planDpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(cv.clientWidth * _planDpr);
+  cv.height = Math.round(cv.clientHeight * _planDpr);
+}
+function _planFit() {
+  const zone = _planZone, cv = _planCanvas; if (!zone || !cv) return;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  const b = _planBounds(zone), pad = 34;
+  const bw = Math.max(b.maxX - b.minX, 0.5), bh = Math.max(b.maxZ - b.minZ, 0.5);
+  const scale = Math.max(2, Math.min((W - 2 * pad) / bw, (H - 2 * pad) / bh));
+  _planView.scale = scale;
+  _planView.ox = pad - b.minX * scale + ((W - 2 * pad) - bw * scale) / 2;
+  _planView.oy = pad - b.minZ * scale + ((H - 2 * pad) - bh * scale) / 2;
+  _planDraw();
+}
+function _planDraw() {
+  const cv = _planCanvas, ctx = _planCtx; if (!cv || !ctx) return;
+  ctx.setTransform(_planDpr, 0, 0, _planDpr, 0, 0);
+  const W = cv.clientWidth, H = cv.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0b1220'; ctx.fillRect(0, 0, W, H);
+  const zone = _planZone; if (!zone || !zone.aisles || !zone.aisles.length) return;
+  const { scale, ox, oy } = _planView;
+  const sx = x => ox + x * scale, sy = z => oy + z * scale;
+  const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+  const unit = (zone.dims && zone.dims.unit) || 'cm';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+  // 主通道 = 最大 gap
+  let mainIdx = -1, mainVal = -1;
+  for (let i = 0; i < zone.aisles.length - 1; i++) { const g = _gapAt(zone, i); if (g > mainVal) { mainVal = g; mainIdx = i; } }
+
+  // 通道带（画在货架下层）
+  for (let i = 0; i < zone.aisles.length - 1; i++) {
+    const a = _planShelf(zone, i), b = _planShelf(zone, i + 1);
+    const zx0 = Math.min(a.x0, b.x0), zx1 = Math.max(a.x1, b.x1);
+    const X = sx(zx0), Y = sy(a.z1), Wd = (zx1 - zx0) * scale, Hd = (b.z0 - a.z1) * scale;
+    const isMain = (i === mainIdx && mainVal > 0.001);
+    const sel = _planSel && _planSel.kind === 'gap' && _planSel.idx === i;
+    ctx.fillStyle = isMain ? 'rgba(56,189,248,.12)' : 'rgba(148,163,184,.05)';
+    ctx.fillRect(X, Y, Wd, Hd);
+    if (sel) { ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.strokeRect(X + 1, Y + 1, Wd - 2, Hd - 2); }
+    if (Hd > 13) {
+      ctx.fillStyle = isMain ? '#38bdf8' : '#7c8aa0';
+      ctx.font = '600 11px -apple-system,sans-serif';
+      ctx.fillText((isMain ? '主通道 ' : '通道 ') + _dimFmt(_gapAt(zone, i), unit) + unit, X + Wd / 2, Y + Hd / 2);
+    }
+  }
+
+  // 货架
+  const PAL = [['rgba(59,130,246,.32)', '#3b82f6'], ['rgba(34,197,94,.32)', '#22c55e'],
+    ['rgba(168,85,247,.32)', '#a855f7'], ['rgba(245,158,11,.32)', '#f59e0b'],
+    ['rgba(6,182,212,.32)', '#06b6d4'], ['rgba(244,63,94,.32)', '#f43f5e']];
+  zone.aisles.forEach((aisle, ai) => {
+    const r = _planShelf(zone, ai), pal = PAL[ai % PAL.length];
+    const X = sx(r.x0), Y = sy(r.z0), Wd = (r.x1 - r.x0) * scale, Hd = (r.z1 - r.z0) * scale;
+    ctx.fillStyle = pal[0]; ctx.fillRect(X, Y, Wd, Hd);
+    const sel = _planSel && _planSel.kind === 'shelf' && _planSel.idx === ai;
+    ctx.strokeStyle = sel ? '#fbbf24' : pal[1]; ctx.lineWidth = sel ? 3 : 1.5; ctx.strokeRect(X, Y, Wd, Hd);
+    const name = aisle.name || String.fromCharCode(65 + ai);
+    ctx.fillStyle = '#f1f5f9'; ctx.font = '800 ' + Math.max(12, Math.min(20, Hd * 0.5)) + 'px -apple-system,sans-serif';
+    ctx.fillText(name, X + Wd / 2, Y + Hd / 2 - (Hd > 26 ? 6 : 0));
+    if (Hd > 26) {
+      const cols = (aisle[ck] || []).length;
+      const sw = _shelfDim(zone, ai, 'sw'), cg = _shelfDim(zone, ai, 'cg'), sd = _shelfDim(zone, ai, 'sd');
+      const totLen = (cols - 1) * (sw + cg) + sw;
+      ctx.font = '600 9px -apple-system,sans-serif'; ctx.fillStyle = 'rgba(226,232,240,.72)';
+      ctx.fillText(_dimFmt(totLen, unit) + '×' + _dimFmt(sd, unit) + unit, X + Wd / 2, Y + Hd / 2 + 9);
+    }
+  });
+
+  // 入口标记
+  const ex = zone.entryX ?? -1.5, ez = zone.entryZ ?? -1.0;
+  const eX = sx(ex), eY = sy(ez);
+  ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(eX, eY, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#34d399'; ctx.font = '700 10px -apple-system,sans-serif';
+  ctx.textAlign = 'left'; ctx.fillText(' 入口', eX + 6, eY);
+}
+
+function _planOpen() {
+  if (!_isBoss()) { toast('⛔ 仅老板可使用平面图设计'); return; }
+  const zone = _planCurZone(); if (!zone) { toast('未选择区域'); return; }
+  _planZone = zone; _planSel = null;
+  document.getElementById('plan2d-zone').textContent = zone.name || '本区';
+  document.getElementById('plan2d-unit').value = (zone.dims && zone.dims.unit) || 'cm';
+  document.getElementById('plan2d-overlay').classList.add('open');
+  _planCanvas = document.getElementById('plan2d-canvas');
+  _planCtx = _planCanvas.getContext('2d');
+  if (!_planBound) { _planBindEvents(); _planBound = true; }
+  requestAnimationFrame(() => { _planResize(); _planFit(); _planSyncEdit(); });
+}
+function _planClose() {
+  document.getElementById('plan2d-overlay').classList.remove('open');
+  _planDrag = null;
+  _3dRefreshIfOpen();   // 把平面图改动同步回 3D
+}
+function _planBindEvents() {
+  const cv = _planCanvas;
+  cv.addEventListener('pointerdown', _planPD);
+  cv.addEventListener('pointermove', _planPM);
+  cv.addEventListener('pointerup', _planPU);
+  cv.addEventListener('pointercancel', _planPU);
+  window.addEventListener('resize', () => {
+    if (document.getElementById('plan2d-overlay').classList.contains('open')) { _planResize(); _planFit(); }
+  });
+}
+function _planXY(e) { const r = _planCanvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function _planHit(px, py) {
+  const zone = _planZone; if (!zone) return null;
+  const { scale, ox, oy } = _planView;
+  const wx = (px - ox) / scale, wz = (py - oy) / scale;
+  for (let ai = 0; ai < zone.aisles.length; ai++) {
+    const r = _planShelf(zone, ai);
+    if (wx >= r.x0 && wx <= r.x1 && wz >= r.z0 && wz <= r.z1) return { kind: 'shelf', idx: ai };
+  }
+  for (let i = 0; i < zone.aisles.length - 1; i++) {
+    const a = _planShelf(zone, i), b = _planShelf(zone, i + 1);
+    const zx0 = Math.min(a.x0, b.x0), zx1 = Math.max(a.x1, b.x1);
+    if (wx >= zx0 && wx <= zx1 && wz >= a.z1 && wz <= b.z0) return { kind: 'gap', idx: i };
+  }
+  return null;
+}
+function _planPD(e) {
+  const p = _planXY(e), hit = _planHit(p.x, p.y);
+  if (hit && hit.kind === 'shelf' && hit.idx >= 1) {
+    _planDrag = { ai: hit.idx, startWz: (p.y - _planView.oy) / _planView.scale, startGap: _gapAt(_planZone, hit.idx - 1), moved: false };
+    try { _planCanvas.setPointerCapture(e.pointerId); } catch (x) {}
+  } else {
+    _planDrag = { tapOnly: true, hit };
+  }
+}
+function _planPM(e) {
+  if (!_planDrag || _planDrag.tapOnly) return;
+  const p = _planXY(e), wz = (p.y - _planView.oy) / _planView.scale;
+  let ng = _planDrag.startGap + (wz - _planDrag.startWz);
+  ng = Math.max(0, Math.min(10, Math.round(ng * 100) / 100));
+  if (ng < 0.02) ng = 0;
+  if (Math.abs(ng - _planDrag.startGap) > 0.001) _planDrag.moved = true;
+  const d = _dimEnsure(_planZone); d.gaps[_planDrag.ai - 1] = ng;
+  _planSel = { kind: 'gap', idx: _planDrag.ai - 1 };
+  _planSyncEdit(); _planDraw();
+}
+function _planPU(e) {
+  if (!_planDrag) return;
+  if (_planDrag.tapOnly) { _planSel = _planDrag.hit || null; _planSyncEdit(); _planDraw(); }
+  else if (_planDrag.moved) { saveState(); toast('✅ 通道已调整'); }
+  _planDrag = null;
+}
+function _planSyncEdit() {
+  const zone = _planZone;
+  const selEl = document.getElementById('plan2d-sel'), axisSel = document.getElementById('plan2d-axis');
+  const valEl = document.getElementById('plan2d-value'), unitEl = document.getElementById('plan2d-unit');
+  const applyEl = document.getElementById('plan2d-apply');
+  const unit = unitEl.value || 'cm';
+  if (!zone || !_planSel) {
+    selEl.textContent = '点一个货架或通道来选择';
+    axisSel.innerHTML = ''; axisSel.disabled = true; valEl.value = ''; valEl.disabled = true; applyEl.disabled = true;
+    return;
+  }
+  const nm = i => (zone.aisles[i] && zone.aisles[i].name) || String.fromCharCode(65 + i);
+  if (_planSel.kind === 'gap') {
+    const i = _planSel.idx;
+    selEl.textContent = '通道 ' + nm(i) + '↔' + nm(i + 1) + '（间距）— 设 0 = 背靠背贴合';
+    axisSel.innerHTML = '<option value="gap">通道间距</option>'; axisSel.disabled = true;
+    valEl.disabled = false; applyEl.disabled = false;
+    valEl.value = _dimFmt(_gapAt(zone, i), unit);
+  } else {
+    const ai = _planSel.idx, prev = axisSel.dataset.k || 'sw';
+    selEl.textContent = '货架 ' + nm(ai) + ' 尺寸';
+    axisSel.disabled = false;
+    axisSel.innerHTML = '<option value="sw">列宽（每列）</option><option value="sd">进深</option><option value="sh">层高（每层）</option>';
+    axisSel.value = (prev === 'gap') ? 'sw' : prev; axisSel.dataset.k = axisSel.value;
+    valEl.disabled = false; applyEl.disabled = false;
+    valEl.value = _dimFmt(_shelfDim(zone, ai, axisSel.value), unit);
+  }
+}
+function _planAxisChange() {
+  const a = document.getElementById('plan2d-axis'); a.dataset.k = a.value;
+  if (_planSel && _planSel.kind === 'shelf') {
+    const unit = document.getElementById('plan2d-unit').value || 'cm';
+    document.getElementById('plan2d-value').value = _dimFmt(_shelfDim(_planZone, _planSel.idx, a.value), unit);
+  }
+}
+function _planApply() {
+  if (!_isBoss()) { toast('⛔ 仅老板可使用平面图设计'); return; }
+  const zone = _planZone; if (!zone || !_planSel) { toast('请先选择货架或通道'); return; }
+  const unit = document.getElementById('plan2d-unit').value || 'cm';
+  const raw = parseFloat(document.getElementById('plan2d-value').value);
+  if (!isFinite(raw) || raw < 0) { toast('请输入有效尺寸'); return; }
+  const m = raw * _dimFactor(unit);
+  const d = _dimEnsure(zone); d.unit = unit;
+  if (_planSel.kind === 'gap') {
+    if (m > 10) { toast('通道间距过大（≤1000cm）'); return; }
+    d.gaps[_planSel.idx] = m;
+  } else {
+    if (m < 0.02 || m > 8) { toast('尺寸超出合理范围（2cm~800cm）'); return; }
+    const axis = document.getElementById('plan2d-axis').value || 'sw';
+    (d.shelves[_planSel.idx] = d.shelves[_planSel.idx] || {})[axis] = m;
+  }
+  saveState(); _planFit(); _planSyncEdit(); toast('✅ 已更新');
 }
 
 _initAuth(); // All vars declared above — safe entry point
