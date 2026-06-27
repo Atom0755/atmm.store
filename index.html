@@ -721,6 +721,26 @@
   #three-search-clear { background:none; border:none; color:#888; cursor:pointer; font-size:17px; padding:0; line-height:1; display:none; }
   #three-hint { position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
     color:rgba(255,255,255,.3); font-size:10px; pointer-events:none; white-space:nowrap; }
+  /* 尺寸编辑器 */
+  #three-dim-toggle { display:none; position:absolute; right:12px; bottom:12px; z-index:21;
+    background:rgba(15,23,42,.85); color:#e2e8f0; border:1px solid rgba(148,163,184,.4);
+    border-radius:999px; padding:8px 14px; font-size:13px; font-family:inherit; cursor:pointer;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  #three-dim-panel { display:none; position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:22;
+    width:min(420px,94vw); box-sizing:border-box; background:rgba(15,23,42,.94); color:#e2e8f0;
+    border:1px solid rgba(148,163,184,.35); border-radius:14px; padding:12px 14px;
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 -6px 30px rgba(0,0,0,.5); }
+  #three-dim-panel.open { display:block; }
+  .dim-head { display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:10px; }
+  .dim-head .dim-x { background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; line-height:1; padding:0; }
+  .dim-row { display:flex; gap:8px; margin-bottom:8px; }
+  #three-dim-panel select, #three-dim-panel input {
+    flex:1; min-width:0; background:#0f172a; color:#e2e8f0; border:1px solid rgba(148,163,184,.4);
+    border-radius:9px; padding:9px 10px; font-size:14px; font-family:inherit; outline:none; }
+  #three-dim-panel #dim-unit { flex:0 0 70px; }
+  #three-dim-panel #dim-apply { flex:0 0 64px; background:#2563eb; color:#fff; border:none; font-weight:700; cursor:pointer; }
+  #three-dim-panel #dim-apply:active { background:#1d4ed8; }
+  .dim-hint { font-size:11px; color:#94a3b8; line-height:1.5; min-height:16px; }
   .aisles-row { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 6px; }
   .grid-aisle { background: var(--aisle-bg); border: 1px solid var(--line); border-radius: 10px; padding: 5px; }
   .grid-aisle-name { font-weight: 700; font-size: 11px; text-align: center; padding: 3px 0 6px; }
@@ -1582,7 +1602,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.1</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.2</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -1622,6 +1642,27 @@
     <canvas id="three-canvas"></canvas>
     <div id="three-labels-ov"></div>
     <div id="three-hint">拖动旋转 · 双指缩放 · 双击重置视角</div>
+    <!-- 尺寸编辑（老板/经理）：改货架尺寸 / 通道间距 → 货架随之移动 -->
+    <button id="three-dim-toggle" onclick="_dimTogglePanel()" title="编辑货架/通道尺寸">📐 尺寸</button>
+    <div id="three-dim-panel">
+      <div class="dim-head">
+        <span>📐 货架 / 通道尺寸</span>
+        <button onclick="_dimTogglePanel()" class="dim-x">✕</button>
+      </div>
+      <div class="dim-row">
+        <select id="dim-target" onchange="_dimOnTargetChange()"></select>
+        <select id="dim-axis" onchange="_dimSyncValue()"></select>
+      </div>
+      <div class="dim-row">
+        <input id="dim-value" type="number" inputmode="decimal" step="0.1" min="0" placeholder="尺寸">
+        <select id="dim-unit" onchange="_dimSyncValue()">
+          <option value="cm">CM</option>
+          <option value="in">IN</option>
+        </select>
+        <button id="dim-apply" onclick="_dimApply()">应用</button>
+      </div>
+      <div id="dim-hint" class="dim-hint"></div>
+    </div>
   </div>
   <div class="delete-zone" id="delete-zone">🗑️ 拖到这里删除整箱(已搬走)</div>
 </div>
@@ -2758,7 +2799,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.1</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.2</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>3D 找货页新增「📐 尺寸」编辑（仅老板/经理）：可设置每个货架的列宽/进深/层高，以及每两个货架之间的通道间距（支持 CM / IN）</li>
+            <li>改通道间距即可让货架靠拢或拉开（设 0 为背靠背贴合），3D 效果图与找货路径自动按新尺寸重算</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v8.1</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -4056,13 +4109,38 @@ const WHC = {
   lg: 0.05,  // 层间隙 (Y)
   ag: 1.50,  // 排间距 (Z, 含走道宽度)
 };
-// 返回格位3D中心坐标。ai=排索引(A=0), ci=列索引, si=格位索引(0=底层)
+// ── 尺寸读取（内部统一用米；缺省回退全局 WHC 常量）──
+// 优先级：单货架覆盖 zone.dims.shelves[ai][key] → 区级默认 zone.dims[key] → 全局 WHC[key]
+function _zDims(zone) { return (zone && zone.dims) || null; }
+function _shelfDim(zone, ai, key) {
+  const d = _zDims(zone);
+  const o = d && d.shelves && d.shelves[ai];
+  if (o && o[key] != null) return o[key];
+  if (d && d[key] != null) return d[key];
+  return WHC[key];
+}
+// 第 ai 排与第 ai+1 排之间的净通道宽（米）；缺省回退 WHC.ag
+function _gapAt(zone, ai) {
+  const d = _zDims(zone);
+  const g = d && d.gaps && d.gaps[ai];
+  return (g != null) ? g : WHC.ag;
+}
+// 第 ai 排中心的 Z 坐标（按各排进深+各通道宽累加，支持不等间距）
+function WHC_rowZ(zone, ai) {
+  let z = 0;
+  for (let k = 0; k < ai; k++)
+    z += _shelfDim(zone, k, 'sd') / 2 + _gapAt(zone, k) + _shelfDim(zone, k + 1, 'sd') / 2;
+  return z;
+}
+// 返回格位3D中心坐标。zone=所在区(可空,空则全用全局常量), ai=排索引(A=0), ci=列, si=格位(0=底层)
 // 预留：3D显示 / 工人找货导航 / 机器人目标坐标
-function WHC_slotPos(ai, ci, si) {
+function WHC_slotPos(zone, ai, ci, si) {
+  const sw = _shelfDim(zone, ai, 'sw'), cg = _shelfDim(zone, ai, 'cg');
+  const sh = _shelfDim(zone, ai, 'sh'), lg = _shelfDim(zone, ai, 'lg');
   return {
-    x: ci * (WHC.sw + WHC.cg),
-    y: si * (WHC.sh + WHC.lg) + WHC.sh / 2,
-    z: ai * (WHC.sd + WHC.ag),
+    x: ci * (sw + cg),
+    y: si * (sh + lg) + sh / 2,
+    z: WHC_rowZ(zone, ai),
   };
 }
 // 解析库位编号 → 结构化索引。'J-1-A-2-03' → {type,zoneTypeIdx,ai,ci,si}
@@ -4088,10 +4166,11 @@ function WHC_buildWalkGrid(zone) {
   // 求所有货架列的世界坐标极值
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   zone.aisles.forEach((aisle, ai) => {
+    const sw = _shelfDim(zone, ai, 'sw'), sd = _shelfDim(zone, ai, 'sd');
     aisle[ck].forEach((cont, ci) => {
-      const p = WHC_slotPos(ai, ci, 0);
-      x0 = Math.min(x0, p.x - WHC.sw/2); x1 = Math.max(x1, p.x + WHC.sw/2);
-      z0 = Math.min(z0, p.z - WHC.sd/2); z1 = Math.max(z1, p.z + WHC.sd/2);
+      const p = WHC_slotPos(zone, ai, ci, 0);
+      x0 = Math.min(x0, p.x - sw/2); x1 = Math.max(x1, p.x + sw/2);
+      z0 = Math.min(z0, p.z - sd/2); z1 = Math.max(z1, p.z + sd/2);
     });
   });
   if (!isFinite(x0)) return null;
@@ -4104,13 +4183,14 @@ function WHC_buildWalkGrid(zone) {
 
   // 把每个货架列的 XZ 脚印标为障碍
   zone.aisles.forEach((aisle, ai) => {
-    const zc = ai * (WHC.sd + WHC.ag);
-    const rMin = Math.max(0, Math.floor(((zc - WHC.sd/2 - EPS) - gz0) / CELL));
-    const rMax = Math.min(rows, Math.ceil(((zc + WHC.sd/2 + EPS) - gz0) / CELL));
+    const sw = _shelfDim(zone, ai, 'sw'), sd = _shelfDim(zone, ai, 'sd');
+    const zc = WHC_rowZ(zone, ai);
+    const rMin = Math.max(0, Math.floor(((zc - sd/2 - EPS) - gz0) / CELL));
+    const rMax = Math.min(rows, Math.ceil(((zc + sd/2 + EPS) - gz0) / CELL));
     aisle[ck].forEach((cont, ci) => {
-      const xc = ci * (WHC.sw + WHC.cg);
-      const cMin = Math.max(0, Math.floor(((xc - WHC.sw/2 - EPS) - gx0) / CELL));
-      const cMax = Math.min(cols, Math.ceil(((xc + WHC.sw/2 + EPS) - gx0) / CELL));
+      const xc = WHC_slotPos(zone, ai, ci, 0).x;
+      const cMin = Math.max(0, Math.floor(((xc - sw/2 - EPS) - gx0) / CELL));
+      const cMax = Math.min(cols, Math.ceil(((xc + sw/2 + EPS) - gx0) / CELL));
       for (let r = rMin; r < rMax; r++)
         for (let c = cMin; c < cMax; c++)
           grid[r * cols + c] = 1;
@@ -13335,6 +13415,7 @@ let _3dZoneObjs = [];  // frame/floor objects for the current zone
 let _3dHit = [];       // highlighted entries
 let _3dLastTap = 0;
 let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
+let _3dDynGeos = [];        // 本次渲染按各货架尺寸临时创建的几何体（需逐次释放）
 
 // 内联轨道控制器 — 单指/鼠标=旋转，双指=捏合缩放+同向平移，滚轮=缩放
 // 所有状态（radius/theta/phi/tgt）在手势结束后保持不变
@@ -13531,17 +13612,32 @@ function _3dClearZone() {
     _3dScene.remove(o);
     o.material?.dispose();
   });
+  _3dDynGeos.forEach(g => { try { g.dispose(); } catch(e){} });
+  _3dDynGeos = [];
   _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
   document.getElementById('three-labels-ov').innerHTML = '';
 }
 
-function _3dRenderZone(zone) {
+function _3dRenderZone(zone, keepView) {
   if (!_3dReady || !zone) return;
   _3dClearZone();
   const T = window.THREE;
   const isShelf = zone.type === 'shelf';
   const ck = isShelf ? 'shelves' : 'pallets';
   const sk = isShelf ? 'slots' : 'layers';
+
+  // 按尺寸缓存格位几何体（同尺寸的格位共用一份，结束时统一释放）
+  const geoCache = {};
+  const geoFor = (sw, sh, sd) => {
+    const k = sw.toFixed(3) + '_' + sh.toFixed(3) + '_' + sd.toFixed(3);
+    if (!geoCache[k]) {
+      const box = new T.BoxGeometry(sw, sh, sd);
+      const edge = new T.EdgesGeometry(box);
+      geoCache[k] = { box, edge };
+      _3dDynGeos.push(box, edge);
+    }
+    return geoCache[k];
+  };
 
   // 每排配色（按 ai 轮转）
   const _PALETTE = [
@@ -13555,9 +13651,11 @@ function _3dRenderZone(zone) {
 
   zone.aisles.forEach((aisle, ai) => {
     const pal = _PALETTE[ai % _PALETTE.length];
+    const sw = _shelfDim(zone, ai, 'sw'), sh = _shelfDim(zone, ai, 'sh'), sd = _shelfDim(zone, ai, 'sd');
+    const geo = geoFor(sw, sh, sd);
     aisle[ck].forEach((container, ci) => {
       container[sk].forEach((slot, si) => {
-        const pos    = WHC_slotPos(ai, ci, si);
+        const pos    = WHC_slotPos(zone, ai, ci, si);
         const hasMod = !!slot.modelId;
         const m      = hasMod ? getModel(slot.modelId) : null;
         const hasQty = (slot.qty || 0) > 0;
@@ -13570,24 +13668,24 @@ function _3dRenderZone(zone) {
           roughness: 0.45, metalness: 0.12,
           emissive: new T.Color(0x000000), emissiveIntensity: 0,
         });
-        const mesh = new T.Mesh(_3dBoxGeo, mat);
+        const mesh = new T.Mesh(geo.box, mat);
         mesh.position.set(pos.x, pos.y, pos.z);
         _3dScene.add(mesh);
 
         const eMat = new T.LineBasicMaterial({ color: edgeColor });
-        const edges = new T.LineSegments(_3dEdgeGeo, eMat);
+        const edges = new T.LineSegments(geo.edge, eMat);
         edges.position.copy(mesh.position);
         _3dScene.add(edges); _3dZoneObjs.push(edges);
 
         const locCode = makeLocationCode(zone.id, ai, ci, si);
         const label   = _3dMakeLabel(locCode, m?.name, slot.qty || 0);
-        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos, _origAlpha: faceAlpha, ai, ci, si });
+        _3dMeshMap.push({ mesh, label, locCode, modelId: slot.modelId, qty: slot.qty || 0, pos, _origAlpha: faceAlpha, ai, ci, si, sh });
       });
     });
-    _3dDrawFrame(aisle, ai, ck, sk);
+    _3dDrawFrame(zone, aisle, ai, ck, sk);
   });
 
-  _3dFitCamera();
+  if (!keepView) _3dFitCamera();
   if (_3dSearch) _3dApplySearch(_3dSearch);
 }
 
@@ -13609,9 +13707,9 @@ function _3dUpdateLabels() {
   const host = document.getElementById('three-canvas-host');
   const W = host.clientWidth, H = host.clientHeight;
   const v  = new window.THREE.Vector3();
-  _3dMeshMap.forEach(({ label, pos }) => {
+  _3dMeshMap.forEach(({ label, pos, sh }) => {
     if (!label) return;
-    v.set(pos.x, pos.y + WHC.sh * 0.55, pos.z);
+    v.set(pos.x, pos.y + (sh || WHC.sh) * 0.55, pos.z);
     v.project(_3dCam);
     const sx = (v.x * 0.5 + 0.5) * W;
     const sy = (-v.y * 0.5 + 0.5) * H;
@@ -13621,18 +13719,20 @@ function _3dUpdateLabels() {
   });
 }
 
-function _3dDrawFrame(aisle, ai, ck, sk) {
+function _3dDrawFrame(zone, aisle, ai, ck, sk) {
   const T = window.THREE;
   const mat = new T.LineBasicMaterial({ color: 0x334155 });
   const cols  = aisle[ck].length;
   const maxSi = cols ? Math.max(...aisle[ck].map(c => c[sk].length)) : 0;
   if (!cols || !maxSi) return;
-  const zc   = ai * (WHC.sd + WHC.ag);
-  const totW = (cols - 1) * (WHC.sw + WHC.cg) + WHC.sw;
-  const totH = (maxSi - 1) * (WHC.sh + WHC.lg) + WHC.sh;
-  const x0 = -WHC.sw/2 - 0.04, x1 = totW - WHC.sw/2 + 0.04;
+  const sw = _shelfDim(zone, ai, 'sw'), sh = _shelfDim(zone, ai, 'sh'), sd = _shelfDim(zone, ai, 'sd');
+  const cg = _shelfDim(zone, ai, 'cg'), lg = _shelfDim(zone, ai, 'lg');
+  const zc   = WHC_rowZ(zone, ai);
+  const totW = (cols - 1) * (sw + cg) + sw;
+  const totH = (maxSi - 1) * (sh + lg) + sh;
+  const x0 = -sw/2 - 0.04, x1 = totW - sw/2 + 0.04;
   const y0 = -0.05, y1 = totH + 0.05;
-  const z0 = zc - WHC.sd/2 - 0.04, z1 = zc + WHC.sd/2 + 0.04;
+  const z0 = zc - sd/2 - 0.04, z1 = zc + sd/2 + 0.04;
 
   // 4 vertical corner posts (front & back)
   [[x0,z0],[x1,z0],[x0,z1],[x1,z1]].forEach(([x,z]) => {
@@ -13641,18 +13741,18 @@ function _3dDrawFrame(aisle, ai, ck, sk) {
   });
   // Horizontal shelf beams (front & back, per layer)
   for (let li = 0; li <= maxSi; li++) {
-    const y = li * (WHC.sh + WHC.lg) - WHC.lg/2;
+    const y = li * (sh + lg) - lg/2;
     [z0, z1].forEach(z => {
       const g = new T.BufferGeometry().setFromPoints([new T.Vector3(x0,y,z), new T.Vector3(x1,y,z)]);
       const l = new T.Line(g, mat); _3dScene.add(l); _3dZoneObjs.push(l);
     });
   }
   // Floor plate
-  const fGeo = new T.PlaneGeometry(totW + 0.1, WHC.sd + 0.1);
+  const fGeo = new T.PlaneGeometry(totW + 0.1, sd + 0.1);
   const fMat = new T.MeshStandardMaterial({ color: 0x1e293b, opacity: 0.55, transparent: true });
   const floor = new T.Mesh(fGeo, fMat);
   floor.rotation.x = -Math.PI/2;
-  floor.position.set((totW - WHC.sw)/2, y0 - 0.01, zc);
+  floor.position.set((totW - sw)/2, y0 - 0.01, zc);
   _3dScene.add(floor); _3dZoneObjs.push(floor);
 }
 
@@ -13694,11 +13794,14 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   const startCell = gd.toCell(entryX, entryZ);
 
   // 目标列的 X 中心
-  const txc = targetAi * (WHC.sd + WHC.ag);
-  const xc  = targetCi * (WHC.sw + WHC.cg);
+  const txc = WHC_rowZ(zone, targetAi);
+  const xc  = WHC_slotPos(zone, targetAi, targetCi, 0).x;
+  const sdT = _shelfDim(zone, targetAi, 'sd');
+  const gapBefore = targetAi > 0 ? _gapAt(zone, targetAi - 1) : WHC.ag;
+  const gapAfter  = _gapAt(zone, targetAi);
   // 两侧走道中心 Z（让 A* 选更近的一侧）
-  const zFront = txc - WHC.sd/2 - WHC.ag/2;
-  const zBack  = txc + WHC.sd/2 + WHC.ag/2;
+  const zFront = txc - sdT/2 - gapBefore/2;
+  const zBack  = txc + sdT/2 + gapAfter/2;
 
   const endF = gd.toCell(xc, zFront);
   const endB = gd.toCell(xc, zBack);
@@ -13767,7 +13870,7 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   sGeo.dispose();
 
   // ④ 路径末端→目标格位列前的引导短线
-  const tgtPos = WHC_slotPos(targetAi, targetCi, 0);
+  const tgtPos = WHC_slotPos(zone, targetAi, targetCi, 0);
   const lastPt = smoothPts[smoothPts.length - 1];
   const finalGeo = new T.BufferGeometry().setFromPoints([
     lastPt.clone(),
@@ -13783,7 +13886,7 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
     const finalPerp = new T.Vector3(-finalDir.z, 0, finalDir.x);
     // 终点 > 放在货架边线（sd/2 + 小余量）处，而不是路径末端
     const fBase = new T.Vector3(tgtPos.x, 0.07, tgtPos.z)
-      .sub(finalDir.clone().multiplyScalar(WHC.sd / 2 + 0.08));
+      .sub(finalDir.clone().multiplyScalar(sdT / 2 + 0.08));
     const fTip  = fBase.clone().add(finalDir.clone().multiplyScalar(arrowSz));
     const fLw   = fBase.clone().sub(finalDir.clone().multiplyScalar(arrowSz * 0.35)).add(finalPerp.clone().multiplyScalar(arrowSz * 0.85));
     const fRw   = fBase.clone().sub(finalDir.clone().multiplyScalar(arrowSz * 0.35)).sub(finalPerp.clone().multiplyScalar(arrowSz * 0.85));
@@ -13863,6 +13966,11 @@ async function _3dOpen() {
   _3dRenderZone(state.zones.find(z => z.id === currentTable));
   if (_3dAnimId) cancelAnimationFrame(_3dAnimId);
   _3dAnimate();
+  // 尺寸编辑按钮：仅老板/经理可见；面板默认收起
+  const dimT = document.getElementById('three-dim-toggle');
+  if (dimT) dimT.style.display = _canManage() ? '' : 'none';
+  const dimP = document.getElementById('three-dim-panel');
+  if (dimP) dimP.classList.remove('open');
 }
 function _3dClose() {
   if (_3dAnimId) { cancelAnimationFrame(_3dAnimId); _3dAnimId = null; }
@@ -13872,6 +13980,103 @@ function _3dClose() {
 function _3dRefreshIfOpen() {
   if (!_3dReady || document.getElementById('three-canvas-host').style.display === 'none') return;
   _3dRenderZone(state.zones.find(z => z.id === currentTable));
+  const dimP = document.getElementById('three-dim-panel');
+  if (dimP && dimP.classList.contains('open')) _dimRebuildSelectors();
+}
+
+// ══════ 尺寸编辑器（老板/经理）：改货架尺寸 / 通道间距 ═══════════════
+// 数据存 zone.dims = { unit, [sw|sh|sd|cg|lg](区级默认), shelves:{ai:{...}}, gaps:{ai:净通道宽(米)} }
+function _dimCurZone() { return state.zones.find(z => z.id === currentTable); }
+function _dimEnsure(zone) {
+  if (!zone.dims) zone.dims = {};
+  if (!zone.dims.shelves) zone.dims.shelves = {};
+  if (!zone.dims.gaps) zone.dims.gaps = {};
+  return zone.dims;
+}
+function _dimFactor(unit) { return unit === 'in' ? 0.0254 : 0.01; } // →米
+function _dimFmt(m, unit) {
+  const v = m / _dimFactor(unit);
+  return parseFloat((unit === 'in' ? v.toFixed(2) : v.toFixed(1))).toString();
+}
+function _dimTogglePanel() {
+  const p = document.getElementById('three-dim-panel');
+  const open = !p.classList.contains('open');
+  if (open) {
+    if (!_canManage()) { toast('⛔ 仅老板/经理可修改尺寸'); return; }
+    document.getElementById('dim-unit').value = (_dimCurZone()?.dims?.unit) || 'cm';
+    _dimRebuildSelectors();
+  }
+  p.classList.toggle('open', open);
+  const tog = document.getElementById('three-dim-toggle');
+  if (tog) tog.style.display = open ? 'none' : (_canManage() ? '' : 'none');
+}
+function _dimRebuildSelectors() {
+  const zone = _dimCurZone();
+  const tSel = document.getElementById('dim-target');
+  if (!zone || !tSel) return;
+  const nm = i => escapeHtml(zone.aisles[i]?.name || String.fromCharCode(65 + i));
+  let opts = '<option value="shelfAll">全区货架（统一尺寸）</option>';
+  zone.aisles.forEach((a, i) => { opts += `<option value="shelf:${i}">货架 ${nm(i)} 尺寸</option>`; });
+  for (let i = 0; i < zone.aisles.length - 1; i++)
+    opts += `<option value="gap:${i}">通道 ${nm(i)}↔${nm(i + 1)}（间距）</option>`;
+  tSel.innerHTML = opts;
+  _dimOnTargetChange();
+}
+function _dimOnTargetChange() {
+  const t = document.getElementById('dim-target').value || '';
+  const aSel = document.getElementById('dim-axis');
+  if (t.startsWith('gap:')) {
+    aSel.innerHTML = '<option value="gap">通道间距</option>';
+    aSel.disabled = true;
+  } else {
+    aSel.disabled = false;
+    aSel.innerHTML = '<option value="sw">列宽（每列）</option><option value="sd">进深</option><option value="sh">层高（每层）</option>';
+  }
+  _dimSyncValue();
+}
+function _dimSyncValue() {
+  const zone = _dimCurZone(); if (!zone) return;
+  const t = document.getElementById('dim-target').value || '';
+  const axis = document.getElementById('dim-axis').value || 'sw';
+  const unit = document.getElementById('dim-unit').value || 'cm';
+  let m;
+  if (t.startsWith('gap:')) m = _gapAt(zone, +t.slice(4));
+  else if (t.startsWith('shelf:')) m = _shelfDim(zone, +t.slice(6), axis);
+  else m = (zone.dims && zone.dims[axis] != null) ? zone.dims[axis] : WHC[axis];
+  document.getElementById('dim-value').value = _dimFmt(m, unit);
+  const h = document.getElementById('dim-hint');
+  if (t.startsWith('gap:')) h.textContent = '设为 0 = 两货架背靠背贴合；按现场实际间距填写更准确。';
+  else if (axis === 'sw') h.textContent = '列宽 × 列数 = 该货架总长。';
+  else if (axis === 'sh') h.textContent = '层高 × 层数 = 该货架总高。';
+  else h.textContent = '进深 = 货架前后方向的厚度。';
+}
+function _dimApply() {
+  if (!_canManage()) { toast('⛔ 仅老板/经理可修改尺寸'); return; }
+  const zone = _dimCurZone(); if (!zone) { toast('未选择区域'); return; }
+  const t = document.getElementById('dim-target').value || '';
+  const axis = document.getElementById('dim-axis').value || 'sw';
+  const unit = document.getElementById('dim-unit').value || 'cm';
+  const raw = parseFloat(document.getElementById('dim-value').value);
+  if (!isFinite(raw) || raw < 0) { toast('请输入有效尺寸'); return; }
+  const m = raw * _dimFactor(unit);
+  const isGap = t.startsWith('gap:');
+  if (isGap) { if (m > 10) { toast('通道间距过大（≤1000cm）'); return; } }
+  else { if (m < 0.02 || m > 8) { toast('尺寸超出合理范围（2cm~800cm）'); return; } }
+  const d = _dimEnsure(zone);
+  d.unit = unit;
+  if (isGap) {
+    d.gaps[+t.slice(4)] = m;
+  } else if (t.startsWith('shelf:')) {
+    const ai = +t.slice(6);
+    (d.shelves[ai] = d.shelves[ai] || {})[axis] = m;
+  } else { // shelfAll：设区级默认并清掉各货架对该项的覆盖
+    d[axis] = m;
+    Object.keys(d.shelves).forEach(k => { if (d.shelves[k]) delete d.shelves[k][axis]; });
+  }
+  saveState();
+  _3dRenderZone(zone, true);   // 保持当前视角
+  toast('✅ 尺寸已更新');
+  _dimSyncValue();
 }
 
 _initAuth(); // All vars declared above — safe entry point

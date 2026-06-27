@@ -9,8 +9,8 @@
 
 do $$
 declare
-  v_trial uuid := '<TRIAL_UID>';   -- ← 替换为 trial@atmm.store 的 UID
-  v_src   uuid := '<SRC_WH>';      -- ← 替换为克隆示例数据的源仓库 id
+  v_trial uuid := '<5077325d-ea95-47d1-b651-43dd97af9f9c>';   -- ← 替换为 trial@atmm.store 的 UID
+  v_src   uuid := '<b3d5f647-dda4-4434-9283-8700f96e4682>';      -- ← 替换为克隆示例数据的源仓库 id
   v_demo  uuid;
 begin
   -- 1) 建体验仓库（owner=trial）
