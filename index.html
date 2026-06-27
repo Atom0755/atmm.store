@@ -1629,7 +1629,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.6</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2849,7 +2849,18 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.6</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.7</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>3D 找货页一进入就显示绿色「🚪 入口」标记（地面圆环+文字），不用搜索也能让找货员先定位自己</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v8.6</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -13540,6 +13551,7 @@ let _3dHit = [];       // highlighted entries
 let _3dLastTap = 0;
 let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
 let _3dDynGeos = [];        // 本次渲染按各货架尺寸临时创建的几何体（需逐次释放）
+let _3dEntryPos = null, _3dEntryLabel = null; // 持久入口标记（不搜索时也显示）
 
 // 内联轨道控制器 — 单指/鼠标=旋转，双指=捏合缩放+同向平移，滚轮=缩放
 // 所有状态（radius/theta/phi/tgt）在手势结束后保持不变
@@ -13739,6 +13751,7 @@ function _3dClearZone() {
   _3dDynGeos.forEach(g => { try { g.dispose(); } catch(e){} });
   _3dDynGeos = [];
   _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
+  _3dEntryPos = null; _3dEntryLabel = null;
   document.getElementById('three-labels-ov').innerHTML = '';
 }
 
@@ -13810,6 +13823,25 @@ function _3dRenderZone(zone, keepView) {
     _3dDrawFrame(zone, aisle, ai, ck, sk);
   });
 
+  // 持久「入口」标记：进 3D 即可见，方便找货员定位（不依赖搜索）
+  const en = _zoneEntry(zone);
+  _3dEntryPos = new T.Vector3(en.x, 0.2, en.z);
+  const enGeo = new T.SphereGeometry(0.17, 14, 10);
+  const enMesh = new T.Mesh(enGeo, new T.MeshBasicMaterial({ color: 0x10b981 }));
+  enMesh.position.copy(_3dEntryPos);
+  _3dScene.add(enMesh); _3dZoneObjs.push(enMesh); _3dDynGeos.push(enGeo);
+  // 地面小圆环让入口更醒目
+  const ringGeo = new T.RingGeometry(0.26, 0.34, 24);
+  const ring = new T.Mesh(ringGeo, new T.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.55, side: T.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(en.x, 0.02, en.z);
+  _3dScene.add(ring); _3dZoneObjs.push(ring); _3dDynGeos.push(ringGeo);
+  // 入口文字标签（HTML 叠加层，随相机投影）
+  const elbl = document.createElement('div');
+  elbl.className = 'tlbl';
+  elbl.innerHTML = '<div class="tname" style="color:#34d399; font-size:10px;">🚪 入口</div>';
+  document.getElementById('three-labels-ov').appendChild(elbl);
+  _3dEntryLabel = elbl;
+
   if (!keepView) _3dFitCamera();
   if (_3dSearch) _3dApplySearch(_3dSearch);
 }
@@ -13842,6 +13874,14 @@ function _3dUpdateLabels() {
     label.style.display = vis ? '' : 'none';
     if (vis) { label.style.left = sx+'px'; label.style.top = sy+'px'; }
   });
+  // 入口标签投影
+  if (_3dEntryLabel && _3dEntryPos) {
+    v.copy(_3dEntryPos); v.project(_3dCam);
+    const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H;
+    const vis = v.z < 1;
+    _3dEntryLabel.style.display = vis ? '' : 'none';
+    if (vis) { _3dEntryLabel.style.left = sx + 'px'; _3dEntryLabel.style.top = sy + 'px'; }
+  }
 }
 
 function _3dDrawFrame(zone, aisle, ai, ck, sk) {
