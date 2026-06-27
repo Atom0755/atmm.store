@@ -1629,7 +1629,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.4</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.5</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -1700,6 +1700,7 @@
 <div id="plan2d-overlay">
   <div id="plan2d-topbar">
     <span id="plan2d-title">🗺️ 平面图 · <b id="plan2d-zone"></b></span>
+    <button onclick="_planToggleMode()" class="p2btn" id="plan2d-mode" title="切换上下双排 / 平行排列">⇅ 改双排</button>
     <button onclick="_planFit()" class="p2btn" title="适配视图">⤢</button>
     <button onclick="_planClose()" class="p2btn p2close">✕ 关闭</button>
   </div>
@@ -2848,7 +2849,20 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.4</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.5</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>平面图新增「上下双排 + 中央主通道」布局（仅老板）：一键把本区货架复制一份作下排，货架垂直于横向主通道，入口在左中</li>
+            <li>下排货架会真实写入「列表/总览」（带库位编号，可装货），与 3D 立体图、找货路径完全同源；可单独调主通道宽度、各小通道、各货架尺寸</li>
+            <li>平面图可在「双排 ⇄ 平行」之间切换；找货路径改为自动选最近通道一侧，兼容两种布局</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v8.4</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -4193,16 +4207,51 @@ function WHC_rowZ(zone, ai) {
     z += _shelfDim(zone, k, 'sd') / 2 + _gapAt(zone, k) + _shelfDim(zone, k + 1, 'sd') / 2;
   return z;
 }
-// 返回格位3D中心坐标。zone=所在区(可空,空则全用全局常量), ai=排索引(A=0), ci=列, si=格位(0=底层)
-// 预留：3D显示 / 工人找货导航 / 机器人目标坐标
+// 布局模式：'linear'(平行排列，默认/旧) | 'dual'(上下双排，货架垂直于中央主通道)
+function _zoneLayout(zone) { return (zone && zone.layout && zone.layout.mode) || 'linear'; }
+function _zoneMainW(zone) { const L = zone && zone.layout; return (L && L.mainW != null) ? L.mainW : 1.5; }
+// 货架"朝向框架"：定义该货架在 XZ 平面里列方向(ux,uz)、列间距(pitch)、单格盒子世界尺寸(boxX×boxZ)及列0中心(px,pz)
+// linear：货架长边沿 X，多排沿 Z 堆叠（与旧版完全一致）
+// dual  ：货架长边(列方向)垂直于横向主通道；上排向 -Z 伸、下排向 +Z 伸，多架沿 X 并排
+function WHC_aisleFrame(zone, ai) {
+  const sw = _shelfDim(zone, ai, 'sw'), cg = _shelfDim(zone, ai, 'cg'), sd = _shelfDim(zone, ai, 'sd');
+  const pitch = sw + cg;
+  if (_zoneLayout(zone) === 'dual') {
+    const split = (zone.layout && zone.layout.split) || Math.ceil(zone.aisles.length / 2);
+    const mainW = _zoneMainW(zone);
+    const upper = ai < split;
+    const start = upper ? 0 : split;             // 所在块的首架全局索引
+    let x = 0;                                    // 块内 X 累加（块首架在 X=0）
+    for (let g = start; g < ai; g++)
+      x += _shelfDim(zone, g, 'sd') / 2 + _gapAt(zone, g) + _shelfDim(zone, g + 1, 'sd') / 2;
+    if (upper) return { px: x, pz: -(mainW / 2) - sw / 2, ux: 0, uz: -1, pitch, boxX: sd, boxZ: sw };
+    return { px: x, pz: (mainW / 2) + sw / 2, ux: 0, uz: 1, pitch, boxX: sd, boxZ: sw };
+  }
+  return { px: 0, pz: WHC_rowZ(zone, ai), ux: 1, uz: 0, pitch, boxX: sw, boxZ: sd };
+}
+// 返回格位3D中心坐标。zone=所在区(可空), ai=排索引(A=0), ci=列, si=格位(0=底层)
 function WHC_slotPos(zone, ai, ci, si) {
-  const sw = _shelfDim(zone, ai, 'sw'), cg = _shelfDim(zone, ai, 'cg');
+  const fr = WHC_aisleFrame(zone, ai);
   const sh = _shelfDim(zone, ai, 'sh'), lg = _shelfDim(zone, ai, 'lg');
   return {
-    x: ci * (sw + cg),
+    x: fr.px + fr.ux * (ci * fr.pitch),
     y: si * (sh + lg) + sh / 2,
-    z: WHC_rowZ(zone, ai),
+    z: fr.pz + fr.uz * (ci * fr.pitch),
   };
+}
+// 单格盒子的世界轴向尺寸（dual 时长宽互换）
+function WHC_boxDims(zone, ai) {
+  const fr = WHC_aisleFrame(zone, ai);
+  return { bx: fr.boxX, by: _shelfDim(zone, ai, 'sh'), bz: fr.boxZ };
+}
+// 仓库入口（找货路径起点）。可被 zone.entryX/entryZ 覆盖
+function _zoneEntry(zone) {
+  if (zone && zone.entryX != null && zone.entryZ != null) return { x: zone.entryX, z: zone.entryZ };
+  if (_zoneLayout(zone) === 'dual') {
+    const fr = WHC_aisleFrame(zone, 0), sd = _shelfDim(zone, 0, 'sd');
+    return { x: fr.px - sd / 2 - 0.9, z: 0 };   // 主通道左端
+  }
+  return { x: -1.5, z: -1.0 };
 }
 // 解析库位编号 → 结构化索引。'J-1-A-2-03' → {type,zoneTypeIdx,ai,ci,si}
 // 预留：路径规划起/终点解析
@@ -4224,17 +4273,21 @@ function WHC_buildWalkGrid(zone) {
   const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
   const CELL = 0.35, PAD = 1.8, EPS = 0.10;
 
-  // 求所有货架列的世界坐标极值
+  // 求所有格位盒子的世界坐标极值（按每格朝向，dual/linear 通用）
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   zone.aisles.forEach((aisle, ai) => {
-    const sw = _shelfDim(zone, ai, 'sw'), sd = _shelfDim(zone, ai, 'sd');
+    const bd = WHC_boxDims(zone, ai);
     aisle[ck].forEach((cont, ci) => {
       const p = WHC_slotPos(zone, ai, ci, 0);
-      x0 = Math.min(x0, p.x - sw/2); x1 = Math.max(x1, p.x + sw/2);
-      z0 = Math.min(z0, p.z - sd/2); z1 = Math.max(z1, p.z + sd/2);
+      x0 = Math.min(x0, p.x - bd.bx/2); x1 = Math.max(x1, p.x + bd.bx/2);
+      z0 = Math.min(z0, p.z - bd.bz/2); z1 = Math.max(z1, p.z + bd.bz/2);
     });
   });
   if (!isFinite(x0)) return null;
+  // 入口也纳入边界，确保起点在可走区
+  const en = _zoneEntry(zone);
+  x0 = Math.min(x0, en.x); x1 = Math.max(x1, en.x);
+  z0 = Math.min(z0, en.z); z1 = Math.max(z1, en.z);
 
   // 建格子表（带 PAD 边距）
   const gx0 = x0 - PAD, gz0 = z0 - PAD;
@@ -4242,16 +4295,15 @@ function WHC_buildWalkGrid(zone) {
   const rows = Math.ceil((z1 + PAD - gz0) / CELL);
   const grid = new Uint8Array(cols * rows); // 0=走，1=挡
 
-  // 把每个货架列的 XZ 脚印标为障碍
+  // 把每个格位盒子的 XZ 脚印标为障碍
   zone.aisles.forEach((aisle, ai) => {
-    const sw = _shelfDim(zone, ai, 'sw'), sd = _shelfDim(zone, ai, 'sd');
-    const zc = WHC_rowZ(zone, ai);
-    const rMin = Math.max(0, Math.floor(((zc - sd/2 - EPS) - gz0) / CELL));
-    const rMax = Math.min(rows, Math.ceil(((zc + sd/2 + EPS) - gz0) / CELL));
+    const bd = WHC_boxDims(zone, ai);
     aisle[ck].forEach((cont, ci) => {
-      const xc = WHC_slotPos(zone, ai, ci, 0).x;
-      const cMin = Math.max(0, Math.floor(((xc - sw/2 - EPS) - gx0) / CELL));
-      const cMax = Math.min(cols, Math.ceil(((xc + sw/2 + EPS) - gx0) / CELL));
+      const p = WHC_slotPos(zone, ai, ci, 0);
+      const cMin = Math.max(0, Math.floor(((p.x - bd.bx/2 - EPS) - gx0) / CELL));
+      const cMax = Math.min(cols, Math.ceil(((p.x + bd.bx/2 + EPS) - gx0) / CELL));
+      const rMin = Math.max(0, Math.floor(((p.z - bd.bz/2 - EPS) - gz0) / CELL));
+      const rMax = Math.min(rows, Math.ceil(((p.z + bd.bz/2 + EPS) - gz0) / CELL));
       for (let r = rMin; r < rMax; r++)
         for (let c = cMin; c < cMax; c++)
           grid[r * cols + c] = 1;
@@ -13712,8 +13764,9 @@ function _3dRenderZone(zone, keepView) {
 
   zone.aisles.forEach((aisle, ai) => {
     const pal = _PALETTE[ai % _PALETTE.length];
-    const sw = _shelfDim(zone, ai, 'sw'), sh = _shelfDim(zone, ai, 'sh'), sd = _shelfDim(zone, ai, 'sd');
-    const geo = geoFor(sw, sh, sd);
+    const bd = WHC_boxDims(zone, ai);
+    const sh = bd.by;
+    const geo = geoFor(bd.bx, bd.by, bd.bz);
     aisle[ck].forEach((container, ci) => {
       container[sk].forEach((slot, si) => {
         const pos    = WHC_slotPos(zone, ai, ci, si);
@@ -13786,34 +13839,39 @@ function _3dDrawFrame(zone, aisle, ai, ck, sk) {
   const cols  = aisle[ck].length;
   const maxSi = cols ? Math.max(...aisle[ck].map(c => c[sk].length)) : 0;
   if (!cols || !maxSi) return;
-  const sw = _shelfDim(zone, ai, 'sw'), sh = _shelfDim(zone, ai, 'sh'), sd = _shelfDim(zone, ai, 'sd');
-  const cg = _shelfDim(zone, ai, 'cg'), lg = _shelfDim(zone, ai, 'lg');
-  const zc   = WHC_rowZ(zone, ai);
-  const totW = (cols - 1) * (sw + cg) + sw;
+  const sh = _shelfDim(zone, ai, 'sh'), lg = _shelfDim(zone, ai, 'lg');
+  const bd = WHC_boxDims(zone, ai);
+  // 货架的 XZ 外接矩形（按各格盒子，dual/linear 通用）
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let ci = 0; ci < cols; ci++) {
+    const p = WHC_slotPos(zone, ai, ci, 0);
+    x0 = Math.min(x0, p.x - bd.bx/2); x1 = Math.max(x1, p.x + bd.bx/2);
+    z0 = Math.min(z0, p.z - bd.bz/2); z1 = Math.max(z1, p.z + bd.bz/2);
+  }
+  x0 -= 0.04; x1 += 0.04; z0 -= 0.04; z1 += 0.04;
   const totH = (maxSi - 1) * (sh + lg) + sh;
-  const x0 = -sw/2 - 0.04, x1 = totW - sw/2 + 0.04;
   const y0 = -0.05, y1 = totH + 0.05;
-  const z0 = zc - sd/2 - 0.04, z1 = zc + sd/2 + 0.04;
 
-  // 4 vertical corner posts (front & back)
+  // 4 根立柱
   [[x0,z0],[x1,z0],[x0,z1],[x1,z1]].forEach(([x,z]) => {
     const g = new T.BufferGeometry().setFromPoints([new T.Vector3(x,y0,z), new T.Vector3(x,y1,z)]);
     const l = new T.Line(g, mat); _3dScene.add(l); _3dZoneObjs.push(l);
   });
-  // Horizontal shelf beams (front & back, per layer)
+  // 每层一圈水平横梁（围着 XZ 外框）
   for (let li = 0; li <= maxSi; li++) {
     const y = li * (sh + lg) - lg/2;
-    [z0, z1].forEach(z => {
-      const g = new T.BufferGeometry().setFromPoints([new T.Vector3(x0,y,z), new T.Vector3(x1,y,z)]);
-      const l = new T.Line(g, mat); _3dScene.add(l); _3dZoneObjs.push(l);
-    });
+    const g = new T.BufferGeometry().setFromPoints([
+      new T.Vector3(x0,y,z0), new T.Vector3(x1,y,z0), new T.Vector3(x1,y,z1),
+      new T.Vector3(x0,y,z1), new T.Vector3(x0,y,z0)
+    ]);
+    const l = new T.Line(g, mat); _3dScene.add(l); _3dZoneObjs.push(l);
   }
-  // Floor plate
-  const fGeo = new T.PlaneGeometry(totW + 0.1, sd + 0.1);
+  // 地面板
+  const fGeo = new T.PlaneGeometry((x1 - x0) + 0.06, (z1 - z0) + 0.06);
   const fMat = new T.MeshStandardMaterial({ color: 0x1e293b, opacity: 0.55, transparent: true });
   const floor = new T.Mesh(fGeo, fMat);
   floor.rotation.x = -Math.PI/2;
-  floor.position.set((totW - sw)/2, y0 - 0.01, zc);
+  floor.position.set((x0 + x1)/2, y0 - 0.01, (z0 + z1)/2);
   _3dScene.add(floor); _3dZoneObjs.push(floor);
 }
 
@@ -13839,6 +13897,27 @@ function _3dClearNavPath() {
   _3dNavObjs = [];
 }
 
+// 从给定格子出发，BFS 找最近的可走格（用于把入口/目标贴到通道里）
+function _nearestWalk(gd, cell) {
+  const { grid, cols, rows } = gd;
+  const idx = (c, r) => r * cols + c;
+  const c0 = Math.max(0, Math.min(cols - 1, cell.col));
+  const r0 = Math.max(0, Math.min(rows - 1, cell.row));
+  if (grid[idx(c0, r0)] === 0) return { col: c0, row: r0 };
+  const seen = new Uint8Array(cols * rows);
+  const q = [[c0, r0]]; seen[idx(c0, r0)] = 1; let h = 0;
+  while (h < q.length) {
+    const [c, r] = q[h++];
+    if (grid[idx(c, r)] === 0) return { col: c, row: r };
+    const nb = [[c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]];
+    for (const [nc, nr] of nb) {
+      if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+      const ii = idx(nc, nr); if (seen[ii]) continue; seen[ii] = 1; q.push([nc, nr]);
+    }
+  }
+  return { col: c0, row: r0 };
+}
+
 // 在 3D 场景里画从固定入口→目标库位的导航路径
 // targetAi/targetCi: 目标格位的排/列索引
 function _3dDrawNavPath(zone, targetAi, targetCi) {
@@ -13849,30 +13928,14 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   const gd = WHC_buildWalkGrid(zone);
   if (!gd) return;
 
-  // 入口（可在 zone 上配置 entryX/entryZ，默认货架左前角）
-  const entryX = zone.entryX ?? -1.5;
-  const entryZ = zone.entryZ ?? -1.0;
-  const startCell = gd.toCell(entryX, entryZ);
+  // 入口（按布局模式取，可被 zone.entryX/entryZ 覆盖）
+  const en = _zoneEntry(zone);
+  const startCell = _nearestWalk(gd, gd.toCell(en.x, en.z));
 
-  // 目标列的 X 中心
-  const txc = WHC_rowZ(zone, targetAi);
-  const xc  = WHC_slotPos(zone, targetAi, targetCi, 0).x;
-  const sdT = _shelfDim(zone, targetAi, 'sd');
-  const gapBefore = targetAi > 0 ? _gapAt(zone, targetAi - 1) : WHC.ag;
-  const gapAfter  = _gapAt(zone, targetAi);
-  // 两侧走道中心 Z（让 A* 选更近的一侧）
-  const zFront = txc - sdT/2 - gapBefore/2;
-  const zBack  = txc + sdT/2 + gapAfter/2;
-
-  const endF = gd.toCell(xc, zFront);
-  const endB = gd.toCell(xc, zBack);
-  const pathF = WHC_findPath(gd, startCell, endF);
-  const pathB = WHC_findPath(gd, startCell, endB);
-
-  // 选较短路径
-  let path = null;
-  if (pathF && pathB) path = pathF.length <= pathB.length ? pathF : pathB;
-  else path = pathF || pathB;
+  // 目标格中心 → 取最近的可走格作为终点（dual/linear 通用，自动选最近的通道一侧）
+  const tgt0 = WHC_slotPos(zone, targetAi, targetCi, 0);
+  const endCell = _nearestWalk(gd, gd.toCell(tgt0.x, tgt0.z));
+  const path = WHC_findPath(gd, startCell, endCell);
   if (!path || path.length < 2) { toast('⚠️ 找不到通道路径'); return; }
 
   // 把格子坐标转成 3D 世界点（贴地 y=0.05）
@@ -13931,7 +13994,8 @@ function _3dDrawNavPath(zone, targetAi, targetCi) {
   sGeo.dispose();
 
   // ④ 路径末端→目标格位列前的引导短线
-  const tgtPos = WHC_slotPos(zone, targetAi, targetCi, 0);
+  const tgtPos = tgt0;
+  const sdT = WHC_boxDims(zone, targetAi).bz;
   const lastPt = smoothPts[smoothPts.length - 1];
   const finalGeo = new T.BufferGeometry().setFromPoints([
     lastPt.clone(),
@@ -14153,10 +14217,14 @@ function _planCurZone() { return state.zones.find(z => z.id === currentTable); }
 function _planShelf(zone, ai) {
   const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
   const cols = (zone.aisles[ai] && zone.aisles[ai][ck] || []).length || 1;
-  const sw = _shelfDim(zone, ai, 'sw'), cg = _shelfDim(zone, ai, 'cg'), sd = _shelfDim(zone, ai, 'sd');
-  const totW = (cols - 1) * (sw + cg) + sw;
-  const zc = WHC_rowZ(zone, ai);
-  return { x0: -sw / 2, x1: totW - sw / 2, z0: zc - sd / 2, z1: zc + sd / 2 };
+  const bd = WHC_boxDims(zone, ai);
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let ci = 0; ci < cols; ci++) {
+    const p = WHC_slotPos(zone, ai, ci, 0);
+    x0 = Math.min(x0, p.x - bd.bx / 2); x1 = Math.max(x1, p.x + bd.bx / 2);
+    z0 = Math.min(z0, p.z - bd.bz / 2); z1 = Math.max(z1, p.z + bd.bz / 2);
+  }
+  return { x0, x1, z0, z1 };
 }
 function _planBounds(zone) {
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -14165,9 +14233,9 @@ function _planBounds(zone) {
     minX = Math.min(minX, r.x0); maxX = Math.max(maxX, r.x1);
     minZ = Math.min(minZ, r.z0); maxZ = Math.max(maxZ, r.z1);
   });
-  const ex = zone.entryX ?? -1.5, ez = zone.entryZ ?? -1.0;
-  minX = Math.min(minX, ex); maxX = Math.max(maxX, ex);
-  minZ = Math.min(minZ, ez); maxZ = Math.max(maxZ, ez);
+  const en = _zoneEntry(zone);
+  minX = Math.min(minX, en.x); maxX = Math.max(maxX, en.x);
+  minZ = Math.min(minZ, en.z); maxZ = Math.max(maxZ, en.z);
   if (!isFinite(minX)) { minX = 0; maxX = 1; minZ = 0; maxZ = 1; }
   return { minX, maxX, minZ, maxZ };
 }
@@ -14188,6 +14256,31 @@ function _planFit() {
   _planView.oy = pad - b.minZ * scale + ((H - 2 * pad) - bh * scale) / 2;
   _planDraw();
 }
+// 通道矩形列表（draw + hit 共用）。dual：1 条主通道(kind 'main') + 各块内小通道(kind 'gap')；linear：相邻排之间
+function _planGapRects(zone) {
+  const out = [], N = zone.aisles.length;
+  if (_zoneLayout(zone) === 'dual') {
+    const split = (zone.layout && zone.layout.split) || Math.ceil(N / 2);
+    let upMaxZ = -Infinity, loMinZ = Infinity, gx0 = Infinity, gx1 = -Infinity;
+    for (let ai = 0; ai < N; ai++) {
+      const r = _planShelf(zone, ai); gx0 = Math.min(gx0, r.x0); gx1 = Math.max(gx1, r.x1);
+      if (ai < split) upMaxZ = Math.max(upMaxZ, r.z1); else loMinZ = Math.min(loMinZ, r.z0);
+    }
+    if (isFinite(upMaxZ) && isFinite(loMinZ) && loMinZ > upMaxZ)
+      out.push({ kind: 'main', idx: 0, x0: gx0, x1: gx1, z0: upMaxZ, z1: loMinZ, val: _zoneMainW(zone) });
+    const within = (s, e) => { for (let i = s; i < e - 1; i++) {
+      const a = _planShelf(zone, i), b = _planShelf(zone, i + 1);
+      out.push({ kind: 'gap', idx: i, x0: a.x1, x1: b.x0, z0: Math.min(a.z0, b.z0), z1: Math.max(a.z1, b.z1), val: _gapAt(zone, i) });
+    } };
+    within(0, split); within(split, N);
+  } else {
+    for (let i = 0; i < N - 1; i++) {
+      const a = _planShelf(zone, i), b = _planShelf(zone, i + 1);
+      out.push({ kind: 'gap', idx: i, x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), z0: a.z1, z1: b.z0, val: _gapAt(zone, i) });
+    }
+  }
+  return out;
+}
 function _planDraw() {
   const cv = _planCanvas, ctx = _planCtx; if (!cv || !ctx) return;
   ctx.setTransform(_planDpr, 0, 0, _planDpr, 0, 0);
@@ -14199,28 +14292,28 @@ function _planDraw() {
   const sx = x => ox + x * scale, sy = z => oy + z * scale;
   const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
   const unit = (zone.dims && zone.dims.unit) || 'cm';
+  const dual = _zoneLayout(zone) === 'dual';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-  // 主通道 = 最大 gap
+  // linear 模式：最大 gap 视作主通道（仅着色用）
   let mainIdx = -1, mainVal = -1;
-  for (let i = 0; i < zone.aisles.length - 1; i++) { const g = _gapAt(zone, i); if (g > mainVal) { mainVal = g; mainIdx = i; } }
+  if (!dual) for (let i = 0; i < zone.aisles.length - 1; i++) { const g = _gapAt(zone, i); if (g > mainVal) { mainVal = g; mainIdx = i; } }
 
-  // 通道带（画在货架下层）
-  for (let i = 0; i < zone.aisles.length - 1; i++) {
-    const a = _planShelf(zone, i), b = _planShelf(zone, i + 1);
-    const zx0 = Math.min(a.x0, b.x0), zx1 = Math.max(a.x1, b.x1);
-    const X = sx(zx0), Y = sy(a.z1), Wd = (zx1 - zx0) * scale, Hd = (b.z0 - a.z1) * scale;
-    const isMain = (i === mainIdx && mainVal > 0.001);
-    const sel = _planSel && _planSel.kind === 'gap' && _planSel.idx === i;
+  // 通道带
+  _planGapRects(zone).forEach(g => {
+    const X = sx(g.x0), Y = sy(g.z0), Wd = (g.x1 - g.x0) * scale, Hd = (g.z1 - g.z0) * scale;
+    const isMain = g.kind === 'main' || (!dual && g.idx === mainIdx && mainVal > 0.001);
+    const sel = _planSel && _planSel.kind === g.kind && _planSel.idx === g.idx;
     ctx.fillStyle = isMain ? 'rgba(56,189,248,.12)' : 'rgba(148,163,184,.05)';
     ctx.fillRect(X, Y, Wd, Hd);
     if (sel) { ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.strokeRect(X + 1, Y + 1, Wd - 2, Hd - 2); }
-    if (Hd > 13) {
+    const fits = (g.kind === 'main') ? (Hd > 12) : (Wd > 30 && Hd > 12);
+    if (fits) {
       ctx.fillStyle = isMain ? '#38bdf8' : '#7c8aa0';
       ctx.font = '600 11px -apple-system,sans-serif';
-      ctx.fillText((isMain ? '主通道 ' : '通道 ') + _dimFmt(_gapAt(zone, i), unit) + unit, X + Wd / 2, Y + Hd / 2);
+      ctx.fillText((isMain ? '主通道 ' : '通道 ') + _dimFmt(g.val, unit) + unit, X + Wd / 2, Y + Hd / 2);
     }
-  }
+  });
 
   // 货架
   const PAL = [['rgba(59,130,246,.32)', '#3b82f6'], ['rgba(34,197,94,.32)', '#22c55e'],
@@ -14244,9 +14337,9 @@ function _planDraw() {
     }
   });
 
-  // 入口标记
-  const ex = zone.entryX ?? -1.5, ez = zone.entryZ ?? -1.0;
-  const eX = sx(ex), eY = sy(ez);
+  // 入口标记（按布局模式）
+  const en = _zoneEntry(zone);
+  const eX = sx(en.x), eY = sy(en.z);
   ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(eX, eY, 7, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#34d399'; ctx.font = '700 10px -apple-system,sans-serif';
   ctx.textAlign = 'left'; ctx.fillText(' 入口', eX + 6, eY);
@@ -14262,6 +14355,7 @@ function _planOpen() {
   _planCanvas = document.getElementById('plan2d-canvas');
   _planCtx = _planCanvas.getContext('2d');
   if (!_planBound) { _planBindEvents(); _planBound = true; }
+  _updateModeBtn();
   requestAnimationFrame(() => { _planResize(); _planFit(); _planSyncEdit(); });
 }
 function _planClose() {
@@ -14288,17 +14382,27 @@ function _planHit(px, py) {
     const r = _planShelf(zone, ai);
     if (wx >= r.x0 && wx <= r.x1 && wz >= r.z0 && wz <= r.z1) return { kind: 'shelf', idx: ai };
   }
-  for (let i = 0; i < zone.aisles.length - 1; i++) {
-    const a = _planShelf(zone, i), b = _planShelf(zone, i + 1);
-    const zx0 = Math.min(a.x0, b.x0), zx1 = Math.max(a.x1, b.x1);
-    if (wx >= zx0 && wx <= zx1 && wz >= a.z1 && wz <= b.z0) return { kind: 'gap', idx: i };
+  const pad = 6 / scale;  // 窄通道也好点中
+  for (const g of _planGapRects(zone)) {
+    if (wx >= g.x0 - pad && wx <= g.x1 + pad && wz >= g.z0 - pad && wz <= g.z1 + pad) return { kind: g.kind, idx: g.idx };
   }
   return null;
 }
+// 货架是否可拖动（块首架作基准不可拖）
+function _planDraggable(zone, ai) {
+  if (ai < 1) return false;
+  if (_zoneLayout(zone) === 'dual') {
+    const split = (zone.layout && zone.layout.split) || Math.ceil(zone.aisles.length / 2);
+    if (ai === split) return false;   // 下块首架
+  }
+  return true;
+}
 function _planPD(e) {
-  const p = _planXY(e), hit = _planHit(p.x, p.y);
-  if (hit && hit.kind === 'shelf' && hit.idx >= 1) {
-    _planDrag = { ai: hit.idx, startWz: (p.y - _planView.oy) / _planView.scale, startGap: _gapAt(_planZone, hit.idx - 1), moved: false };
+  const p = _planXY(e), zone = _planZone, hit = _planHit(p.x, p.y);
+  if (hit && hit.kind === 'shelf' && _planDraggable(zone, hit.idx)) {
+    const dual = _zoneLayout(zone) === 'dual';
+    const startW = dual ? (p.x - _planView.ox) / _planView.scale : (p.y - _planView.oy) / _planView.scale;
+    _planDrag = { ai: hit.idx, axis: dual ? 'x' : 'z', startW, startGap: _gapAt(zone, hit.idx - 1), moved: false };
     try { _planCanvas.setPointerCapture(e.pointerId); } catch (x) {}
   } else {
     _planDrag = { tapOnly: true, hit };
@@ -14306,8 +14410,9 @@ function _planPD(e) {
 }
 function _planPM(e) {
   if (!_planDrag || _planDrag.tapOnly) return;
-  const p = _planXY(e), wz = (p.y - _planView.oy) / _planView.scale;
-  let ng = _planDrag.startGap + (wz - _planDrag.startWz);
+  const p = _planXY(e);
+  const cur = _planDrag.axis === 'x' ? (p.x - _planView.ox) / _planView.scale : (p.y - _planView.oy) / _planView.scale;
+  let ng = _planDrag.startGap + (cur - _planDrag.startW);
   ng = Math.max(0, Math.min(10, Math.round(ng * 100) / 100));
   if (ng < 0.02) ng = 0;
   if (Math.abs(ng - _planDrag.startGap) > 0.001) _planDrag.moved = true;
@@ -14328,12 +14433,17 @@ function _planSyncEdit() {
   const applyEl = document.getElementById('plan2d-apply');
   const unit = unitEl.value || 'cm';
   if (!zone || !_planSel) {
-    selEl.textContent = '点一个货架或通道来选择';
+    selEl.textContent = '点货架 / 通道 / 主通道来选择';
     axisSel.innerHTML = ''; axisSel.disabled = true; valEl.value = ''; valEl.disabled = true; applyEl.disabled = true;
     return;
   }
   const nm = i => (zone.aisles[i] && zone.aisles[i].name) || String.fromCharCode(65 + i);
-  if (_planSel.kind === 'gap') {
+  if (_planSel.kind === 'main') {
+    selEl.textContent = '中央主通道 宽度';
+    axisSel.innerHTML = '<option value="main">主通道宽度</option>'; axisSel.disabled = true;
+    valEl.disabled = false; applyEl.disabled = false;
+    valEl.value = _dimFmt(_zoneMainW(zone), unit);
+  } else if (_planSel.kind === 'gap') {
     const i = _planSel.idx;
     selEl.textContent = '通道 ' + nm(i) + '↔' + nm(i + 1) + '（间距）— 设 0 = 背靠背贴合';
     axisSel.innerHTML = '<option value="gap">通道间距</option>'; axisSel.disabled = true;
@@ -14344,7 +14454,7 @@ function _planSyncEdit() {
     selEl.textContent = '货架 ' + nm(ai) + ' 尺寸';
     axisSel.disabled = false;
     axisSel.innerHTML = '<option value="sw">列宽（每列）</option><option value="sd">进深</option><option value="sh">层高（每层）</option>';
-    axisSel.value = (prev === 'gap') ? 'sw' : prev; axisSel.dataset.k = axisSel.value;
+    axisSel.value = (prev === 'gap' || prev === 'main') ? 'sw' : prev; axisSel.dataset.k = axisSel.value;
     valEl.disabled = false; applyEl.disabled = false;
     valEl.value = _dimFmt(_shelfDim(zone, ai, axisSel.value), unit);
   }
@@ -14364,7 +14474,10 @@ function _planApply() {
   if (!isFinite(raw) || raw < 0) { toast('请输入有效尺寸'); return; }
   const m = raw * _dimFactor(unit);
   const d = _dimEnsure(zone); d.unit = unit;
-  if (_planSel.kind === 'gap') {
+  if (_planSel.kind === 'main') {
+    if (m < 0.1 || m > 20) { toast('主通道宽度超范围（10cm~2000cm）'); return; }
+    zone.layout = zone.layout || {}; zone.layout.mainW = m;
+  } else if (_planSel.kind === 'gap') {
     if (m > 10) { toast('通道间距过大（≤1000cm）'); return; }
     d.gaps[_planSel.idx] = m;
   } else {
@@ -14373,6 +14486,54 @@ function _planApply() {
     (d.shelves[_planSel.idx] = d.shelves[_planSel.idx] || {})[axis] = m;
   }
   saveState(); _planFit(); _planSyncEdit(); toast('✅ 已更新');
+}
+// ── 布局模式切换 + 双排生成（复制 ABCD→EFGH，真实写入 zone.aisles，列表/总览同步）──
+function _updateModeBtn() {
+  const btn = document.getElementById('plan2d-mode'); if (!btn) return;
+  btn.textContent = _zoneLayout(_planZone) === 'dual' ? '⇄ 改平行' : '⇅ 改双排';
+}
+function _dualCreateLower(zone) {
+  const ck = zone.type === 'shelf' ? 'shelves' : 'pallets';
+  const sk = zone.type === 'shelf' ? 'slots' : 'layers';
+  const n = zone.aisles.length;
+  for (let i = 0; i < n; i++) {
+    const src = zone.aisles[i];
+    const clone = { name: String.fromCharCode(65 + n + i) };   // E,F,G,H…
+    clone[ck] = (src[ck] || []).map(col => {
+      const c = { name: col.name }; c[sk] = (col[sk] || []).map(() => newSlot()); return c;
+    });
+    zone.aisles.push(clone);
+  }
+  const d = _dimEnsure(zone);   // 下排尺寸/间距对齐上排
+  for (let i = 0; i < n; i++) {
+    if (d.shelves[i]) d.shelves[n + i] = Object.assign({}, d.shelves[i]);
+    if (i < n - 1 && d.gaps[i] != null) d.gaps[n + i] = d.gaps[i];
+  }
+}
+function _planToggleMode() {
+  if (!_isBoss()) { toast('⛔ 仅老板可操作'); return; }
+  const zone = _planZone; if (!zone) return;
+  if (_zoneLayout(zone) === 'dual') {
+    zone.layout = zone.layout || {}; zone.layout.mode = 'linear';
+    saveState(); render();
+    _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
+    toast('已切换为平行排列（货架保留）');
+    return;
+  }
+  // 之前已生成过下排 → 直接恢复双排，不重复克隆
+  if (zone.layout && zone.layout.split && zone.aisles.length > zone.layout.split) {
+    zone.layout.mode = 'dual';
+    saveState(); render();
+    _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
+    toast('✅ 已恢复上下双排'); return;
+  }
+  const n = zone.aisles.length;
+  if (!confirm('将复制当前 ' + n + ' 个货架作为下排（新增空库位货架，会出现在「列表/总览」），形成"上下双排 + 中央主通道"。继续？')) return;
+  _dualCreateLower(zone);
+  zone.layout = { mode: 'dual', split: n, mainW: _zoneMainW(zone) };
+  render();   // 重渲染列表/总览以显示新货架，并自动 saveState
+  _planSel = null; _planFit(); _planSyncEdit(); _updateModeBtn();
+  toast('✅ 已生成上下双排（下排新增 ' + n + ' 个空货架）');
 }
 
 _initAuth(); // All vars declared above — safe entry point
