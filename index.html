@@ -710,6 +710,9 @@
   .tlbl .tname { font-size:7.5px; font-weight:700; color:#e2e8f0; }
   .tlbl .tqty  { font-size:8.5px; font-weight:800; }
   /* 搜索命中时：库位编号放大加粗，高亮黄色 */
+  .aisle-end-lbl { position:absolute; transform:translate(-50%,-50%); pointer-events:none; z-index:2;
+    font-weight:800; font-size:15px; color:#fff; line-height:1; padding:2px 7px; border-radius:6px;
+    text-shadow:0 0 4px rgba(0,0,0,.9); box-shadow:0 1px 4px rgba(0,0,0,.5); }
   .tlbl-hit .tloc { font-size:10px !important; font-weight:800 !important; color:#fde047 !important; letter-spacing:.06em; text-shadow: 0 0 8px rgba(253,224,71,.8); }
   .tlbl-hit .tname { font-size:8.5px; color:#fff; }
   .tlbl-hit .tqty  { font-size:10px; }
@@ -1629,7 +1632,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.7</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2846,6 +2849,17 @@
       <h3>📋 更新日志</h3>
 
       <div style="display:flex; flex-direction:column; gap:14px; font-size:13px;">
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.8</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>3D 找货页每个货架两端地面显示大号货架名（A/B/C…，与列表/总览一致），一眼看清货在哪个货架</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -13552,6 +13566,7 @@ let _3dLastTap = 0;
 let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
 let _3dDynGeos = [];        // 本次渲染按各货架尺寸临时创建的几何体（需逐次释放）
 let _3dEntryPos = null, _3dEntryLabel = null; // 持久入口标记（不搜索时也显示）
+let _3dEndLabels = [];      // 各货架两端地面大字标号 [{el,pos}]
 
 // 内联轨道控制器 — 单指/鼠标=旋转，双指=捏合缩放+同向平移，滚轮=缩放
 // 所有状态（radius/theta/phi/tgt）在手势结束后保持不变
@@ -13751,7 +13766,7 @@ function _3dClearZone() {
   _3dDynGeos.forEach(g => { try { g.dispose(); } catch(e){} });
   _3dDynGeos = [];
   _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
-  _3dEntryPos = null; _3dEntryLabel = null;
+  _3dEntryPos = null; _3dEntryLabel = null; _3dEndLabels = [];
   document.getElementById('three-labels-ov').innerHTML = '';
 }
 
@@ -13821,6 +13836,28 @@ function _3dRenderZone(zone, keepView) {
       });
     });
     _3dDrawFrame(zone, aisle, ai, ck, sk);
+
+    // 货架两端地面大字标号（A/B/…，取自列表/总览的货架名），一眼定位货架
+    const fr = WHC_aisleFrame(zone, ai);
+    const cols = aisle[ck].length || 1;
+    const swA = _shelfDim(zone, ai, 'sw');
+    const m = swA / 2 + 0.18;
+    const c0 = { x: fr.px, z: fr.pz };
+    const cL = { x: fr.px + fr.ux * (cols - 1) * fr.pitch, z: fr.pz + fr.uz * (cols - 1) * fr.pitch };
+    const ends = [
+      { x: c0.x - fr.ux * m, z: c0.z - fr.uz * m },
+      { x: cL.x + fr.ux * m, z: cL.z + fr.uz * m },
+    ];
+    const edgeHex = '#' + (pal.edge >>> 0).toString(16).padStart(6, '0');
+    const aiName = aisle.name || String.fromCharCode(65 + ai);
+    ends.forEach(e => {
+      const el = document.createElement('div');
+      el.className = 'aisle-end-lbl';
+      el.textContent = aiName;
+      el.style.background = edgeHex;
+      document.getElementById('three-labels-ov').appendChild(el);
+      _3dEndLabels.push({ el, pos: new T.Vector3(e.x, 0.06, e.z) });
+    });
   });
 
   // 持久「入口」标记：进 3D 即可见，方便找货员定位（不依赖搜索）
@@ -13882,6 +13919,14 @@ function _3dUpdateLabels() {
     _3dEntryLabel.style.display = vis ? '' : 'none';
     if (vis) { _3dEntryLabel.style.left = sx + 'px'; _3dEntryLabel.style.top = sy + 'px'; }
   }
+  // 货架两端标号投影
+  _3dEndLabels.forEach(({ el, pos }) => {
+    v.copy(pos); v.project(_3dCam);
+    const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H;
+    const vis = v.z < 1 && sx > -40 && sx < W + 40 && sy > -30 && sy < H + 30;
+    el.style.display = vis ? '' : 'none';
+    if (vis) { el.style.left = sx + 'px'; el.style.top = sy + 'px'; }
+  });
 }
 
 function _3dDrawFrame(zone, aisle, ai, ck, sk) {
