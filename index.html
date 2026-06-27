@@ -1632,7 +1632,7 @@
 
 <div class="app" id="main-app">
   <header>
-    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.8</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
+    <h1><span translate="no">ZEHEM</span>哲亨WMS仓管系统<span id="app-biz-name">（一件代发）</span> <span id="app-version-label" onclick="_openChangelog()" style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:0.05em; cursor:pointer; text-decoration:underline dotted;">v8.9</span><span style="font-size:11px; font-weight:500; color:var(--muted); letter-spacing:0.05em;"> 手机版</span></h1>
     <div class="hdr-btn-row">
       <button class="icon-btn" id="biz-btn" title="⊞ 业务模块 — 切换一件代发 / 转运快拆" aria-label="业务模块" onclick="_showWelcome()" style="width:auto; padding:0 12px; gap:5px; background:#7c3aed; color:#fff; border:2.5px solid #5b21b6; font-weight:800; font-size:14px; box-shadow:0 1px 4px rgba(124,58,237,.35);">⊞ 业务</button>
       <button class="icon-btn" id="lang-btn" title="界面语言 — 固定全站语言版本" aria-label="界面语言"><span class="gt-icon"><span class="gt-a">A</span><span class="gt-zh">文</span><span class="gt-pin">📌</span></span></button>
@@ -2852,7 +2852,19 @@
 
         <div>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.8</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--red); font-size:12px;">v8.9</span>
+            <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
+          </div>
+          <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
+            <li>3D 找货页默认视角改为从「入口一侧」看进去，入口不再被货架挡住，进来即可定位</li>
+            <li>货架名/入口名智能遮挡：被前方货架挡住的名称自动隐藏，只显示当前能看见的，转动角度实时显隐（不卡顿）</li>
+          </ul>
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:4px;"></div>
+        </div>
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--muted); font-size:12px;">v8.8</span>
             <span style="font-size:10px; color:var(--muted);">2026-06-24</span>
           </div>
           <ul style="margin:0; padding-left:16px; line-height:2; color:var(--ink);">
@@ -13566,7 +13578,8 @@ let _3dLastTap = 0;
 let _3dBoxGeo, _3dEdgeGeo; // shared geometries (created once at init)
 let _3dDynGeos = [];        // 本次渲染按各货架尺寸临时创建的几何体（需逐次释放）
 let _3dEntryPos = null, _3dEntryLabel = null; // 持久入口标记（不搜索时也显示）
-let _3dEndLabels = [];      // 各货架两端地面大字标号 [{el,pos}]
+let _3dEndLabels = [];      // 各货架两端地面大字标号 [{el,pos,ai}]
+let _3dAisleBoxes = [];     // 各货架世界包围盒（用于标签遮挡剔除）
 
 // 内联轨道控制器 — 单指/鼠标=旋转，双指=捏合缩放+同向平移，滚轮=缩放
 // 所有状态（radius/theta/phi/tgt）在手势结束后保持不变
@@ -13655,13 +13668,16 @@ function _3dMakeOrbit(camera, canvas) {
   return {
     update() {},
     setTarget(x, y, z) { tgt.x = x; tgt.y = y; tgt.z = z; sync(); },
-    fitToBox(box) {
+    fitToBox(box, lookFrom) {
       const T = window.THREE;
       const c = new T.Vector3(); box.getCenter(c);
       const s = new T.Vector3(); box.getSize(s);
       const maxD = Math.max(s.x, s.y, s.z);
       radius = Math.max((maxD / 2) / Math.tan(camera.fov * Math.PI / 360) * 2.1, 3);
-      theta = 0.8; phi = Math.PI / 4;
+      // 默认从"入口一侧"看进去（入口在前不被货架挡），并带 3/4 斜角
+      if (lookFrom) theta = Math.atan2(lookFrom.x - c.x, lookFrom.z - c.z) + 0.6;
+      else theta = 0.8;
+      phi = 1.0;
       tgt.x = c.x; tgt.y = c.y; tgt.z = c.z; sync();
     }
   };
@@ -13766,7 +13782,7 @@ function _3dClearZone() {
   _3dDynGeos.forEach(g => { try { g.dispose(); } catch(e){} });
   _3dDynGeos = [];
   _3dMeshMap = []; _3dZoneObjs = []; _3dHit = [];
-  _3dEntryPos = null; _3dEntryLabel = null; _3dEndLabels = [];
+  _3dEntryPos = null; _3dEntryLabel = null; _3dEndLabels = []; _3dAisleBoxes = [];
   document.getElementById('three-labels-ov').innerHTML = '';
 }
 
@@ -13837,9 +13853,20 @@ function _3dRenderZone(zone, keepView) {
     });
     _3dDrawFrame(zone, aisle, ai, ck, sk);
 
+    // 货架世界包围盒（标签遮挡剔除用）
+    const cols = aisle[ck].length || 1;
+    let bx0 = Infinity, bx1 = -Infinity, bz0 = Infinity, bz1 = -Infinity;
+    for (let ci = 0; ci < cols; ci++) {
+      const p = WHC_slotPos(zone, ai, ci, 0);
+      bx0 = Math.min(bx0, p.x - bd.bx / 2); bx1 = Math.max(bx1, p.x + bd.bx / 2);
+      bz0 = Math.min(bz0, p.z - bd.bz / 2); bz1 = Math.max(bz1, p.z + bd.bz / 2);
+    }
+    const maxSi = Math.max(1, ...aisle[ck].map(c => c[sk].length));
+    const totH = (maxSi - 1) * (sh + _shelfDim(zone, ai, 'lg')) + sh;
+    _3dAisleBoxes.push({ ai, x0: bx0, x1: bx1, y0: 0, y1: totH, z0: bz0, z1: bz1 });
+
     // 货架两端地面大字标号（A/B/…，取自列表/总览的货架名），一眼定位货架
     const fr = WHC_aisleFrame(zone, ai);
-    const cols = aisle[ck].length || 1;
     const swA = _shelfDim(zone, ai, 'sw');
     const m = swA / 2 + 0.18;
     const c0 = { x: fr.px, z: fr.pz };
@@ -13856,7 +13883,7 @@ function _3dRenderZone(zone, keepView) {
       el.textContent = aiName;
       el.style.background = edgeHex;
       document.getElementById('three-labels-ov').appendChild(el);
-      _3dEndLabels.push({ el, pos: new T.Vector3(e.x, 0.06, e.z) });
+      _3dEndLabels.push({ el, pos: new T.Vector3(e.x, 0.06, e.z), ai });
     });
   });
 
@@ -13911,22 +13938,46 @@ function _3dUpdateLabels() {
     label.style.display = vis ? '' : 'none';
     if (vis) { label.style.left = sx+'px'; label.style.top = sy+'px'; }
   });
-  // 入口标签投影
+  // 入口标签投影（被货架挡住则隐藏）
   if (_3dEntryLabel && _3dEntryPos) {
     v.copy(_3dEntryPos); v.project(_3dCam);
     const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H;
-    const vis = v.z < 1;
+    const vis = v.z < 1 && !_labelOccluded(_3dEntryPos, -1);
     _3dEntryLabel.style.display = vis ? '' : 'none';
     if (vis) { _3dEntryLabel.style.left = sx + 'px'; _3dEntryLabel.style.top = sy + 'px'; }
   }
-  // 货架两端标号投影
-  _3dEndLabels.forEach(({ el, pos }) => {
+  // 货架两端标号投影（被其它货架挡住则隐藏）
+  _3dEndLabels.forEach(({ el, pos, ai }) => {
     v.copy(pos); v.project(_3dCam);
     const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H;
-    const vis = v.z < 1 && sx > -40 && sx < W + 40 && sy > -30 && sy < H + 30;
+    const vis = v.z < 1 && sx > -40 && sx < W + 40 && sy > -30 && sy < H + 30 && !_labelOccluded(pos, ai);
     el.style.display = vis ? '' : 'none';
     if (vis) { el.style.left = sx + 'px'; el.style.top = sy + 'px'; }
   });
+}
+// 标签遮挡判断：相机到标签点的线段，若穿过任一货架包围盒(跳过自身排)则被挡
+function _labelOccluded(pos, skipAi) {
+  const cam = _3dCam.position;
+  const d = { x: pos.x - cam.x, y: pos.y - cam.y, z: pos.z - cam.z };
+  for (let i = 0; i < _3dAisleBoxes.length; i++) {
+    const b = _3dAisleBoxes[i];
+    if (b.ai === skipAi) continue;
+    if (_segHitsBox(cam, d, b)) return true;
+  }
+  return false;
+}
+// 线段(相机起, d=终点-起点, 参数 t∈(0,1)) 是否穿过盒子 b（盒子内缩 e 防贴边自挡）
+function _segHitsBox(o, d, b) {
+  const e = 0.04; let t0 = 0.004, t1 = 0.996;
+  const ax = [[o.x, d.x, b.x0 + e, b.x1 - e], [o.y, d.y, b.y0 + e, b.y1 - e], [o.z, d.z, b.z0 + e, b.z1 - e]];
+  for (let k = 0; k < 3; k++) {
+    const oo = ax[k][0], dd = ax[k][1], mn = ax[k][2], mx = ax[k][3];
+    if (mn >= mx) return false;
+    if (Math.abs(dd) < 1e-9) { if (oo < mn || oo > mx) return false; continue; }
+    let a = (mn - oo) / dd, c = (mx - oo) / dd; if (a > c) { const t = a; a = c; c = t; }
+    if (a > t0) t0 = a; if (c < t1) t1 = c; if (t0 > t1) return false;
+  }
+  return t1 > t0;
 }
 
 function _3dDrawFrame(zone, aisle, ai, ck, sk) {
@@ -13976,7 +14027,7 @@ function _3dFitCamera() {
   const T = window.THREE;
   const box = new T.Box3();
   _3dMeshMap.forEach(({ mesh }) => box.expandByObject(mesh));
-  _3dCtrl.fitToBox(box);
+  _3dCtrl.fitToBox(box, _3dEntryPos);   // 默认朝入口一侧
 }
 function _3dResetCam() { _3dFitCamera(); }
 
